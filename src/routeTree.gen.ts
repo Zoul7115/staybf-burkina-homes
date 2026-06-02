@@ -28,6 +28,7 @@ import { Route as HostReviewsRouteImport } from './routes/host.reviews'
 import { Route as HostRevenueRouteImport } from './routes/host.revenue'
 import { Route as HostReservationsRouteImport } from './routes/host.reservations'
 import { Route as HostPropertyRouteImport } from './routes/host.property'
+import { Route as HostProfileRouteImport } from './routes/host.profile'
 import { Route as HostMessagesRouteImport } from './routes/host.messages'
 import { Route as HostDashboardRouteImport } from './routes/host.dashboard'
 import { Route as HostCalendarRouteImport } from './routes/host.calendar'
@@ -130,6 +131,11 @@ const HostPropertyRoute = HostPropertyRouteImport.update({
   path: '/property',
   getParentRoute: () => HostRoute,
 } as any)
+const HostProfileRoute = HostProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => HostRoute,
+} as any)
 const HostMessagesRoute = HostMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
+    | '/host/profile'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
+    | '/host/profile'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
+    | '/host/profile'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -473,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HostPropertyRouteImport
       parentRoute: typeof HostRoute
     }
+    '/host/profile': {
+      id: '/host/profile'
+      path: '/profile'
+      fullPath: '/host/profile'
+      preLoaderRoute: typeof HostProfileRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/host/messages': {
       id: '/host/messages'
       path: '/messages'
@@ -535,6 +554,7 @@ interface HostRouteChildren {
   HostCalendarRoute: typeof HostCalendarRoute
   HostDashboardRoute: typeof HostDashboardRoute
   HostMessagesRoute: typeof HostMessagesRoute
+  HostProfileRoute: typeof HostProfileRoute
   HostPropertyRoute: typeof HostPropertyRoute
   HostReservationsRoute: typeof HostReservationsRoute
   HostRevenueRoute: typeof HostRevenueRoute
@@ -548,6 +568,7 @@ const HostRouteChildren: HostRouteChildren = {
   HostCalendarRoute: HostCalendarRoute,
   HostDashboardRoute: HostDashboardRoute,
   HostMessagesRoute: HostMessagesRoute,
+  HostProfileRoute: HostProfileRoute,
   HostPropertyRoute: HostPropertyRoute,
   HostReservationsRoute: HostReservationsRoute,
   HostRevenueRoute: HostRevenueRoute,
