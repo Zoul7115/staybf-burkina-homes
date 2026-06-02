@@ -23,6 +23,7 @@ import { Route as TravelerBookingsRouteImport } from './routes/traveler.bookings
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
 import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
 import { Route as HostSubscriptionRouteImport } from './routes/host.subscription'
+import { Route as HostSettingsRouteImport } from './routes/host.settings'
 import { Route as HostRoomsRouteImport } from './routes/host.rooms'
 import { Route as HostReviewsRouteImport } from './routes/host.reviews'
 import { Route as HostRevenueRouteImport } from './routes/host.revenue'
@@ -106,6 +107,11 @@ const HostSubscriptionRoute = HostSubscriptionRouteImport.update({
   path: '/subscription',
   getParentRoute: () => HostRoute,
 } as any)
+const HostSettingsRoute = HostSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => HostRoute,
+} as any)
 const HostRoomsRoute = HostRoomsRouteImport.update({
   id: '/rooms',
   path: '/rooms',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/host/revenue': typeof HostRevenueRoute
   '/host/reviews': typeof HostReviewsRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
   '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/host/revenue': typeof HostRevenueRoute
   '/host/reviews': typeof HostReviewsRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
   '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/host/revenue': typeof HostRevenueRoute
   '/host/reviews': typeof HostReviewsRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
   '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/host/revenue'
     | '/host/reviews'
     | '/host/rooms'
+    | '/host/settings'
     | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/host/revenue'
     | '/host/reviews'
     | '/host/rooms'
+    | '/host/settings'
     | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/host/revenue'
     | '/host/reviews'
     | '/host/rooms'
+    | '/host/settings'
     | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
@@ -450,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HostSubscriptionRouteImport
       parentRoute: typeof HostRoute
     }
+    '/host/settings': {
+      id: '/host/settings'
+      path: '/settings'
+      fullPath: '/host/settings'
+      preLoaderRoute: typeof HostSettingsRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/host/rooms': {
       id: '/host/rooms'
       path: '/rooms'
@@ -560,6 +579,7 @@ interface HostRouteChildren {
   HostRevenueRoute: typeof HostRevenueRoute
   HostReviewsRoute: typeof HostReviewsRoute
   HostRoomsRoute: typeof HostRoomsRoute
+  HostSettingsRoute: typeof HostSettingsRoute
   HostSubscriptionRoute: typeof HostSubscriptionRoute
 }
 
@@ -574,6 +594,7 @@ const HostRouteChildren: HostRouteChildren = {
   HostRevenueRoute: HostRevenueRoute,
   HostReviewsRoute: HostReviewsRoute,
   HostRoomsRoute: HostRoomsRoute,
+  HostSettingsRoute: HostSettingsRoute,
   HostSubscriptionRoute: HostSubscriptionRoute,
 }
 
