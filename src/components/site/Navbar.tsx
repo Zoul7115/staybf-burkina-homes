@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Menu, Search, Leaf } from "lucide-react";
+import { Menu, Search, Leaf, LayoutDashboard, Home, ShieldCheck, ChevronDown } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function Navbar({ solid = false }: { solid?: boolean }) {
   const [scrolled, setScrolled] = useState(solid);
