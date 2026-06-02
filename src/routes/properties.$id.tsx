@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchX } from "lucide-react";
-import { getPropertyById, PropertyProvider, type PropertyDetail } from "@/lib/staybf-property-data";
+import { getPropertyById, PropertyProvider, useProperty, type PropertyDetail } from "@/lib/staybf-property-data";
 
 export const Route = createFileRoute("/properties/$id")({
   head: ({ params }) => {
@@ -104,8 +104,6 @@ function PropertyPage() {
 }
 
 function PropertyGalleryWrapper() {
-  // Read property from context via a small bridge
-  const { useProperty } = require("@/lib/staybf-property-data") as typeof import("@/lib/staybf-property-data");
   const p = useProperty();
   return <PropertyGallery images={p.images} name={p.name} />;
 }
