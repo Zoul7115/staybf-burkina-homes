@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/lib/staybf-search-data";
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function SearchMap({ listings, activeId, city }: Props) {
+  const navigate = useNavigate();
   return (
     <div className="relative w-full h-full min-h-[400px] rounded-3xl overflow-hidden border border-border/60 shadow-card">
       {/* Stylized map background */}
@@ -51,6 +53,7 @@ export function SearchMap({ listings, activeId, city }: Props) {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.02 * l.id }}
+            onClick={() => navigate({ to: "/properties/$id", params: { id: String(l.id) } })}
             whileHover={{ scale: 1.1 }}
             className={cn(
               "absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full text-xs font-bold shadow-card border-2 transition-all",
