@@ -93,9 +93,10 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                     Stay<span className="text-primary">BF</span>
                   </span>
                 </a>
-                <Button variant="ghost" className="justify-start text-base">Rechercher</Button>
-                <Button variant="ghost" className="justify-start text-base">Devenir hôte</Button>
-                <Button variant="ghost" className="justify-start text-base">Connexion</Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/search">Rechercher</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/traveler/dashboard">Espace voyageur</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/host/dashboard">Espace hôte</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/admin/dashboard">Espace admin</Link></Button>
                 <Button className="mt-2 bg-primary hover:bg-primary-dark text-primary-foreground">S'inscrire</Button>
               </div>
             </SheetContent>
