@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TravelerRouteImport } from './routes/traveler'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as HostRouteImport } from './routes/host'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TravelerSettingsRouteImport } from './routes/traveler.settings'
@@ -32,6 +33,11 @@ const TravelerRoute = TravelerRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HostRoute = HostRouteImport.update({
+  id: '/host',
+  path: '/host',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -98,6 +104,7 @@ const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRoute
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRoute
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRoute
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
     | '/booking/confirmation'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
     | '/booking/confirmation'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
     | '/booking/confirmation'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckoutRoute: typeof CheckoutRouteWithChildren
+  HostRoute: typeof HostRoute
   SearchRoute: typeof SearchRoute
   TravelerRoute: typeof TravelerRouteWithChildren
   BookingConfirmationRoute: typeof BookingConfirmationRoute
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/host': {
+      id: '/host'
+      path: '/host'
+      fullPath: '/host'
+      preLoaderRoute: typeof HostRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -345,6 +365,7 @@ const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckoutRoute: CheckoutRouteWithChildren,
+  HostRoute: HostRoute,
   SearchRoute: SearchRoute,
   TravelerRoute: TravelerRouteWithChildren,
   BookingConfirmationRoute: BookingConfirmationRoute,
@@ -354,3 +375,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
