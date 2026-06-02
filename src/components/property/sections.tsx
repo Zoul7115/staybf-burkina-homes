@@ -262,6 +262,69 @@ export function RoomInfo() {
           </div>
         ))}
       </div>
+
+      <Dialog open={!!openRoom} onOpenChange={(o) => !o && setOpenRoom(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Choisissez vos dates</DialogTitle>
+          </DialogHeader>
+          {activeRoom && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-muted/50 border border-border p-3 text-sm">
+                <p className="font-semibold">{activeRoom.type}</p>
+                <p className="text-muted-foreground text-xs">
+                  {activeRoom.capacity} voyageurs max · {activeRoom.price.toLocaleString("fr-FR")} FCFA/nuit
+                </p>
+              </div>
+
+              <div className="flex justify-center">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={1}
+                  selected={range as any}
+                  onSelect={(r: any) => setRange(r ?? {})}
+                  disabled={(d) => d < today}
+                  className="p-0 pointer-events-auto"
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>Voyageurs</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                    onClick={() => setGuests((g) => Math.max(1, g - 1))} disabled={guests <= 1}>−</Button>
+                  <span className="w-6 text-center font-medium">{guests}</span>
+                  <Button variant="outline" size="icon" className="h-8 w-8 rounded-full"
+                    onClick={() => setGuests((g) => Math.min(activeRoom.capacity, g + 1))}
+                    disabled={guests >= activeRoom.capacity}>+</Button>
+                </div>
+              </div>
+
+              {canConfirm && (
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {activeRoom.price.toLocaleString("fr-FR")} FCFA × {nights} nuit{nights > 1 ? "s" : ""}
+                  </span>
+                  <span className="font-display font-bold text-lg">
+                    {subtotal.toLocaleString("fr-FR")} FCFA
+                  </span>
+                </div>
+              )}
+
+              <Button
+                onClick={confirm}
+                disabled={!canConfirm}
+                className="w-full h-11 gradient-primary text-primary-foreground rounded-xl font-semibold"
+              >
+                Continuer vers le paiement
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
