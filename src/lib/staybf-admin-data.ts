@@ -223,7 +223,7 @@ export const adminAuditLogs = Array.from({ length: 12 }).map((_, i) => ({
   target: ["Résidence Laongo", "Awa Sankara", "Global", "Modérateur", "user#412", "PAY-78421", "Manager role", "Service fees", "—", "Reports", "PAY-77621", "Tenkodogo"][i],
   ip: `41.83.${10 + i}.${42 + i * 3}`,
   date: `il y a ${i + 1}h`,
-});
+}));
 
 export const adminRoles = [
   { id: "r1", name: "Super Admin", users: 2, permissions: 42, color: "primary" as const },
