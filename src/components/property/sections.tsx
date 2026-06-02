@@ -16,7 +16,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { property, similarProperties } from "@/lib/staybf-property-data";
+import { similarProperties, useProperty } from "@/lib/staybf-property-data";
+import { useNavigate } from "@tanstack/react-router";
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi, ac: Snowflake, parking: Car, restaurant: Utensils, security: ShieldCheck,
