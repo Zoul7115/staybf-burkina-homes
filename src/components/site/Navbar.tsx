@@ -48,9 +48,20 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
         </button>
 
         <nav className="hidden md:flex items-center gap-1">
-          <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
-            Devenir hôte
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
+                Espaces <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Accéder à un espace</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/traveler/dashboard"><Home className="h-4 w-4 mr-2" /> Espace voyageur</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/host/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" /> Espace hôte</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/admin/dashboard"><ShieldCheck className="h-4 w-4 mr-2" /> Espace admin</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
             Connexion
           </Button>
