@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TravelerRouteImport } from './routes/traveler'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as HostRouteImport } from './routes/host'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TravelerSettingsRouteImport } from './routes/traveler.settings'
 import { Route as TravelerProfileRouteImport } from './routes/traveler.profile'
@@ -21,8 +23,35 @@ import { Route as TravelerDashboardRouteImport } from './routes/traveler.dashboa
 import { Route as TravelerBookingsRouteImport } from './routes/traveler.bookings'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
 import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
+import { Route as HostSubscriptionRouteImport } from './routes/host.subscription'
+import { Route as HostSettingsRouteImport } from './routes/host.settings'
+import { Route as HostRoomsRouteImport } from './routes/host.rooms'
+import { Route as HostReviewsRouteImport } from './routes/host.reviews'
+import { Route as HostRevenueRouteImport } from './routes/host.revenue'
+import { Route as HostReservationsRouteImport } from './routes/host.reservations'
+import { Route as HostPropertyRouteImport } from './routes/host.property'
+import { Route as HostProfileRouteImport } from './routes/host.profile'
+import { Route as HostMessagesRouteImport } from './routes/host.messages'
+import { Route as HostDashboardRouteImport } from './routes/host.dashboard'
+import { Route as HostCalendarRouteImport } from './routes/host.calendar'
+import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
+import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
+import { Route as AdminReservationsRouteImport } from './routes/admin.reservations'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
+import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminHostsRouteImport } from './routes/admin.hosts'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminCitiesRouteImport } from './routes/admin.cities'
 
 const TravelerRoute = TravelerRouteImport.update({
   id: '/traveler',
@@ -34,9 +63,19 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HostRoute = HostRouteImport.update({
+  id: '/host',
+  path: '/host',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -84,6 +123,66 @@ const PropertiesIdRoute = PropertiesIdRouteImport.update({
   path: '/properties/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HostSubscriptionRoute = HostSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostSettingsRoute = HostSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostRoomsRoute = HostRoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostReviewsRoute = HostReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostRevenueRoute = HostRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostReservationsRoute = HostReservationsRouteImport.update({
+  id: '/reservations',
+  path: '/reservations',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostPropertyRoute = HostPropertyRouteImport.update({
+  id: '/property',
+  path: '/property',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostProfileRoute = HostProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostMessagesRoute = HostMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostDashboardRoute = HostDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostCalendarRoute = HostCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => HostRoute,
+} as any)
+const HostAnalyticsRoute = HostAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => HostRoute,
+} as any)
 const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -94,14 +193,118 @@ const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
   path: '/booking/confirmation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTravelersRoute = AdminTravelersRouteImport.update({
+  id: '/travelers',
+  path: '/travelers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRevenueRoute = AdminRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReservationsRoute = AdminReservationsRouteImport.update({
+  id: '/reservations',
+  path: '/reservations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPropertiesRoute = AdminPropertiesRouteImport.update({
+  id: '/properties',
+  path: '/properties',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminHostsRoute = AdminHostsRouteImport.update({
+  id: '/hosts',
+  path: '/hosts',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCitiesRoute = AdminCitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/hosts': typeof AdminHostsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
+  '/host/calendar': typeof HostCalendarRoute
+  '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
+  '/host/property': typeof HostPropertyRoute
+  '/host/reservations': typeof HostReservationsRoute
+  '/host/revenue': typeof HostRevenueRoute
+  '/host/reviews': typeof HostReviewsRoute
+  '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -113,11 +316,40 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/hosts': typeof AdminHostsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
+  '/host/calendar': typeof HostCalendarRoute
+  '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
+  '/host/property': typeof HostPropertyRoute
+  '/host/reservations': typeof HostReservationsRoute
+  '/host/revenue': typeof HostRevenueRoute
+  '/host/reviews': typeof HostReviewsRoute
+  '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -130,11 +362,40 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/hosts': typeof AdminHostsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
+  '/host/calendar': typeof HostCalendarRoute
+  '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
+  '/host/profile': typeof HostProfileRoute
+  '/host/property': typeof HostPropertyRoute
+  '/host/reservations': typeof HostReservationsRoute
+  '/host/revenue': typeof HostRevenueRoute
+  '/host/reviews': typeof HostReviewsRoute
+  '/host/rooms': typeof HostRoomsRoute
+  '/host/settings': typeof HostSettingsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -148,11 +409,40 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
+    | '/admin/dashboard'
+    | '/admin/hosts'
+    | '/admin/notifications'
+    | '/admin/payments'
+    | '/admin/properties'
+    | '/admin/reports'
+    | '/admin/reservations'
+    | '/admin/revenue'
+    | '/admin/reviews'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/admin/travelers'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
+    | '/host/calendar'
+    | '/host/dashboard'
+    | '/host/messages'
+    | '/host/profile'
+    | '/host/property'
+    | '/host/reservations'
+    | '/host/revenue'
+    | '/host/reviews'
+    | '/host/rooms'
+    | '/host/settings'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -164,11 +454,40 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
+    | '/admin/dashboard'
+    | '/admin/hosts'
+    | '/admin/notifications'
+    | '/admin/payments'
+    | '/admin/properties'
+    | '/admin/reports'
+    | '/admin/reservations'
+    | '/admin/revenue'
+    | '/admin/reviews'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/admin/travelers'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
+    | '/host/calendar'
+    | '/host/dashboard'
+    | '/host/messages'
+    | '/host/profile'
+    | '/host/property'
+    | '/host/reservations'
+    | '/host/revenue'
+    | '/host/reviews'
+    | '/host/rooms'
+    | '/host/settings'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -180,11 +499,40 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/checkout'
+    | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
+    | '/admin/dashboard'
+    | '/admin/hosts'
+    | '/admin/notifications'
+    | '/admin/payments'
+    | '/admin/properties'
+    | '/admin/reports'
+    | '/admin/reservations'
+    | '/admin/revenue'
+    | '/admin/reviews'
+    | '/admin/roles'
+    | '/admin/settings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/admin/travelers'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
+    | '/host/calendar'
+    | '/host/dashboard'
+    | '/host/messages'
+    | '/host/profile'
+    | '/host/property'
+    | '/host/reservations'
+    | '/host/revenue'
+    | '/host/reviews'
+    | '/host/rooms'
+    | '/host/settings'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -197,7 +545,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CheckoutRoute: typeof CheckoutRouteWithChildren
+  HostRoute: typeof HostRouteWithChildren
   SearchRoute: typeof SearchRoute
   TravelerRoute: typeof TravelerRouteWithChildren
   BookingConfirmationRoute: typeof BookingConfirmationRoute
@@ -221,11 +571,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/host': {
+      id: '/host'
+      path: '/host'
+      fullPath: '/host'
+      preLoaderRoute: typeof HostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout': {
       id: '/checkout'
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -291,6 +655,90 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/host/subscription': {
+      id: '/host/subscription'
+      path: '/subscription'
+      fullPath: '/host/subscription'
+      preLoaderRoute: typeof HostSubscriptionRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/settings': {
+      id: '/host/settings'
+      path: '/settings'
+      fullPath: '/host/settings'
+      preLoaderRoute: typeof HostSettingsRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/rooms': {
+      id: '/host/rooms'
+      path: '/rooms'
+      fullPath: '/host/rooms'
+      preLoaderRoute: typeof HostRoomsRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/reviews': {
+      id: '/host/reviews'
+      path: '/reviews'
+      fullPath: '/host/reviews'
+      preLoaderRoute: typeof HostReviewsRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/revenue': {
+      id: '/host/revenue'
+      path: '/revenue'
+      fullPath: '/host/revenue'
+      preLoaderRoute: typeof HostRevenueRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/reservations': {
+      id: '/host/reservations'
+      path: '/reservations'
+      fullPath: '/host/reservations'
+      preLoaderRoute: typeof HostReservationsRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/property': {
+      id: '/host/property'
+      path: '/property'
+      fullPath: '/host/property'
+      preLoaderRoute: typeof HostPropertyRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/profile': {
+      id: '/host/profile'
+      path: '/profile'
+      fullPath: '/host/profile'
+      preLoaderRoute: typeof HostProfileRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/messages': {
+      id: '/host/messages'
+      path: '/messages'
+      fullPath: '/host/messages'
+      preLoaderRoute: typeof HostMessagesRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/dashboard': {
+      id: '/host/dashboard'
+      path: '/dashboard'
+      fullPath: '/host/dashboard'
+      preLoaderRoute: typeof HostDashboardRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/calendar': {
+      id: '/host/calendar'
+      path: '/calendar'
+      fullPath: '/host/calendar'
+      preLoaderRoute: typeof HostCalendarRouteImport
+      parentRoute: typeof HostRoute
+    }
+    '/host/analytics': {
+      id: '/host/analytics'
+      path: '/analytics'
+      fullPath: '/host/analytics'
+      preLoaderRoute: typeof HostAnalyticsRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/checkout/success': {
       id: '/checkout/success'
       path: '/success'
@@ -305,8 +753,151 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingConfirmationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/travelers': {
+      id: '/admin/travelers'
+      path: '/travelers'
+      fullPath: '/admin/travelers'
+      preLoaderRoute: typeof AdminTravelersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/revenue': {
+      id: '/admin/revenue'
+      path: '/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reservations': {
+      id: '/admin/reservations'
+      path: '/reservations'
+      fullPath: '/admin/reservations'
+      preLoaderRoute: typeof AdminReservationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/properties': {
+      id: '/admin/properties'
+      path: '/properties'
+      fullPath: '/admin/properties'
+      preLoaderRoute: typeof AdminPropertiesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/hosts': {
+      id: '/admin/hosts'
+      path: '/hosts'
+      fullPath: '/admin/hosts'
+      preLoaderRoute: typeof AdminHostsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/cities': {
+      id: '/admin/cities'
+      path: '/cities'
+      fullPath: '/admin/cities'
+      preLoaderRoute: typeof AdminCitiesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminCitiesRoute: typeof AdminCitiesRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminHostsRoute: typeof AdminHostsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminPropertiesRoute: typeof AdminPropertiesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminReservationsRoute: typeof AdminReservationsRoute
+  AdminRevenueRoute: typeof AdminRevenueRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
+  AdminSupportRoute: typeof AdminSupportRoute
+  AdminTravelersRoute: typeof AdminTravelersRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminCitiesRoute: AdminCitiesRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
+  AdminHostsRoute: AdminHostsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminPropertiesRoute: AdminPropertiesRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminReservationsRoute: AdminReservationsRoute,
+  AdminRevenueRoute: AdminRevenueRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
+  AdminRolesRoute: AdminRolesRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
+  AdminSupportRoute: AdminSupportRoute,
+  AdminTravelersRoute: AdminTravelersRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CheckoutRouteChildren {
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
@@ -319,6 +910,38 @@ const CheckoutRouteChildren: CheckoutRouteChildren = {
 const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
   CheckoutRouteChildren,
 )
+
+interface HostRouteChildren {
+  HostAnalyticsRoute: typeof HostAnalyticsRoute
+  HostCalendarRoute: typeof HostCalendarRoute
+  HostDashboardRoute: typeof HostDashboardRoute
+  HostMessagesRoute: typeof HostMessagesRoute
+  HostProfileRoute: typeof HostProfileRoute
+  HostPropertyRoute: typeof HostPropertyRoute
+  HostReservationsRoute: typeof HostReservationsRoute
+  HostRevenueRoute: typeof HostRevenueRoute
+  HostReviewsRoute: typeof HostReviewsRoute
+  HostRoomsRoute: typeof HostRoomsRoute
+  HostSettingsRoute: typeof HostSettingsRoute
+  HostSubscriptionRoute: typeof HostSubscriptionRoute
+}
+
+const HostRouteChildren: HostRouteChildren = {
+  HostAnalyticsRoute: HostAnalyticsRoute,
+  HostCalendarRoute: HostCalendarRoute,
+  HostDashboardRoute: HostDashboardRoute,
+  HostMessagesRoute: HostMessagesRoute,
+  HostProfileRoute: HostProfileRoute,
+  HostPropertyRoute: HostPropertyRoute,
+  HostReservationsRoute: HostReservationsRoute,
+  HostRevenueRoute: HostRevenueRoute,
+  HostReviewsRoute: HostReviewsRoute,
+  HostRoomsRoute: HostRoomsRoute,
+  HostSettingsRoute: HostSettingsRoute,
+  HostSubscriptionRoute: HostSubscriptionRoute,
+}
+
+const HostRouteWithChildren = HostRoute._addFileChildren(HostRouteChildren)
 
 interface TravelerRouteChildren {
   TravelerBookingsRoute: typeof TravelerBookingsRoute
@@ -344,7 +967,9 @@ const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   CheckoutRoute: CheckoutRouteWithChildren,
+  HostRoute: HostRouteWithChildren,
   SearchRoute: SearchRoute,
   TravelerRoute: TravelerRouteWithChildren,
   BookingConfirmationRoute: BookingConfirmationRoute,

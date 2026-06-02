@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Menu, Search, Leaf } from "lucide-react";
+import { Menu, Search, Leaf, LayoutDashboard, Home, ShieldCheck, ChevronDown } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function Navbar({ solid = false }: { solid?: boolean }) {
   const [scrolled, setScrolled] = useState(solid);
@@ -46,9 +48,20 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
         </button>
 
         <nav className="hidden md:flex items-center gap-1">
-          <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
-            Devenir hôte
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
+                Espaces <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Accéder à un espace</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/traveler/dashboard"><Home className="h-4 w-4 mr-2" /> Espace voyageur</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/host/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" /> Espace hôte</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/admin/dashboard"><ShieldCheck className="h-4 w-4 mr-2" /> Espace admin</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" className={scrolled ? "" : "text-white hover:bg-white/10 hover:text-white"}>
             Connexion
           </Button>
@@ -80,9 +93,10 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                     Stay<span className="text-primary">BF</span>
                   </span>
                 </a>
-                <Button variant="ghost" className="justify-start text-base">Rechercher</Button>
-                <Button variant="ghost" className="justify-start text-base">Devenir hôte</Button>
-                <Button variant="ghost" className="justify-start text-base">Connexion</Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/search">Rechercher</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/traveler/dashboard">Espace voyageur</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/host/dashboard">Espace hôte</Link></Button>
+                <Button asChild variant="ghost" className="justify-start text-base"><Link to="/admin/dashboard">Espace admin</Link></Button>
                 <Button className="mt-2 bg-primary hover:bg-primary-dark text-primary-foreground">S'inscrire</Button>
               </div>
             </SheetContent>
