@@ -39,6 +39,7 @@ import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminReservationsRouteImport } from './routes/admin.reservations'
 import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
@@ -195,6 +196,11 @@ const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   path: '/subscriptions',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRevenueRoute = AdminRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminReservationsRoute = AdminReservationsRouteImport.update({
   id: '/reservations',
   path: '/reservations',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
   '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
   '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
   '/admin/reservations': typeof AdminReservationsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
@@ -347,6 +356,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/properties'
     | '/admin/reservations'
+    | '/admin/revenue'
     | '/admin/subscriptions'
     | '/admin/travelers'
     | '/booking/confirmation'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/properties'
     | '/admin/reservations'
+    | '/admin/revenue'
     | '/admin/subscriptions'
     | '/admin/travelers'
     | '/booking/confirmation'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/properties'
     | '/admin/reservations'
+    | '/admin/revenue'
     | '/admin/subscriptions'
     | '/admin/travelers'
     | '/booking/confirmation'
@@ -671,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/revenue': {
+      id: '/admin/revenue'
+      path: '/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/reservations': {
       id: '/admin/reservations'
       path: '/reservations'
@@ -715,6 +734,7 @@ interface AdminRouteChildren {
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminPropertiesRoute: typeof AdminPropertiesRoute
   AdminReservationsRoute: typeof AdminReservationsRoute
+  AdminRevenueRoute: typeof AdminRevenueRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminTravelersRoute: typeof AdminTravelersRoute
 }
@@ -725,6 +745,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminPropertiesRoute: AdminPropertiesRoute,
   AdminReservationsRoute: AdminReservationsRoute,
+  AdminRevenueRoute: AdminRevenueRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminTravelersRoute: AdminTravelersRoute,
 }
