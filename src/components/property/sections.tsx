@@ -67,6 +67,7 @@ export function PropertyHeader() {
 
 /* ---------- Host card ---------- */
 export function HostCard() {
+  const property = useProperty();
   const { host } = property;
   return (
     <motion.div
@@ -109,6 +110,7 @@ export function HostCard() {
 
 /* ---------- Description ---------- */
 export function Description() {
+  const property = useProperty();
   const [expanded, setExpanded] = useState(false);
   const { description } = property;
   return (
@@ -145,6 +147,7 @@ export function Description() {
 
 /* ---------- Amenities ---------- */
 export function Amenities() {
+  const property = useProperty();
   const items = property.amenities;
   return (
     <section>
@@ -187,6 +190,7 @@ export function Amenities() {
 
 /* ---------- Rooms ---------- */
 export function RoomInfo() {
+  const property = useProperty();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Chambres disponibles</h2>
@@ -228,13 +232,12 @@ export function RoomInfo() {
 }
 
 /* ---------- Calendar ---------- */
-function isUnavailable(d: Date) {
-  return property.unavailableDates.includes(d.toISOString().slice(0, 10));
-}
-
 export function AvailabilityCalendar({
   range, setRange,
 }: { range: { from?: Date; to?: Date }; setRange: (r: { from?: Date; to?: Date }) => void }) {
+  const property = useProperty();
+  const isUnavailable = (d: Date) =>
+    property.unavailableDates.includes(d.toISOString().slice(0, 10));
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-2">Sélectionnez vos dates</h2>
@@ -259,6 +262,9 @@ export function AvailabilityCalendar({
 export function BookingCard({
   range, setRange,
 }: { range: { from?: Date; to?: Date }; setRange: (r: { from?: Date; to?: Date }) => void }) {
+  const property = useProperty();
+  const isUnavailable = (d: Date) =>
+    property.unavailableDates.includes(d.toISOString().slice(0, 10));
   const [guests, setGuests] = useState(2);
   const nights = range.from && range.to ? Math.max(1, differenceInDays(range.to, range.from)) : 0;
   const subtotal = nights * property.price;
@@ -368,6 +374,7 @@ function PayBadge({ icon, label, tone }: { icon: React.ReactNode; label: string;
 
 /* ---------- Reviews ---------- */
 export function Reviews() {
+  const property = useProperty();
   const [shown, setShown] = useState(3);
   const list = property.reviewsList;
   const breakdown = [
@@ -436,6 +443,7 @@ export function Reviews() {
 
 /* ---------- Map ---------- */
 export function LocationMap() {
+  const property = useProperty();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-2">Où se situe le logement</h2>
@@ -497,6 +505,7 @@ export function LocationMap() {
 
 /* ---------- Similar ---------- */
 export function SimilarProperties() {
+  const navigate = useNavigate();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Hébergements similaires</h2>
@@ -537,6 +546,7 @@ export function SimilarProperties() {
 
 /* ---------- Mobile booking bar ---------- */
 export function MobileBookingBar() {
+  const property = useProperty();
   return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border shadow-elevated p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
       <div className="flex items-center justify-between gap-3">
