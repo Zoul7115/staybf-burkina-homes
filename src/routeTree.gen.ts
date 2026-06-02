@@ -9,13 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TravelerRouteImport } from './routes/traveler'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TravelerSettingsRouteImport } from './routes/traveler.settings'
+import { Route as TravelerProfileRouteImport } from './routes/traveler.profile'
+import { Route as TravelerMessagesRouteImport } from './routes/traveler.messages'
+import { Route as TravelerFavoritesRouteImport } from './routes/traveler.favorites'
+import { Route as TravelerDashboardRouteImport } from './routes/traveler.dashboard'
+import { Route as TravelerBookingsRouteImport } from './routes/traveler.bookings'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
 import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
+import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 
+const TravelerRoute = TravelerRouteImport.update({
+  id: '/traveler',
+  path: '/traveler',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -30,6 +43,36 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TravelerSettingsRoute = TravelerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => TravelerRoute,
+} as any)
+const TravelerProfileRoute = TravelerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => TravelerRoute,
+} as any)
+const TravelerMessagesRoute = TravelerMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => TravelerRoute,
+} as any)
+const TravelerFavoritesRoute = TravelerFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => TravelerRoute,
+} as any)
+const TravelerDashboardRoute = TravelerDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => TravelerRoute,
+} as any)
+const TravelerBookingsRoute = TravelerBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => TravelerRoute,
 } as any)
 const PropertyIdRoute = PropertyIdRouteImport.update({
   id: '/property/$id',
@@ -46,31 +89,60 @@ const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
   path: '/success',
   getParentRoute: () => CheckoutRoute,
 } as any)
+const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
+  id: '/booking/confirmation',
+  path: '/booking/confirmation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/search': typeof SearchRoute
+  '/traveler': typeof TravelerRouteWithChildren
+  '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
+  '/traveler/bookings': typeof TravelerBookingsRoute
+  '/traveler/dashboard': typeof TravelerDashboardRoute
+  '/traveler/favorites': typeof TravelerFavoritesRoute
+  '/traveler/messages': typeof TravelerMessagesRoute
+  '/traveler/profile': typeof TravelerProfileRoute
+  '/traveler/settings': typeof TravelerSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/search': typeof SearchRoute
+  '/traveler': typeof TravelerRouteWithChildren
+  '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
+  '/traveler/bookings': typeof TravelerBookingsRoute
+  '/traveler/dashboard': typeof TravelerDashboardRoute
+  '/traveler/favorites': typeof TravelerFavoritesRoute
+  '/traveler/messages': typeof TravelerMessagesRoute
+  '/traveler/profile': typeof TravelerProfileRoute
+  '/traveler/settings': typeof TravelerSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/search': typeof SearchRoute
+  '/traveler': typeof TravelerRouteWithChildren
+  '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
+  '/traveler/bookings': typeof TravelerBookingsRoute
+  '/traveler/dashboard': typeof TravelerDashboardRoute
+  '/traveler/favorites': typeof TravelerFavoritesRoute
+  '/traveler/messages': typeof TravelerMessagesRoute
+  '/traveler/profile': typeof TravelerProfileRoute
+  '/traveler/settings': typeof TravelerSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -78,37 +150,70 @@ export interface FileRouteTypes {
     | '/'
     | '/checkout'
     | '/search'
+    | '/traveler'
+    | '/booking/confirmation'
     | '/checkout/success'
     | '/properties/$id'
     | '/property/$id'
+    | '/traveler/bookings'
+    | '/traveler/dashboard'
+    | '/traveler/favorites'
+    | '/traveler/messages'
+    | '/traveler/profile'
+    | '/traveler/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/checkout'
     | '/search'
+    | '/traveler'
+    | '/booking/confirmation'
     | '/checkout/success'
     | '/properties/$id'
     | '/property/$id'
+    | '/traveler/bookings'
+    | '/traveler/dashboard'
+    | '/traveler/favorites'
+    | '/traveler/messages'
+    | '/traveler/profile'
+    | '/traveler/settings'
   id:
     | '__root__'
     | '/'
     | '/checkout'
     | '/search'
+    | '/traveler'
+    | '/booking/confirmation'
     | '/checkout/success'
     | '/properties/$id'
     | '/property/$id'
+    | '/traveler/bookings'
+    | '/traveler/dashboard'
+    | '/traveler/favorites'
+    | '/traveler/messages'
+    | '/traveler/profile'
+    | '/traveler/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckoutRoute: typeof CheckoutRouteWithChildren
   SearchRoute: typeof SearchRoute
+  TravelerRoute: typeof TravelerRouteWithChildren
+  BookingConfirmationRoute: typeof BookingConfirmationRoute
   PropertiesIdRoute: typeof PropertiesIdRoute
   PropertyIdRoute: typeof PropertyIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/traveler': {
+      id: '/traveler'
+      path: '/traveler'
+      fullPath: '/traveler'
+      preLoaderRoute: typeof TravelerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -129,6 +234,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/traveler/settings': {
+      id: '/traveler/settings'
+      path: '/settings'
+      fullPath: '/traveler/settings'
+      preLoaderRoute: typeof TravelerSettingsRouteImport
+      parentRoute: typeof TravelerRoute
+    }
+    '/traveler/profile': {
+      id: '/traveler/profile'
+      path: '/profile'
+      fullPath: '/traveler/profile'
+      preLoaderRoute: typeof TravelerProfileRouteImport
+      parentRoute: typeof TravelerRoute
+    }
+    '/traveler/messages': {
+      id: '/traveler/messages'
+      path: '/messages'
+      fullPath: '/traveler/messages'
+      preLoaderRoute: typeof TravelerMessagesRouteImport
+      parentRoute: typeof TravelerRoute
+    }
+    '/traveler/favorites': {
+      id: '/traveler/favorites'
+      path: '/favorites'
+      fullPath: '/traveler/favorites'
+      preLoaderRoute: typeof TravelerFavoritesRouteImport
+      parentRoute: typeof TravelerRoute
+    }
+    '/traveler/dashboard': {
+      id: '/traveler/dashboard'
+      path: '/dashboard'
+      fullPath: '/traveler/dashboard'
+      preLoaderRoute: typeof TravelerDashboardRouteImport
+      parentRoute: typeof TravelerRoute
+    }
+    '/traveler/bookings': {
+      id: '/traveler/bookings'
+      path: '/bookings'
+      fullPath: '/traveler/bookings'
+      preLoaderRoute: typeof TravelerBookingsRouteImport
+      parentRoute: typeof TravelerRoute
     }
     '/property/$id': {
       id: '/property/$id'
@@ -151,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutSuccessRouteImport
       parentRoute: typeof CheckoutRoute
     }
+    '/booking/confirmation': {
+      id: '/booking/confirmation'
+      path: '/booking/confirmation'
+      fullPath: '/booking/confirmation'
+      preLoaderRoute: typeof BookingConfirmationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -166,10 +320,34 @@ const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
   CheckoutRouteChildren,
 )
 
+interface TravelerRouteChildren {
+  TravelerBookingsRoute: typeof TravelerBookingsRoute
+  TravelerDashboardRoute: typeof TravelerDashboardRoute
+  TravelerFavoritesRoute: typeof TravelerFavoritesRoute
+  TravelerMessagesRoute: typeof TravelerMessagesRoute
+  TravelerProfileRoute: typeof TravelerProfileRoute
+  TravelerSettingsRoute: typeof TravelerSettingsRoute
+}
+
+const TravelerRouteChildren: TravelerRouteChildren = {
+  TravelerBookingsRoute: TravelerBookingsRoute,
+  TravelerDashboardRoute: TravelerDashboardRoute,
+  TravelerFavoritesRoute: TravelerFavoritesRoute,
+  TravelerMessagesRoute: TravelerMessagesRoute,
+  TravelerProfileRoute: TravelerProfileRoute,
+  TravelerSettingsRoute: TravelerSettingsRoute,
+}
+
+const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
+  TravelerRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckoutRoute: CheckoutRouteWithChildren,
   SearchRoute: SearchRoute,
+  TravelerRoute: TravelerRouteWithChildren,
+  BookingConfirmationRoute: BookingConfirmationRoute,
   PropertiesIdRoute: PropertiesIdRoute,
   PropertyIdRoute: PropertyIdRoute,
 }

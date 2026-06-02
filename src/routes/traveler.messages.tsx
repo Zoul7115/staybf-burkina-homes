@@ -15,7 +15,7 @@ export const Route = createFileRoute("/traveler/messages")({
 });
 
 function MessagesPage() {
-  const [activeId, setActiveId] = useState(conversations[0]?.id);
+  const [activeId, setActiveId] = useState<string | undefined>(conversations[0]?.id);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
   const filtered = conversations.filter((c) => c.hostName.toLowerCase().includes(query.toLowerCase()));
