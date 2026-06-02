@@ -1,0 +1,52 @@
+erDiagram
+    auth_users ||--|| profiles : "1:1"
+    profiles ||--o{ user_roles : "has"
+    roles ||--o{ user_roles : "assigned"
+    roles ||--o{ role_permissions : "grants"
+    permissions ||--o{ role_permissions : "in"
+
+    profiles ||--o{ host_profiles : "extends (host)"
+    profiles ||--o{ traveler_preferences : "extends (traveler)"
+
+    host_profiles ||--o{ properties : "owns"
+    properties ||--o{ property_images : "has"
+    properties ||--o{ rooms : "contains"
+    properties ||--o{ amenities_map : "has"
+    amenities ||--o{ amenities_map : "in"
+    properties }o--|| cities : "located in"
+    cities }o--|| regions : "in"
+
+    rooms ||--o{ room_images : "has"
+    rooms ||--o{ availability : "calendar"
+    rooms ||--o{ seasonal_pricing : "priced"
+
+    profiles ||--o{ bookings : "books (traveler)"
+    rooms ||--o{ bookings : "reserved"
+    properties ||--o{ bookings : "for"
+    bookings ||--|| payments : "settled by"
+    bookings ||--o{ booking_guests : "guests"
+    bookings ||--o| reviews : "rated"
+    bookings ||--o{ messages_threads : "spawns"
+
+    profiles ||--o{ favorites : "saves"
+    properties ||--o{ favorites : "saved in"
+
+    profiles ||--o{ messages_threads : "participates"
+    messages_threads ||--o{ messages : "contains"
+
+    host_profiles ||--o| subscriptions : "subscribes"
+    subscription_plans ||--o{ subscriptions : "plan"
+    subscriptions ||--o{ subscription_invoices : "billed"
+
+    properties ||--o{ reviews : "receives"
+    profiles ||--o{ reviews : "writes"
+
+    profiles ||--o{ notifications : "receives"
+    profiles ||--o{ support_tickets : "opens"
+    support_tickets ||--o{ ticket_messages : "thread"
+
+    payments ||--o{ payouts_items : "split"
+    host_profiles ||--o{ payouts : "receives"
+    payouts ||--o{ payouts_items : "groups"
+
+    profiles ||--o{ audit_logs : "actor"
