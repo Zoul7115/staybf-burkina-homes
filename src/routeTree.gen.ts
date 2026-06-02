@@ -28,6 +28,7 @@ import { Route as HostReviewsRouteImport } from './routes/host.reviews'
 import { Route as HostRevenueRouteImport } from './routes/host.revenue'
 import { Route as HostReservationsRouteImport } from './routes/host.reservations'
 import { Route as HostPropertyRouteImport } from './routes/host.property'
+import { Route as HostMessagesRouteImport } from './routes/host.messages'
 import { Route as HostDashboardRouteImport } from './routes/host.dashboard'
 import { Route as HostCalendarRouteImport } from './routes/host.calendar'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
@@ -128,6 +129,11 @@ const HostPropertyRoute = HostPropertyRouteImport.update({
   path: '/property',
   getParentRoute: () => HostRoute,
 } as any)
+const HostMessagesRoute = HostMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => HostRoute,
+} as any)
 const HostDashboardRoute = HostDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
+  '/host/messages': typeof HostMessagesRoute
   '/host/property': typeof HostPropertyRoute
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/host/calendar'
     | '/host/dashboard'
+    | '/host/messages'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/host/calendar'
     | '/host/dashboard'
+    | '/host/messages'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/checkout/success'
     | '/host/calendar'
     | '/host/dashboard'
+    | '/host/messages'
     | '/host/property'
     | '/host/reservations'
     | '/host/revenue'
@@ -449,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HostPropertyRouteImport
       parentRoute: typeof HostRoute
     }
+    '/host/messages': {
+      id: '/host/messages'
+      path: '/messages'
+      fullPath: '/host/messages'
+      preLoaderRoute: typeof HostMessagesRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/host/dashboard': {
       id: '/host/dashboard'
       path: '/dashboard'
@@ -495,6 +514,7 @@ const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
 interface HostRouteChildren {
   HostCalendarRoute: typeof HostCalendarRoute
   HostDashboardRoute: typeof HostDashboardRoute
+  HostMessagesRoute: typeof HostMessagesRoute
   HostPropertyRoute: typeof HostPropertyRoute
   HostReservationsRoute: typeof HostReservationsRoute
   HostRevenueRoute: typeof HostRevenueRoute
@@ -506,6 +526,7 @@ interface HostRouteChildren {
 const HostRouteChildren: HostRouteChildren = {
   HostCalendarRoute: HostCalendarRoute,
   HostDashboardRoute: HostDashboardRoute,
+  HostMessagesRoute: HostMessagesRoute,
   HostPropertyRoute: HostPropertyRoute,
   HostReservationsRoute: HostReservationsRoute,
   HostRevenueRoute: HostRevenueRoute,
