@@ -42,12 +42,12 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
-const methods = [
+const methods: { id: string; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
   { id: "orange", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
   { id: "moov", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
   { id: "visa", label: "Visa", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-indigo-600 to-indigo-800" },
   { id: "mastercard", label: "Mastercard", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-rose-600 to-orange-500" },
-] as const;
+];
 
 const countries = ["Burkina Faso", "Côte d'Ivoire", "Mali", "Sénégal", "Ghana", "Togo", "Bénin", "Niger", "France", "Canada", "États-Unis", "Autre"];
 
