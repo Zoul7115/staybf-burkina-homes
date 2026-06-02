@@ -263,6 +263,7 @@ export function BookingCard({
   range, setRange,
 }: { range: { from?: Date; to?: Date }; setRange: (r: { from?: Date; to?: Date }) => void }) {
   const property = useProperty();
+  const navigate = useNavigate();
   const isUnavailable = (d: Date) =>
     property.unavailableDates.includes(d.toISOString().slice(0, 10));
   const [guests, setGuests] = useState(2);
@@ -561,6 +562,7 @@ export function SimilarProperties() {
 /* ---------- Mobile booking bar ---------- */
 export function MobileBookingBar() {
   const property = useProperty();
+  const navigate = useNavigate();
   return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border shadow-elevated p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
       <div className="flex items-center justify-between gap-3">
@@ -575,7 +577,10 @@ export function MobileBookingBar() {
             <span className="text-muted-foreground">· {property.reviews} avis</span>
           </div>
         </div>
-        <Button className="h-12 px-6 gradient-primary text-primary-foreground rounded-xl font-semibold shadow-card">
+        <Button
+          className="h-12 px-6 gradient-primary text-primary-foreground rounded-xl font-semibold shadow-card"
+          onClick={() => navigate({ to: "/checkout", search: { propertyId: property.id, guests: 2 } })}
+        >
           Réserver
         </Button>
       </div>
