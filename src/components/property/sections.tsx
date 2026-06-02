@@ -324,7 +324,20 @@ export function BookingCard({
         </div>
       </div>
 
-      <Button className="w-full mt-4 h-12 gradient-primary text-primary-foreground rounded-xl font-semibold text-base shadow-card">
+      <Button
+        className="w-full mt-4 h-12 gradient-primary text-primary-foreground rounded-xl font-semibold text-base shadow-card"
+        onClick={() =>
+          navigate({
+            to: "/checkout",
+            search: {
+              propertyId: property.id,
+              from: range.from ? range.from.toISOString().slice(0, 10) : undefined,
+              to: range.to ? range.to.toISOString().slice(0, 10) : undefined,
+              guests,
+            },
+          })
+        }
+      >
         Réserver maintenant
       </Button>
       <p className="text-center text-xs text-muted-foreground mt-2">Aucun débit pour le moment</p>
