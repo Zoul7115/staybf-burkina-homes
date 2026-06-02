@@ -153,8 +153,10 @@ CREATE TABLE IF NOT EXISTS public.analytics_events (
 
 -- Deduplication anchor: prevents duplicate inserts for the same logical event.
 -- Partial index excludes the majority of behavioral events with no key.
+-- occurred_at must be included: Postgres requires all partitioning columns
+-- in every unique constraint on a partitioned table.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_analytics_events_idempotency
-  ON public.analytics_events (idempotency_key)
+  ON public.analytics_events (idempotency_key, occurred_at)
   WHERE idempotency_key IS NOT NULL;
 
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
@@ -947,7 +949,6 @@ BEGIN
 
   -- ── Key: platform_summary_7d ──────────────────────────────────
   BEGIN
-    SAVEPOINT sp_platform_7d;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'platform_summary_7d',
@@ -969,15 +970,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_platform_7d;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_platform_7d;
     v_errors := array_append(v_errors, 'platform_summary_7d: ' || SQLERRM);
   END;
 
   -- ── Key: platform_summary_30d ─────────────────────────────────
   BEGIN
-    SAVEPOINT sp_platform_30d;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'platform_summary_30d',
@@ -1002,15 +1000,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_platform_30d;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_platform_30d;
     v_errors := array_append(v_errors, 'platform_summary_30d: ' || SQLERRM);
   END;
 
   -- ── Key: kyc_queue_depth ──────────────────────────────────────
   BEGIN
-    SAVEPOINT sp_kyc;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'kyc_queue_depth',
@@ -1027,15 +1022,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_kyc;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_kyc;
     v_errors := array_append(v_errors, 'kyc_queue_depth: ' || SQLERRM);
   END;
 
   -- ── Key: moderation_queue_depth ───────────────────────────────
   BEGIN
-    SAVEPOINT sp_mod;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'moderation_queue_depth',
@@ -1057,15 +1049,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_mod;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_mod;
     v_errors := array_append(v_errors, 'moderation_queue_depth: ' || SQLERRM);
   END;
 
   -- ── Key: ticket_queue_by_priority ────────────────────────────
   BEGIN
-    SAVEPOINT sp_tickets;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'ticket_queue_by_priority',
@@ -1087,15 +1076,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_tickets;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_tickets;
     v_errors := array_append(v_errors, 'ticket_queue_by_priority: ' || SQLERRM);
   END;
 
   -- ── Key: pending_payouts ──────────────────────────────────────
   BEGIN
-    SAVEPOINT sp_payouts;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'pending_payouts',
@@ -1112,15 +1098,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_payouts;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_payouts;
     v_errors := array_append(v_errors, 'pending_payouts: ' || SQLERRM);
   END;
 
   -- ── Key: top_properties_30d ───────────────────────────────────
   BEGIN
-    SAVEPOINT sp_top_props;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'top_properties_30d',
@@ -1153,15 +1136,12 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_top_props;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_top_props;
     v_errors := array_append(v_errors, 'top_properties_30d: ' || SQLERRM);
   END;
 
   -- ── Key: revenue_trend_90d ────────────────────────────────────
   BEGIN
-    SAVEPOINT sp_revenue;
     INSERT INTO public.dashboard_metrics (metric_key, metric_value, computed_at, valid_until)
     SELECT
       'revenue_trend_90d',
@@ -1186,9 +1166,7 @@ BEGIN
       computed_at  = EXCLUDED.computed_at,
       valid_until  = EXCLUDED.valid_until;
     v_key_count := v_key_count + 1;
-    RELEASE SAVEPOINT sp_revenue;
   EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_revenue;
     v_errors := array_append(v_errors, 'revenue_trend_90d: ' || SQLERRM);
   END;
 

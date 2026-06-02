@@ -134,8 +134,8 @@ CREATE TABLE IF NOT EXISTS public.room_availability (
 
   FOREIGN KEY (room_id)
     REFERENCES public.rooms (id)         ON DELETE CASCADE,
-  FOREIGN KEY (booking_id)
-    REFERENCES public.bookings (id)      ON DELETE SET NULL,
+  -- FK (booking_id → bookings) is deferred to Migration 0005 via ALTER TABLE
+  -- because public.bookings does not exist until 0005 runs.
   FOREIGN KEY (blocked_dates_id)
     REFERENCES public.blocked_dates (id) ON DELETE SET NULL
 );

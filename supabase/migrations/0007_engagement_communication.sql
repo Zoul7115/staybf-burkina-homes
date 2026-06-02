@@ -147,21 +147,25 @@ CREATE OR REPLACE FUNCTION public.is_thread_participant(
   _thread_id uuid
 )
   RETURNS boolean
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   STABLE
   PARALLEL SAFE
   SET search_path = ''
 AS $$
-  SELECT CASE
-    WHEN _user_id IS NULL OR _thread_id IS NULL THEN false
-    ELSE EXISTS (
-      SELECT 1
-      FROM public.threads t
-      WHERE t.id          = _thread_id
-        AND (t.traveler_id = _user_id OR t.host_id = _user_id)
-    )
-  END;
+BEGIN
+  RETURN (
+    SELECT CASE
+      WHEN _user_id IS NULL OR _thread_id IS NULL THEN false
+      ELSE EXISTS (
+        SELECT 1
+        FROM public.threads t
+        WHERE t.id          = _thread_id
+          AND (t.traveler_id = _user_id OR t.host_id = _user_id)
+      )
+    END
+  );
+END;
 $$;
 
 COMMENT ON FUNCTION public.is_thread_participant(uuid, uuid) IS

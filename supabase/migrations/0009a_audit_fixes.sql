@@ -833,44 +833,42 @@ SELECT cron.schedule(
 -- =============================================================================
 
 
-/*
 -- =============================================================================
--- DOWN MIGRATION
+-- DOWN MIGRATION (reference only — do not execute in production)
 -- =============================================================================
 -- To roll back (execute in reverse dependency order).
 -- WARNING: restores the broken state from 0009 — run only in development.
-
+--
 -- 1. Restore cron jobs to their (broken) 0009 forms
-SELECT cron.unschedule(jobid) FROM cron.job
-WHERE jobname IN (
-  'expire-pending-bookings', 'retry-failed-payouts',
-  'process-payout-batch', 'audit-log-retention'
-);
-SELECT cron.schedule('expire-pending-bookings', '*/15 * * * *',
-  $$SELECT public.expire_pending_bookings(now())$$);
-SELECT cron.schedule('retry-failed-payouts', '0 3 * * *',
-  $$SELECT public.retry_failed_payout(CURRENT_DATE)$$);
-SELECT cron.schedule('process-payout-batch', '0 6 * * *',
-  $$SELECT public.process_payout_batch(CURRENT_DATE)$$);
-SELECT cron.schedule('audit-log-retention', '0 3 1 * *',
-  $$SELECT public.drop_expired_audit_partitions(now())$$);
-
+-- SELECT cron.unschedule(jobid) FROM cron.job
+-- WHERE jobname IN (
+--   'expire-pending-bookings', 'retry-failed-payouts',
+--   'process-payout-batch', 'audit-log-retention'
+-- );
+-- SELECT cron.schedule('expire-pending-bookings', '* /15 * * * *',
+--   $$SELECT public.expire_pending_bookings(now())$$);
+-- SELECT cron.schedule('retry-failed-payouts', '0 3 * * *',
+--   $$SELECT public.retry_failed_payout(CURRENT_DATE)$$);
+-- SELECT cron.schedule('process-payout-batch', '0 6 * * *',
+--   $$SELECT public.process_payout_batch(CURRENT_DATE)$$);
+-- SELECT cron.schedule('audit-log-retention', '0 3 1 * *',
+--   $$SELECT public.drop_expired_audit_partitions(now())$$);
+--
 -- 2. Revoke SELECT on blocked_dates (restores broken state)
-REVOKE SELECT ON public.blocked_dates FROM authenticated;
-
--- 3. Restore claim_availability / release_availability to authenticated (restores risky state)
-GRANT EXECUTE ON FUNCTION public.claim_availability(uuid, date, date, uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.release_availability(uuid) TO authenticated;
-
+-- REVOKE SELECT ON public.blocked_dates FROM authenticated;
+--
+-- 3. Restore claim_availability / release_availability to authenticated
+-- GRANT EXECUTE ON FUNCTION public.claim_availability(uuid, date, date, uuid) TO authenticated;
+-- GRANT EXECUTE ON FUNCTION public.release_availability(uuid) TO authenticated;
+--
 -- 4. Drop new functions
-DROP FUNCTION IF EXISTS public.retry_failed_payouts_batch(timestamptz);
-DROP FUNCTION IF EXISTS public.drop_expired_audit_partitions(timestamptz);
-
+-- DROP FUNCTION IF EXISTS public.retry_failed_payouts_batch(timestamptz);
+-- DROP FUNCTION IF EXISTS public.drop_expired_audit_partitions(timestamptz);
+--
 -- 5. Drop subscriptions table
-DROP TABLE IF EXISTS billing.subscriptions;
-
+-- DROP TABLE IF EXISTS billing.subscriptions;
+--
 -- Note: validate_kyc_transition() and run_analytics_rollup() are replaced
 -- in-place; restoring them requires re-applying their original bodies from
 -- Migration 0009 and 0008 respectively.
 -- =============================================================================
-*/

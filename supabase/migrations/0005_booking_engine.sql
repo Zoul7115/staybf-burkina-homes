@@ -37,7 +37,9 @@ CREATE TYPE public.app_booking_status AS ENUM (
 CREATE TYPE public.app_payout_status AS ENUM (
   'pending',    -- booking completed; payout not yet batched
   'scheduled',  -- included in a payout batch
+  'processing', -- disbursement initiated with payment provider
   'paid',       -- disbursed to host
+  'failed',     -- provider error; eligible for retry
   'on_hold',    -- frozen by dispute or KYC issue
   'reversed'    -- clawback applied after chargeback or fraud
 );
@@ -81,21 +83,25 @@ CREATE OR REPLACE FUNCTION public.is_traveler_of_booking(
   _booking_id uuid
 )
   RETURNS boolean
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   STABLE
   PARALLEL SAFE
   SET search_path = ''
 AS $$
-  SELECT CASE
-    WHEN _user_id IS NULL OR _booking_id IS NULL THEN false
-    ELSE EXISTS (
-      SELECT 1
-      FROM public.bookings b
-      WHERE b.id          = _booking_id
-        AND b.traveler_id = _user_id
-    )
-  END;
+BEGIN
+  RETURN (
+    SELECT CASE
+      WHEN _user_id IS NULL OR _booking_id IS NULL THEN false
+      ELSE EXISTS (
+        SELECT 1
+        FROM public.bookings b
+        WHERE b.id          = _booking_id
+          AND b.traveler_id = _user_id
+      )
+    END
+  );
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.is_traveler_of_booking(uuid, uuid)

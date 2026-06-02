@@ -82,27 +82,33 @@ CREATE OR REPLACE FUNCTION public.is_host_of(
   _property_id uuid
 )
   RETURNS boolean
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   STABLE
   PARALLEL SAFE
   SET search_path = ''
 AS $$
-  SELECT CASE
-    WHEN _user_id IS NULL OR _property_id IS NULL THEN false
-    ELSE EXISTS (
-      SELECT 1
-      FROM public.properties p
-      JOIN public.host_profiles hp ON hp.id = p.host_id
-      WHERE p.id           = _property_id
-        AND hp.id          = _user_id
-        AND p.deleted_at   IS NULL
-        AND hp.status      NOT IN (
-              'suspended'::public.app_host_status,
-              'rejected'::public.app_host_status
-            )
-    )
-  END;
+BEGIN
+  -- plpgsql defers table resolution to call time, avoiding forward-reference
+  -- errors when the function is defined before its referenced tables exist.
+  RETURN (
+    SELECT CASE
+      WHEN _user_id IS NULL OR _property_id IS NULL THEN false
+      ELSE EXISTS (
+        SELECT 1
+        FROM public.properties p
+        JOIN public.host_profiles hp ON hp.id = p.host_id
+        WHERE p.id           = _property_id
+          AND hp.id          = _user_id
+          AND p.deleted_at   IS NULL
+          AND hp.status      NOT IN (
+                'suspended'::public.app_host_status,
+                'rejected'::public.app_host_status
+              )
+      )
+    END
+  );
+END;
 $$;
 
 -- Returns true if _user_id is the active host who owns the property
@@ -113,28 +119,32 @@ CREATE OR REPLACE FUNCTION public.is_host_of_room(
   _room_id  uuid
 )
   RETURNS boolean
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   STABLE
   PARALLEL SAFE
   SET search_path = ''
 AS $$
-  SELECT CASE
-    WHEN _user_id IS NULL OR _room_id IS NULL THEN false
-    ELSE EXISTS (
-      SELECT 1
-      FROM public.rooms r
-      JOIN public.properties p     ON p.id  = r.property_id
-      JOIN public.host_profiles hp ON hp.id = p.host_id
-      WHERE r.id         = _room_id
-        AND hp.id        = _user_id
-        AND p.deleted_at IS NULL
-        AND hp.status    NOT IN (
-              'suspended'::public.app_host_status,
-              'rejected'::public.app_host_status
-            )
-    )
-  END;
+BEGIN
+  RETURN (
+    SELECT CASE
+      WHEN _user_id IS NULL OR _room_id IS NULL THEN false
+      ELSE EXISTS (
+        SELECT 1
+        FROM public.rooms r
+        JOIN public.properties p     ON p.id  = r.property_id
+        JOIN public.host_profiles hp ON hp.id = p.host_id
+        WHERE r.id         = _room_id
+          AND hp.id        = _user_id
+          AND p.deleted_at IS NULL
+          AND hp.status    NOT IN (
+                'suspended'::public.app_host_status,
+                'rejected'::public.app_host_status
+              )
+      )
+    END
+  );
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.is_host_of(uuid, uuid)      TO authenticated;

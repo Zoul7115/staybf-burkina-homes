@@ -16,8 +16,10 @@
 -- 1. ENUMS
 -- ============================================================
 
--- Extend existing KYC status with the 'expired' lifecycle state.
+-- Extend existing KYC status with operational lifecycle states.
 -- ADD VALUE IF NOT EXISTS is safe to re-run; enum values are never removed.
+ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'under_review';
+ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'approved';
 ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'expired';
 
 -- Support ticket state machine (7 states; Revenue doc §3.9)
