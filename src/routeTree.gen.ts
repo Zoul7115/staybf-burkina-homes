@@ -43,6 +43,7 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminReservationsRouteImport } from './routes/admin.reservations'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
@@ -220,6 +221,11 @@ const AdminReservationsRoute = AdminReservationsRouteImport.update({
   path: '/reservations',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPropertiesRoute = AdminPropertiesRouteImport.update({
   id: '/properties',
   path: '/properties',
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/reservations': typeof AdminReservationsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/reservations': typeof AdminReservationsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/reservations': typeof AdminReservationsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/payments'
     | '/admin/properties'
+    | '/admin/reports'
     | '/admin/reservations'
     | '/admin/revenue'
     | '/admin/reviews'
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/payments'
     | '/admin/properties'
+    | '/admin/reports'
     | '/admin/reservations'
     | '/admin/revenue'
     | '/admin/reviews'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/payments'
     | '/admin/properties'
+    | '/admin/reports'
     | '/admin/reservations'
     | '/admin/revenue'
     | '/admin/reviews'
@@ -759,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReservationsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/properties': {
       id: '/admin/properties'
       path: '/properties'
@@ -811,6 +830,7 @@ interface AdminRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminPropertiesRoute: typeof AdminPropertiesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminReservationsRoute: typeof AdminReservationsRoute
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
@@ -826,6 +846,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminPropertiesRoute: AdminPropertiesRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminReservationsRoute: AdminReservationsRoute,
   AdminRevenueRoute: AdminRevenueRoute,
   AdminReviewsRoute: AdminReviewsRoute,
