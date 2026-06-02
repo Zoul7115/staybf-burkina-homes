@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Heart, Star, MapPin } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 type Property = {
@@ -15,10 +16,16 @@ type Property = {
 
 export function PropertyCard({ property, index = 0 }: { property: Property; index?: number }) {
   const [fav, setFav] = useState(false);
+  const navigate = useNavigate();
+  const goToDetails = () => navigate({ to: "/properties/$id", params: { id: String(property.id) } });
 
   return (
     <article
-      className="group rounded-3xl overflow-hidden bg-card hover-lift shadow-card animate-fade-in-up"
+      onClick={goToDetails}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") goToDetails(); }}
+      className="group rounded-3xl overflow-hidden bg-card hover-lift shadow-card animate-fade-in-up cursor-pointer"
       style={{ animationDelay: `${index * 70}ms` }}
     >
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -34,7 +41,7 @@ export function PropertyCard({ property, index = 0 }: { property: Property; inde
           </span>
         )}
         <button
-          onClick={() => setFav(!fav)}
+          onClick={(e) => { e.stopPropagation(); setFav(!fav); }}
           aria-label="Favori"
           className="absolute top-3 right-3 h-10 w-10 rounded-full bg-white/90 backdrop-blur grid place-items-center shadow-card hover:scale-110 transition-transform"
         >

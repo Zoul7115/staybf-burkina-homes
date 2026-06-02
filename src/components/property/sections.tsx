@@ -16,7 +16,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { property, similarProperties } from "@/lib/staybf-property-data";
+import { similarProperties, useProperty } from "@/lib/staybf-property-data";
+import { useNavigate } from "@tanstack/react-router";
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi, ac: Snowflake, parking: Car, restaurant: Utensils, security: ShieldCheck,
@@ -26,6 +27,7 @@ const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> 
 
 /* ---------- Header ---------- */
 export function PropertyHeader() {
+  const property = useProperty();
   const [fav, setFav] = useState(false);
   return (
     <div className="space-y-3">
@@ -65,6 +67,7 @@ export function PropertyHeader() {
 
 /* ---------- Host card ---------- */
 export function HostCard() {
+  const property = useProperty();
   const { host } = property;
   return (
     <motion.div
@@ -107,6 +110,7 @@ export function HostCard() {
 
 /* ---------- Description ---------- */
 export function Description() {
+  const property = useProperty();
   const [expanded, setExpanded] = useState(false);
   const { description } = property;
   return (
@@ -143,6 +147,7 @@ export function Description() {
 
 /* ---------- Amenities ---------- */
 export function Amenities() {
+  const property = useProperty();
   const items = property.amenities;
   return (
     <section>
@@ -185,6 +190,7 @@ export function Amenities() {
 
 /* ---------- Rooms ---------- */
 export function RoomInfo() {
+  const property = useProperty();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Chambres disponibles</h2>
@@ -226,13 +232,12 @@ export function RoomInfo() {
 }
 
 /* ---------- Calendar ---------- */
-function isUnavailable(d: Date) {
-  return property.unavailableDates.includes(d.toISOString().slice(0, 10));
-}
-
 export function AvailabilityCalendar({
   range, setRange,
 }: { range: { from?: Date; to?: Date }; setRange: (r: { from?: Date; to?: Date }) => void }) {
+  const property = useProperty();
+  const isUnavailable = (d: Date) =>
+    property.unavailableDates.includes(d.toISOString().slice(0, 10));
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-2">Sélectionnez vos dates</h2>
@@ -257,6 +262,9 @@ export function AvailabilityCalendar({
 export function BookingCard({
   range, setRange,
 }: { range: { from?: Date; to?: Date }; setRange: (r: { from?: Date; to?: Date }) => void }) {
+  const property = useProperty();
+  const isUnavailable = (d: Date) =>
+    property.unavailableDates.includes(d.toISOString().slice(0, 10));
   const [guests, setGuests] = useState(2);
   const nights = range.from && range.to ? Math.max(1, differenceInDays(range.to, range.from)) : 0;
   const subtotal = nights * property.price;
@@ -366,6 +374,7 @@ function PayBadge({ icon, label, tone }: { icon: React.ReactNode; label: string;
 
 /* ---------- Reviews ---------- */
 export function Reviews() {
+  const property = useProperty();
   const [shown, setShown] = useState(3);
   const list = property.reviewsList;
   const breakdown = [
@@ -434,6 +443,7 @@ export function Reviews() {
 
 /* ---------- Map ---------- */
 export function LocationMap() {
+  const property = useProperty();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-2">Où se situe le logement</h2>
@@ -495,6 +505,7 @@ export function LocationMap() {
 
 /* ---------- Similar ---------- */
 export function SimilarProperties() {
+  const navigate = useNavigate();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Hébergements similaires</h2>
@@ -504,7 +515,8 @@ export function SimilarProperties() {
             key={p.id}
             initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             transition={{ delay: i * 0.04 }}
-            className="shrink-0 w-[260px] sm:w-[280px] snap-start rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card hover:shadow-elevated transition-shadow"
+            onClick={() => navigate({ to: "/properties/$id", params: { id: String(p.id) } })}
+            className="shrink-0 w-[260px] sm:w-[280px] snap-start rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card hover:shadow-elevated transition-shadow cursor-pointer"
           >
             <div className="aspect-[4/3] overflow-hidden">
               <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
@@ -523,7 +535,7 @@ export function SimilarProperties() {
                   <span className="font-display font-bold">{p.price.toLocaleString("fr-FR")}</span>
                   <span className="text-muted-foreground text-xs"> FCFA</span>
                 </p>
-                <Button size="sm" variant="outline" className="rounded-lg h-8">Voir</Button>
+                <Button size="sm" variant="outline" className="rounded-lg h-8" onClick={(e) => { e.stopPropagation(); navigate({ to: "/properties/$id", params: { id: String(p.id) } }); }}>Voir</Button>
               </div>
             </div>
           </motion.article>
@@ -535,6 +547,7 @@ export function SimilarProperties() {
 
 /* ---------- Mobile booking bar ---------- */
 export function MobileBookingBar() {
+  const property = useProperty();
   return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t border-border shadow-elevated p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
       <div className="flex items-center justify-between gap-3">
