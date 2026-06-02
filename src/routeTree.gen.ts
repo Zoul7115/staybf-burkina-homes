@@ -22,6 +22,7 @@ import { Route as TravelerDashboardRouteImport } from './routes/traveler.dashboa
 import { Route as TravelerBookingsRouteImport } from './routes/traveler.bookings'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
 import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
+import { Route as HostDashboardRouteImport } from './routes/host.dashboard'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 
@@ -90,6 +91,11 @@ const PropertiesIdRoute = PropertiesIdRouteImport.update({
   path: '/properties/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HostDashboardRoute = HostDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => HostRoute,
+} as any)
 const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -104,11 +110,12 @@ const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
-  '/host': typeof HostRoute
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/dashboard': typeof HostDashboardRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -121,11 +128,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
-  '/host': typeof HostRoute
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/dashboard': typeof HostDashboardRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -139,11 +147,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/checkout': typeof CheckoutRouteWithChildren
-  '/host': typeof HostRoute
+  '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/dashboard': typeof HostDashboardRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/dashboard'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/dashboard'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/dashboard'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -210,7 +222,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckoutRoute: typeof CheckoutRouteWithChildren
-  HostRoute: typeof HostRoute
+  HostRoute: typeof HostRouteWithChildren
   SearchRoute: typeof SearchRoute
   TravelerRoute: typeof TravelerRouteWithChildren
   BookingConfirmationRoute: typeof BookingConfirmationRoute
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/host/dashboard': {
+      id: '/host/dashboard'
+      path: '/dashboard'
+      fullPath: '/host/dashboard'
+      preLoaderRoute: typeof HostDashboardRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/checkout/success': {
       id: '/checkout/success'
       path: '/success'
@@ -340,6 +359,16 @@ const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
   CheckoutRouteChildren,
 )
 
+interface HostRouteChildren {
+  HostDashboardRoute: typeof HostDashboardRoute
+}
+
+const HostRouteChildren: HostRouteChildren = {
+  HostDashboardRoute: HostDashboardRoute,
+}
+
+const HostRouteWithChildren = HostRoute._addFileChildren(HostRouteChildren)
+
 interface TravelerRouteChildren {
   TravelerBookingsRoute: typeof TravelerBookingsRoute
   TravelerDashboardRoute: typeof TravelerDashboardRoute
@@ -365,7 +394,7 @@ const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckoutRoute: CheckoutRouteWithChildren,
-  HostRoute: HostRoute,
+  HostRoute: HostRouteWithChildren,
   SearchRoute: SearchRoute,
   TravelerRoute: TravelerRouteWithChildren,
   BookingConfirmationRoute: BookingConfirmationRoute,
