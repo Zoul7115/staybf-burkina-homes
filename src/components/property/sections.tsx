@@ -192,6 +192,32 @@ export function Amenities() {
 export function RoomInfo() {
   const property = useProperty();
   const navigate = useNavigate();
+  const [openRoom, setOpenRoom] = useState<string | null>(null);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>({
+    from: new Date(today.getTime() + 7 * 86400000),
+    to: new Date(today.getTime() + 10 * 86400000),
+  });
+  const [guests, setGuests] = useState(2);
+
+  const activeRoom = property.rooms.find((r) => r.type === openRoom);
+  const nights = range.from && range.to ? Math.max(0, differenceInDays(range.to, range.from)) : 0;
+  const subtotal = activeRoom ? nights * activeRoom.price : 0;
+  const canConfirm = !!(range.from && range.to && nights > 0);
+
+  const confirm = () => {
+    if (!canConfirm || !activeRoom) return;
+    navigate({
+      to: "/checkout",
+      search: {
+        propertyId: property.id,
+        from: range.from!.toISOString().slice(0, 10),
+        to: range.to!.toISOString().slice(0, 10),
+        guests,
+      },
+    });
+  };
+
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Chambres disponibles</h2>
@@ -224,16 +250,10 @@ export function RoomInfo() {
               <Button
                 size="sm"
                 disabled={!r.available}
-                onClick={() =>
-                  navigate({
-                    to: "/checkout",
-                    search: {
-                      propertyId: property.id,
-                      room: r.type,
-                      guests: Math.min(r.capacity, 2),
-                    },
-                  })
-                }
+                onClick={() => {
+                  setGuests(Math.min(r.capacity, 2));
+                  setOpenRoom(r.type);
+                }}
                 className="mt-2 gradient-primary text-primary-foreground rounded-xl"
               >
                 Sélectionner
