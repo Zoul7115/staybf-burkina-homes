@@ -40,6 +40,7 @@ import { Route as BookingConfirmationRouteImport } from './routes/booking.confir
 import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
@@ -207,6 +208,11 @@ const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   path: '/subscriptions',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/reviews'
     | '/admin/roles'
+    | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/reviews'
     | '/admin/roles'
+    | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/reviews'
     | '/admin/roles'
+    | '/admin/settings'
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
@@ -762,6 +774,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -854,6 +873,7 @@ interface AdminRouteChildren {
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminRolesRoute: typeof AdminRolesRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTravelersRoute: typeof AdminTravelersRoute
@@ -871,6 +891,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRevenueRoute: AdminRevenueRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminRolesRoute: AdminRolesRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminSupportRoute: AdminSupportRoute,
   AdminTravelersRoute: AdminTravelersRoute,
