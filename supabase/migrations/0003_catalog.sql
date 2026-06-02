@@ -74,9 +74,9 @@ CREATE TYPE public.app_payout_method AS ENUM (
 -- 2. SECURITY-DEFINER HELPER FUNCTIONS
 -- ============================================================
 
--- Returns true if _user_id is the host who owns _property_id.
--- Used by RLS policies on properties, property_images, rooms,
--- room_images, and amenities_map to avoid recursive subqueries.
+-- Returns true if _user_id is the active host who owns _property_id.
+-- Excludes soft-deleted properties and suspended/rejected host accounts
+-- so that suspended hosts cannot write catalog data through any downstream policy.
 CREATE OR REPLACE FUNCTION public.is_host_of(
   _user_id    uuid,
   _property_id uuid
@@ -94,14 +94,20 @@ AS $$
       SELECT 1
       FROM public.properties p
       JOIN public.host_profiles hp ON hp.id = p.host_id
-      WHERE p.id      = _property_id
-        AND hp.id     = _user_id
+      WHERE p.id           = _property_id
+        AND hp.id          = _user_id
+        AND p.deleted_at   IS NULL
+        AND hp.status      NOT IN (
+              'suspended'::public.app_host_status,
+              'rejected'::public.app_host_status
+            )
     )
   END;
 $$;
 
--- Returns true if _user_id is the host who owns the property
+-- Returns true if _user_id is the active host who owns the property
 -- that contains _room_id.
+-- Inherits the same deleted_at and host-status guards as is_host_of.
 CREATE OR REPLACE FUNCTION public.is_host_of_room(
   _user_id uuid,
   _room_id  uuid
@@ -118,10 +124,15 @@ AS $$
     ELSE EXISTS (
       SELECT 1
       FROM public.rooms r
-      JOIN public.properties p  ON p.id  = r.property_id
+      JOIN public.properties p     ON p.id  = r.property_id
       JOIN public.host_profiles hp ON hp.id = p.host_id
-      WHERE r.id    = _room_id
-        AND hp.id   = _user_id
+      WHERE r.id         = _room_id
+        AND hp.id        = _user_id
+        AND p.deleted_at IS NULL
+        AND hp.status    NOT IN (
+              'suspended'::public.app_host_status,
+              'rejected'::public.app_host_status
+            )
     )
   END;
 $$;
@@ -329,10 +340,14 @@ CREATE POLICY "properties: support read-all"
 -- No INSERT policy for authenticated — INSERT via createProperty() server fn
 -- which validates host quota against subscription plan max_properties.
 -- No DELETE policy — soft delete only (deleted_at); hard delete by service_role.
+-- No UPDATE grant to authenticated: system-managed columns (status, deleted_at,
+-- published_at, rating_avg, rating_count, min_price_fcfa) must not be writable
+-- by any client path. All host property edits go through updateProperty() server
+-- function which uses service_role with explicit column targeting.
 
-GRANT SELECT            ON public.properties TO anon;
-GRANT SELECT, UPDATE    ON public.properties TO authenticated;
-GRANT ALL               ON public.properties TO service_role;
+GRANT SELECT ON public.properties TO anon;
+GRANT SELECT ON public.properties TO authenticated;
+GRANT ALL    ON public.properties TO service_role;
 
 -- Tenant scoping — hot path for host dashboard
 CREATE INDEX IF NOT EXISTS idx_properties_host
@@ -459,12 +474,24 @@ CREATE TABLE IF NOT EXISTS public.rooms (
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms FORCE ROW LEVEL SECURITY;
 
--- Active rooms are readable by everyone (anon + authenticated).
--- Whether the parent property is published is enforced by server functions.
+-- Active rooms are readable by everyone (anon + authenticated) only when the
+-- parent property is published and not soft-deleted. This prevents rooms of
+-- suspended, archived, or deleted properties from being reachable via direct
+-- table queries. The subquery does not touch the rooms table itself so there
+-- is no recursive RLS evaluation.
 CREATE POLICY "rooms: public read active"
   ON public.rooms
   FOR SELECT
-  USING (status = 'active');
+  USING (
+    status = 'active'::public.app_room_status
+    AND EXISTS (
+      SELECT 1
+      FROM public.properties p
+      WHERE p.id         = property_id
+        AND p.status     = 'published'::public.app_property_status
+        AND p.deleted_at IS NULL
+    )
+  );
 
 -- Host reads and manages all own rooms (including draft/paused/archived)
 CREATE POLICY "rooms: host read own"
@@ -651,9 +678,45 @@ CREATE INDEX IF NOT EXISTS idx_amenities_map_room
 
 
 -- ============================================================
--- 9. TRIGGER: UPDATE properties.min_price_fcfa
+-- 9. TRIGGER: VALIDATE amenities_map room_id ↔ property_id consistency
 -- ============================================================
--- Fires after any INSERT or UPDATE of base_price_fcfa on rooms.
+-- When room_id is non-null, the room must belong to the same property as
+-- property_id on the same row. Without this check a host could associate a
+-- room from a different property, corrupting amenity display and search filters.
+
+CREATE OR REPLACE FUNCTION public.check_amenity_room_belongs_to_property()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  SET search_path = ''
+AS $$
+BEGIN
+  IF NEW.room_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.rooms r
+      WHERE r.id          = NEW.room_id
+        AND r.property_id = NEW.property_id
+    ) THEN
+      RAISE EXCEPTION
+        'amenities_map: room_id % does not belong to property_id %',
+        NEW.room_id, NEW.property_id
+        USING ERRCODE = 'foreign_key_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_amenities_map_room_property_check
+  BEFORE INSERT OR UPDATE ON public.amenities_map
+  FOR EACH ROW
+  EXECUTE FUNCTION public.check_amenity_room_belongs_to_property();
+
+
+-- ============================================================
+-- 10. TRIGGER: UPDATE properties.min_price_fcfa
+-- ============================================================
+-- Fires after INSERT, UPDATE of base_price_fcfa/status, or DELETE on rooms.
 -- Recomputes min_price_fcfa from all active rooms of that property.
 -- Uses fully qualified names (no search_path assumption).
 -- NOT SECURITY DEFINER — runs as table owner (postgres).
@@ -663,21 +726,35 @@ CREATE OR REPLACE FUNCTION public.update_property_min_price()
   LANGUAGE plpgsql
   SET search_path = ''
 AS $$
+DECLARE
+  _property_id uuid;
 BEGIN
+  -- On DELETE use OLD; on INSERT/UPDATE use NEW.
+  IF TG_OP = 'DELETE' THEN
+    _property_id := OLD.property_id;
+  ELSE
+    _property_id := NEW.property_id;
+  END IF;
+
   UPDATE public.properties
   SET    min_price_fcfa = (
            SELECT MIN(r.base_price_fcfa)
            FROM   public.rooms r
-           WHERE  r.property_id = NEW.property_id
-             AND  r.status      = 'active'
+           WHERE  r.property_id = _property_id
+             AND  r.status      = 'active'::public.app_room_status
          )
-  WHERE  id = NEW.property_id;
+  WHERE  id = _property_id;
+
+  -- Trigger protocol: DELETE handlers must return OLD.
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
   RETURN NEW;
 END;
 $$;
 
 CREATE TRIGGER trg_update_property_min_price
-  AFTER INSERT OR UPDATE OF base_price_fcfa, status
+  AFTER INSERT OR UPDATE OF base_price_fcfa, status OR DELETE
   ON public.rooms
   FOR EACH ROW
   EXECUTE FUNCTION public.update_property_min_price();
@@ -691,6 +768,9 @@ CREATE TRIGGER trg_update_property_min_price
 
   DROP TRIGGER IF EXISTS trg_update_property_min_price ON public.rooms;
   DROP FUNCTION IF EXISTS public.update_property_min_price();
+
+  DROP TRIGGER IF EXISTS trg_amenities_map_room_property_check ON public.amenities_map;
+  DROP FUNCTION IF EXISTS public.check_amenity_room_belongs_to_property();
 
   DROP TABLE IF EXISTS public.amenities_map;
   DROP TABLE IF EXISTS public.room_images;
