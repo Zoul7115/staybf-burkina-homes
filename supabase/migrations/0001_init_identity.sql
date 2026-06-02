@@ -317,25 +317,33 @@ CREATE OR REPLACE FUNCTION public.has_role(
   SECURITY DEFINER
   STABLE
   PARALLEL SAFE
-  -- Pin search_path to prevent schema-shadowing injection attacks.
-  SET search_path = public
+  -- Empty search_path: the strongest possible pinning.
+  -- Prevents an attacker from shadowing any object (tables, types, operators)
+  -- by creating a same-named object in a schema that appears earlier in the
+  -- default search_path. All references inside the body are fully qualified.
+  SET search_path = ''
 AS $$
   -- Short-circuit on NULL user_id (handles the anon role where auth.uid() = NULL).
-  -- EXISTS is used instead of COUNT to stop at the first matching row.
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.user_roles ur
-    WHERE ur.user_id = _user_id
-      AND ur.role    = _role
-  );
+  -- When _user_id IS NULL, the WHERE clause evaluates to NULL (not FALSE), so
+  -- EXISTS returns FALSE — correct behaviour. The CASE makes this explicit.
+  SELECT CASE
+    WHEN _user_id IS NULL THEN false
+    ELSE EXISTS (
+      SELECT 1
+      FROM public.user_roles ur
+      WHERE ur.user_id = _user_id
+        AND ur.role    = _role
+    )
+  END;
 $$;
 
 COMMENT ON FUNCTION public.has_role(uuid, public.app_role) IS
   'Security-definer gate for all RLS policies. '
   'Returns true if the given user holds the given role. '
-  'SECURITY DEFINER + pinned search_path prevents recursive RLS and schema injection. '
+  'SECURITY DEFINER + search_path='''' prevents recursive RLS and schema-shadowing injection. '
   'STABLE allows the query planner to cache the result within a transaction. '
-  'Always returns false for NULL _user_id (anon role).';
+  'Explicit CASE guard returns false for NULL _user_id (anon role) without relying '
+  'on SQL three-valued logic.';
 
 
 -- =============================================================================
@@ -364,7 +372,10 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
   RETURNS trigger
   LANGUAGE plpgsql
   SECURITY DEFINER
-  SET search_path = public
+  -- Empty search_path: prevents schema-shadowing attacks. All object references
+  -- inside the body are fully qualified (public.profiles, public.user_roles,
+  -- public.app_role, public.app_account_status, extensions.gen_random_uuid).
+  SET search_path = ''
 AS $$
 BEGIN
   -- Step 1: Create the profile row.
@@ -414,7 +425,7 @@ BEGIN
     granted_at
   )
   VALUES (
-    gen_random_uuid(),
+    extensions.gen_random_uuid(),  -- fully qualified: search_path = ''
     NEW.id,
     'traveler'::public.app_role,
     NULL,  -- system-assigned; no human grantor
@@ -579,15 +590,27 @@ CREATE POLICY "user_roles: super_admin can delete"
 -- =============================================================================
 
 -- profiles
-GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
--- INSERT is allowed at the GRANT level so the trigger function (SECURITY DEFINER,
--- running as postgres) can insert. RLS has no INSERT policy, so direct client
--- INSERTs are still blocked at the RLS layer.
+-- INSERT is intentionally omitted: handle_new_user() is SECURITY DEFINER and
+-- runs as its owner (postgres / service_role), not as the calling authenticated
+-- role. Granting INSERT to authenticated would only add a redundant GRANT that
+-- must then be blocked again at the RLS layer — unnecessary attack surface.
+-- Direct client INSERTs are blocked at both the GRANT layer (no INSERT here)
+-- and the RLS layer (no INSERT policy exists).
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
 GRANT ALL ON public.profiles TO service_role;
 
 -- user_roles
-GRANT SELECT, INSERT, DELETE ON public.user_roles TO authenticated;
--- No UPDATE grant — roles are immutable (no UPDATE policy either).
+-- INSERT and DELETE are intentionally omitted from authenticated:
+--   • INSERT: handle_new_user() is SECURITY DEFINER (runs as postgres), so the
+--     authenticated role's INSERT privilege is never consulted during signup.
+--     All subsequent role grants go through server functions using supabaseAdmin
+--     (service_role), which has ALL via the grant below.
+--   • DELETE: role revocation must be service_role-only. Granting DELETE to
+--     authenticated means any policy evaluation gap could allow an attacker to
+--     strip role assignments — including admin roles. Defense in depth: block at
+--     the GRANT layer, not only at the RLS policy layer.
+-- No UPDATE grant — roles are immutable once written (no UPDATE policy either).
+GRANT SELECT ON public.user_roles TO authenticated;
 GRANT ALL ON public.user_roles TO service_role;
 
 -- has_role(): must be executable by both authenticated users and anon
