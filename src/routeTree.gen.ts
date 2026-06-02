@@ -31,6 +31,7 @@ import { Route as HostPropertyRouteImport } from './routes/host.property'
 import { Route as HostMessagesRouteImport } from './routes/host.messages'
 import { Route as HostDashboardRouteImport } from './routes/host.dashboard'
 import { Route as HostCalendarRouteImport } from './routes/host.calendar'
+import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 
@@ -144,6 +145,11 @@ const HostCalendarRoute = HostCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => HostRoute,
 } as any)
+const HostAnalyticsRoute = HostAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => HostRoute,
+} as any)
 const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/traveler': typeof TravelerRouteWithChildren
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/host/analytics': typeof HostAnalyticsRoute
   '/host/calendar': typeof HostCalendarRoute
   '/host/dashboard': typeof HostDashboardRoute
   '/host/messages': typeof HostMessagesRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/traveler'
     | '/booking/confirmation'
     | '/checkout/success'
+    | '/host/analytics'
     | '/host/calendar'
     | '/host/dashboard'
     | '/host/messages'
@@ -482,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HostCalendarRouteImport
       parentRoute: typeof HostRoute
     }
+    '/host/analytics': {
+      id: '/host/analytics'
+      path: '/analytics'
+      fullPath: '/host/analytics'
+      preLoaderRoute: typeof HostAnalyticsRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/checkout/success': {
       id: '/checkout/success'
       path: '/success'
@@ -512,6 +531,7 @@ const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
 )
 
 interface HostRouteChildren {
+  HostAnalyticsRoute: typeof HostAnalyticsRoute
   HostCalendarRoute: typeof HostCalendarRoute
   HostDashboardRoute: typeof HostDashboardRoute
   HostMessagesRoute: typeof HostMessagesRoute
@@ -524,6 +544,7 @@ interface HostRouteChildren {
 }
 
 const HostRouteChildren: HostRouteChildren = {
+  HostAnalyticsRoute: HostAnalyticsRoute,
   HostCalendarRoute: HostCalendarRoute,
   HostDashboardRoute: HostDashboardRoute,
   HostMessagesRoute: HostMessagesRoute,
