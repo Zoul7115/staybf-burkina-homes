@@ -191,6 +191,7 @@ export function Amenities() {
 /* ---------- Rooms ---------- */
 export function RoomInfo() {
   const property = useProperty();
+  const navigate = useNavigate();
   return (
     <section>
       <h2 className="font-display font-bold text-xl md:text-2xl mb-4">Chambres disponibles</h2>
@@ -220,7 +221,21 @@ export function RoomInfo() {
               <p className="font-display font-bold text-lg">
                 {r.price.toLocaleString("fr-FR")} <span className="text-xs font-normal text-muted-foreground">FCFA / nuit</span>
               </p>
-              <Button size="sm" disabled={!r.available} className="mt-2 gradient-primary text-primary-foreground rounded-xl">
+              <Button
+                size="sm"
+                disabled={!r.available}
+                onClick={() =>
+                  navigate({
+                    to: "/checkout",
+                    search: {
+                      propertyId: property.id,
+                      room: r.type,
+                      guests: Math.min(r.capacity, 2),
+                    },
+                  })
+                }
+                className="mt-2 gradient-primary text-primary-foreground rounded-xl"
+              >
                 Sélectionner
               </Button>
             </div>
