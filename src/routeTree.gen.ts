@@ -22,6 +22,7 @@ import { Route as TravelerDashboardRouteImport } from './routes/traveler.dashboa
 import { Route as TravelerBookingsRouteImport } from './routes/traveler.bookings'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
 import { Route as PropertiesIdRouteImport } from './routes/properties.$id'
+import { Route as HostSubscriptionRouteImport } from './routes/host.subscription'
 import { Route as HostRoomsRouteImport } from './routes/host.rooms'
 import { Route as HostRevenueRouteImport } from './routes/host.revenue'
 import { Route as HostReservationsRouteImport } from './routes/host.reservations'
@@ -96,6 +97,11 @@ const PropertiesIdRoute = PropertiesIdRouteImport.update({
   path: '/properties/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HostSubscriptionRoute = HostSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => HostRoute,
+} as any)
 const HostRoomsRoute = HostRoomsRouteImport.update({
   id: '/rooms',
   path: '/rooms',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/host/reservations': typeof HostReservationsRoute
   '/host/revenue': typeof HostRevenueRoute
   '/host/rooms': typeof HostRoomsRoute
+  '/host/subscription': typeof HostSubscriptionRoute
   '/properties/$id': typeof PropertiesIdRoute
   '/property/$id': typeof PropertyIdRoute
   '/traveler/bookings': typeof TravelerBookingsRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/host/reservations'
     | '/host/revenue'
     | '/host/rooms'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/host/reservations'
     | '/host/revenue'
     | '/host/rooms'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/host/reservations'
     | '/host/revenue'
     | '/host/rooms'
+    | '/host/subscription'
     | '/properties/$id'
     | '/property/$id'
     | '/traveler/bookings'
@@ -383,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/host/subscription': {
+      id: '/host/subscription'
+      path: '/subscription'
+      fullPath: '/host/subscription'
+      preLoaderRoute: typeof HostSubscriptionRouteImport
+      parentRoute: typeof HostRoute
+    }
     '/host/rooms': {
       id: '/host/rooms'
       path: '/rooms'
@@ -461,6 +480,7 @@ interface HostRouteChildren {
   HostReservationsRoute: typeof HostReservationsRoute
   HostRevenueRoute: typeof HostRevenueRoute
   HostRoomsRoute: typeof HostRoomsRoute
+  HostSubscriptionRoute: typeof HostSubscriptionRoute
 }
 
 const HostRouteChildren: HostRouteChildren = {
@@ -470,6 +490,7 @@ const HostRouteChildren: HostRouteChildren = {
   HostReservationsRoute: HostReservationsRoute,
   HostRevenueRoute: HostRevenueRoute,
   HostRoomsRoute: HostRoomsRoute,
+  HostSubscriptionRoute: HostSubscriptionRoute,
 }
 
 const HostRouteWithChildren = HostRoute._addFileChildren(HostRouteChildren)
