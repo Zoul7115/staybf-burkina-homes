@@ -89,7 +89,7 @@ function CheckoutPage() {
     setTimeout(() => {
       const ref = "STBF-" + Math.random().toString(36).slice(2, 8).toUpperCase() + "-" + Date.now().toString().slice(-4);
       navigate({
-        to: "/checkout/success",
+        to: "/booking/confirmation",
         search: {
           ref, propertyId: property.id, total, method,
           from: fromDate.toISOString().slice(0, 10),
