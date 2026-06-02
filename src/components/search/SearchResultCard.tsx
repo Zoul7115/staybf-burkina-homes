@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Star, MapPin, BadgeCheck, Zap } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Listing } from "@/lib/staybf-search-data";
@@ -15,6 +16,9 @@ type Props = {
 
 export function SearchResultCard({ listing, index = 0, active, onHover }: Props) {
   const [fav, setFav] = useState(false);
+  const navigate = useNavigate();
+  const goToDetails = () => navigate({ to: "/properties/$id", params: { id: String(listing.id) } });
+
 
   return (
     <motion.article
@@ -23,9 +27,13 @@ export function SearchResultCard({ listing, index = 0, active, onHover }: Props)
       transition={{ duration: 0.4, delay: Math.min(index * 0.04, 0.3), ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => onHover?.(listing.id)}
       onMouseLeave={() => onHover?.(null)}
+      onClick={goToDetails}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") goToDetails(); }}
       whileHover={{ y: -4 }}
       className={cn(
-        "group rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card transition-shadow",
+        "group rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card transition-shadow cursor-pointer",
         active ? "ring-2 ring-primary shadow-elevated" : "hover:shadow-elevated",
       )}
     >
@@ -52,7 +60,7 @@ export function SearchResultCard({ listing, index = 0, active, onHover }: Props)
             )}
           </div>
           <button
-            onClick={() => setFav(!fav)}
+            onClick={(e) => { e.stopPropagation(); setFav(!fav); }}
             aria-label="Favori"
             className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/95 backdrop-blur grid place-items-center shadow-card hover:scale-110 transition-transform"
           >
@@ -101,7 +109,7 @@ export function SearchResultCard({ listing, index = 0, active, onHover }: Props)
                 <span className="text-xs text-muted-foreground"> FCFA / nuit</span>
               </p>
             </div>
-            <Button size="sm" className="gradient-primary text-primary-foreground rounded-xl font-semibold">
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); goToDetails(); }} className="gradient-primary text-primary-foreground rounded-xl font-semibold">
               Voir les détails
             </Button>
           </div>
