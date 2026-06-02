@@ -46,6 +46,7 @@ import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminHostsRouteImport } from './routes/admin.hosts'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminCitiesRouteImport } from './routes/admin.cities'
 
 const TravelerRoute = TravelerRouteImport.update({
   id: '/traveler',
@@ -232,6 +233,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCitiesRoute = AdminCitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hosts': typeof AdminHostsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hosts': typeof AdminHostsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/cities': typeof AdminCitiesRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hosts': typeof AdminHostsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -360,6 +369,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
     | '/admin/dashboard'
     | '/admin/hosts'
     | '/admin/payments'
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
     | '/admin/dashboard'
     | '/admin/hosts'
     | '/admin/payments'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/cities'
     | '/admin/dashboard'
     | '/admin/hosts'
     | '/admin/payments'
@@ -744,10 +756,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/cities': {
+      id: '/admin/cities'
+      path: '/cities'
+      fullPath: '/admin/cities'
+      preLoaderRoute: typeof AdminCitiesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminCitiesRoute: typeof AdminCitiesRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminHostsRoute: typeof AdminHostsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
@@ -760,6 +780,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCitiesRoute: AdminCitiesRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminHostsRoute: AdminHostsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
