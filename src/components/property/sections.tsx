@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "@tanstack/react-router";
-import { addDays, differenceInDays, format } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Star, MapPin, Share2, Heart, BadgeCheck, Crown, Clock, MessageCircle,
