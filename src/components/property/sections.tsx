@@ -27,6 +27,7 @@ const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> 
 
 /* ---------- Header ---------- */
 export function PropertyHeader() {
+  const property = useProperty();
   const [fav, setFav] = useState(false);
   return (
     <div className="space-y-3">
