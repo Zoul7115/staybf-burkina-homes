@@ -3,15 +3,16 @@ import { Menu, Search, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-export function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+export function Navbar({ solid = false }: { solid?: boolean }) {
+  const [scrolled, setScrolled] = useState(solid);
 
   useEffect(() => {
+    if (solid) return;
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [solid]);
 
   return (
     <header
