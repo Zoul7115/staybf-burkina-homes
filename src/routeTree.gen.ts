@@ -37,6 +37,7 @@ import { Route as HostCalendarRouteImport } from './routes/host.calendar'
 import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 
 const TravelerRoute = TravelerRouteImport.update({
   id: '/traveler',
@@ -178,14 +179,20 @@ const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
   path: '/booking/confirmation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -211,11 +218,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -242,11 +250,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
   '/traveler': typeof TravelerRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/dashboard'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/dashboard'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -339,6 +350,7 @@ export interface FileRouteTypes {
     | '/host'
     | '/search'
     | '/traveler'
+    | '/admin/dashboard'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -365,7 +377,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CheckoutRoute: typeof CheckoutRouteWithChildren
   HostRoute: typeof HostRouteWithChildren
   SearchRoute: typeof SearchRoute
@@ -573,8 +585,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingConfirmationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminDashboardRoute: typeof AdminDashboardRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDashboardRoute: AdminDashboardRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CheckoutRouteChildren {
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
@@ -644,7 +673,7 @@ const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   CheckoutRoute: CheckoutRouteWithChildren,
   HostRoute: HostRouteWithChildren,
   SearchRoute: SearchRoute,
