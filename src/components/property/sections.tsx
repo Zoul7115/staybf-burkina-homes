@@ -515,7 +515,8 @@ export function SimilarProperties() {
             key={p.id}
             initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             transition={{ delay: i * 0.04 }}
-            className="shrink-0 w-[260px] sm:w-[280px] snap-start rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card hover:shadow-elevated transition-shadow"
+            onClick={() => navigate({ to: "/properties/$id", params: { id: String(p.id) } })}
+            className="shrink-0 w-[260px] sm:w-[280px] snap-start rounded-3xl overflow-hidden bg-card border border-border/60 shadow-card hover:shadow-elevated transition-shadow cursor-pointer"
           >
             <div className="aspect-[4/3] overflow-hidden">
               <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
@@ -534,7 +535,7 @@ export function SimilarProperties() {
                   <span className="font-display font-bold">{p.price.toLocaleString("fr-FR")}</span>
                   <span className="text-muted-foreground text-xs"> FCFA</span>
                 </p>
-                <Button size="sm" variant="outline" className="rounded-lg h-8">Voir</Button>
+                <Button size="sm" variant="outline" className="rounded-lg h-8" onClick={(e) => { e.stopPropagation(); navigate({ to: "/properties/$id", params: { id: String(p.id) } }); }}>Voir</Button>
               </div>
             </div>
           </motion.article>
