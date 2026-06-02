@@ -67,7 +67,7 @@ function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+      <Navbar solid />
       <SearchTopBar
         resultCount={results.length}
         city={city}
