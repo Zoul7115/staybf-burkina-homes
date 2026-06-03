@@ -51,7 +51,7 @@ export type AppStorageOptStatus = "not_applicable" | "pending" | "complete" | "e
 // Row types
 // ---------------------------------------------------------------------------
 
-export interface ProfileRow {
+export type ProfileRow = {
   id: string;
   full_name: string | null;
   display_name: string | null;
@@ -65,9 +65,9 @@ export interface ProfileRow {
   account_status: AppAccountStatus;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface StorageObjectMetaRow {
+export type StorageObjectMetaRow = {
   id: string;
   bucket_id: string;
   storage_path: string;
@@ -86,15 +86,29 @@ export interface StorageObjectMetaRow {
   purged_at: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
 // ---------------------------------------------------------------------------
 // Database type consumed by createClient<Database>(...)
 // ---------------------------------------------------------------------------
 
+export type UserRoleRow = {
+  id: string;
+  user_id: string;
+  role: AppRole;
+  granted_by: string | null;
+  granted_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
+      user_roles: {
+        Row: UserRoleRow;
+        Insert: { id?: string; user_id: string; role: AppRole; granted_by?: string | null; granted_at?: string };
+        Update: Partial<UserRoleRow>;
+        Relationships: [];
+      };
       profiles: {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & { id: string };
@@ -112,15 +126,15 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {};
     Functions: {
       register_storage_object: {
         Args: {
           p_bucket_id: string;
           p_storage_path: string;
           p_owner_id: string;
-          p_mime_type?: string | null;
-          p_size_bytes?: number | null;
+          p_mime_type: string | null;
+          p_size_bytes: number | null;
         };
         Returns: string; // uuid
       };
@@ -130,10 +144,10 @@ export type Database = {
           p_storage_path: string;
           p_actor_id: string;
           p_actor_role: string;
-          p_ip_address?: string | null;
-          p_user_agent?: string | null;
+          p_ip_address: string | null;
+          p_user_agent: string | null;
         };
-        Returns: void;
+        Returns: undefined;
       };
     };
     Enums: {

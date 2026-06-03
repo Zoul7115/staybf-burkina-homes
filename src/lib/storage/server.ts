@@ -229,8 +229,7 @@ export async function getScanStatus(
   bucketId: BucketId,
   storagePath: string,
 ): Promise<ScanStatus> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabaseAdmin as any)
+  const { data, error } = await supabaseAdmin
     .from("storage_object_meta")
     .select("scan_status")
     .eq("bucket_id", bucketId)
@@ -238,7 +237,7 @@ export async function getScanStatus(
     .maybeSingle();
 
   if (error || !data) return "not_found";
-  return (data as { scan_status: string }).scan_status as ScanStatus;
+  return data.scan_status as ScanStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,8 +257,7 @@ export async function deleteStorageObject(
   }
 
   // Mark meta row as purged (best-effort; the cleanup job handles misses)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabaseAdmin as any)
+  await supabaseAdmin
     .from("storage_object_meta")
     .update({ purged_at: new Date().toISOString() })
     .eq("bucket_id", bucketId)

@@ -204,8 +204,7 @@ export const activateAccount = createServerFn({ method: "POST" })
 
     // The handle_new_user trigger creates the profile with pending_email_verification.
     // After email confirmation, transition to active.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from("profiles")
       .update({ account_status: "active" })
       .eq("id", user.id)
