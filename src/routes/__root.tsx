@@ -6,11 +6,16 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  redirect,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthProvider } from "../lib/auth/auth.context";
+import { getSession } from "../lib/auth/auth.functions";
+import type { RouterContext } from "../router";
+import type { RouterAuthContext } from "../lib/auth/types";
 
 function NotFoundComponent() {
   return (
@@ -72,20 +77,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "StayBF" },
       { name: "description", content: "StayBF is a premium accommodation booking platform for Burkina Faso." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "StayBF" },
       { property: "og:description", content: "StayBF is a premium accommodation booking platform for Burkina Faso." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:site", content: "@StayBF" },
+      { name: "twitter:title", content: "StayBF" },
       { name: "twitter:description", content: "StayBF is a premium accommodation booking platform for Burkina Faso." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a87d9a50-f2a8-40c0-9a05-72ea2235b685/id-preview-77271eb5--033aa3ee-3a5a-4127-a584-a0bbf008ca53.lovable.app-1780389377427.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a87d9a50-f2a8-40c0-9a05-72ea2235b685/id-preview-77271eb5--033aa3ee-3a5a-4127-a584-a0bbf008ca53.lovable.app-1780389377427.png" },
@@ -100,6 +105,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
+  loader: async (): Promise<{ auth: RouterAuthContext }> => {
+    try {
+      const session = await getSession({ data: {} });
+      if (!session) return { auth: null };
+
+      // The session middleware already resolved roles — surfaced via context.
+      // The loader here is only used to pass the initial auth to AuthProvider.
+      return { auth: null };
+    } catch {
+      return { auth: null };
+    }
+  },
+  beforeLoad: async ({ context, location }) => {
+    const auth = context.auth;
+    if (auth?.accountStatus === "suspended") {
+      if (!location.pathname.startsWith("/auth/suspended")) {
+        throw redirect({ to: "/auth/suspended" });
+      }
+    }
+    if (auth?.accountStatus === "deleted" || auth?.accountStatus === "deactivated") {
+      if (!location.pathname.startsWith("/auth")) {
+        throw redirect({ to: "/auth/login" });
+      }
+    }
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -122,11 +152,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { auth } = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthProvider initialAuth={auth}>
+        <Outlet />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

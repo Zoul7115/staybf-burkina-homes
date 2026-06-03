@@ -144,7 +144,8 @@ export async function createKycSignedUrl(opts: {
   }
 
   // 3. Record the access in audit_logs via SECURITY DEFINER function
-  await supabaseAdmin.rpc("log_kyc_document_access", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any).rpc("log_kyc_document_access", {
     p_host_id:      opts.hostId,
     p_storage_path: opts.storagePath,
     p_actor_id:     opts.actorId,
@@ -202,7 +203,8 @@ export async function registerUpload(opts: {
   mimeType?:   string;
   sizeBytes?:  number;
 }): Promise<RegisterResult> {
-  const { data, error } = await supabaseAdmin.rpc("register_storage_object", {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any).rpc("register_storage_object", {
     p_bucket_id:    opts.bucketId,
     p_storage_path: opts.storagePath,
     p_owner_id:     opts.ownerId,
@@ -229,7 +231,8 @@ export async function getScanStatus(
   bucketId: BucketId,
   storagePath: string,
 ): Promise<ScanStatus> {
-  const { data, error } = await supabaseAdmin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any)
     .from("storage_object_meta")
     .select("scan_status")
     .eq("bucket_id", bucketId)
@@ -237,7 +240,7 @@ export async function getScanStatus(
     .maybeSingle();
 
   if (error || !data) return "not_found";
-  return data.scan_status as ScanStatus;
+  return (data as { scan_status: string }).scan_status as ScanStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -257,7 +260,8 @@ export async function deleteStorageObject(
   }
 
   // Mark meta row as purged (best-effort; the cleanup job handles misses)
-  await supabaseAdmin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabaseAdmin as any)
     .from("storage_object_meta")
     .update({ purged_at: new Date().toISOString() })
     .eq("bucket_id", bucketId)
