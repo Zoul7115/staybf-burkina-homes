@@ -1,17 +1,117 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Camera, ExternalLink, CheckCircle2 } from "lucide-react";
+import { MapPin, Camera, ExternalLink, CheckCircle2, Plus } from "lucide-react";
 import { hostProperty } from "@/lib/staybf-host-data";
+import type { PropertyDetail } from "@/lib/staybf-property-data";
 
 export const Route = createFileRoute("/host/property")({ component: HostPropertyPage });
 
+const LOAD_TIMEOUT_MS = 8_000;
+
+function fetchHostProperties(_userId: string): Promise<PropertyDetail | null> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // TODO: remplacer par un appel API réel (Supabase) filtré sur host_id
+      resolve(hostProperty);
+    }, 600);
+  });
+}
+
+function getCurrentUser() {
+  // TODO: remplacer par auth réel (Supabase / Lovable Cloud)
+  return { user: { id: "host-demo-001" } };
+}
+
 function HostPropertyPage() {
-  const p = hostProperty;
+  const [loading, setLoading] = useState(true);
+  const [property, setProperty] = useState<PropertyDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setError("Le chargement a pris trop de temps. Veuillez réessayer.");
+        setLoading(false);
+      }
+    }, LOAD_TIMEOUT_MS);
+
+    async function load() {
+      try {
+        const userData = getCurrentUser();
+        const userId = userData.user?.id;
+
+        if (!userId) {
+          if (!cancelled) {
+            setProperty(null);
+            setLoading(false);
+          }
+          clearTimeout(timeoutId);
+          return;
+        }
+
+        const data = await fetchHostProperties(userId);
+
+        if (!cancelled) {
+          console.log("CURRENT USER:", userData.user?.id);
+          console.log("HOST PROPERTIES:", data);
+          setProperty(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Erreur chargement propriété:", err);
+          setError("Impossible de charger vos hébergements.");
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground animate-pulse">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-destructive text-sm">{error}</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Réessayer
+        </Button>
+      </div>
+    );
+  }
+
+  if (!property) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-muted-foreground">Vous n&apos;avez encore aucun hébergement.</p>
+        <Button className="gradient-primary text-primary-foreground">
+          <Plus className="h-4 w-4 mr-1.5" /> Créer mon premier hébergement
+        </Button>
+      </div>
+    );
+  }
+
+  const p = property;
   return (
     <div className="grid lg:grid-cols-[1fr_360px] gap-6">
       <div className="space-y-6">
@@ -21,7 +121,7 @@ function HostPropertyPage() {
             <Badge className="bg-primary/10 text-primary border border-primary/20">Publié</Badge>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2"><Label>Nom de l'hébergement</Label><Input defaultValue={p.name} className="mt-1.5" /></div>
+            <div className="sm:col-span-2"><Label>Nom de l&apos;hébergement</Label><Input defaultValue={p.name} className="mt-1.5" /></div>
             <div><Label>Ville</Label><Input defaultValue={p.city} className="mt-1.5" /></div>
             <div><Label>Quartier</Label><Input defaultValue={p.neighborhood} className="mt-1.5" /></div>
             <div className="sm:col-span-2">
