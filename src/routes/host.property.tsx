@@ -83,8 +83,7 @@ function HostPropertyPage() {
       try {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
-        const user = userData.user;
-        const userId = user?.id;
+        const userId = userData.user?.id;
 
         console.log("CURRENT USER:", userId);
 
@@ -97,7 +96,7 @@ function HostPropertyPage() {
           return;
         }
 
-        const { data, error: queryError } = await supabase
+        const { data, error } = await supabase
           .from("properties")
           .select("*")
           .eq("host_id", userId)
@@ -106,7 +105,7 @@ function HostPropertyPage() {
 
         console.log("HOST PROPERTIES:", data);
 
-        if (queryError) throw queryError;
+        if (error) throw error;
 
         if (!cancelled) {
           setProperty(data ? mapRowToProperty(data as PropertyRow) : null);
