@@ -81,8 +81,12 @@ function HostPropertyPage() {
 
     async function load() {
       try {
-        const userData = getCurrentUser();
-        const userId = userData.user?.id;
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        const user = userData.user;
+        const userId = user?.id;
+
+        console.log("CURRENT USER:", userId);
 
         if (!userId) {
           if (!cancelled) {
@@ -93,13 +97,19 @@ function HostPropertyPage() {
           return;
         }
 
-        const data = await fetchHostProperties(userId);
+        const { data, error: queryError } = await supabase
+          .from("properties")
+          .select("*")
+          .eq("host_id", userId)
+          .limit(1)
+          .maybeSingle();
 
-        console.log("CURRENT USER:", userData.user?.id);
         console.log("HOST PROPERTIES:", data);
 
+        if (queryError) throw queryError;
+
         if (!cancelled) {
-          setProperty(data);
+          setProperty(data ? mapRowToProperty(data as PropertyRow) : null);
         }
       } catch (err) {
         if (!cancelled) {
