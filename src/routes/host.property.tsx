@@ -14,17 +14,27 @@ export const Route = createFileRoute("/host/property")({ component: HostProperty
 
 const LOAD_TIMEOUT_MS = 8_000;
 
-function fetchHostProperties(_userId: string): Promise<PropertyDetail | null> {
+type HostPropertyRecord = PropertyDetail & { hostId: string };
+
+const hostProperties: HostPropertyRecord[] = [
+  {
+    ...hostProperty,
+    hostId: "host-demo-001",
+  },
+];
+
+function fetchHostProperties(userId: string): Promise<PropertyDetail | null> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // TODO: remplacer par un appel API réel (Supabase) filtré sur host_id
-      resolve(hostProperty);
+      // TODO: remplacer par un appel API réel (Lovable Cloud) filtré sur host_id
+      const data = hostProperties.find((property) => property.hostId === userId) ?? null;
+      resolve(data);
     }, 600);
   });
 }
 
 function getCurrentUser() {
-  // TODO: remplacer par auth réel (Supabase / Lovable Cloud)
+  // TODO: remplacer par l'utilisateur connecté réel via Lovable Cloud
   return { user: { id: "host-demo-001" } };
 }
 
@@ -58,9 +68,10 @@ function HostPropertyPage() {
 
         const data = await fetchHostProperties(userId);
 
+        console.log("CURRENT USER:", userData.user?.id);
+        console.log("HOST PROPERTIES:", data);
+
         if (!cancelled) {
-          console.log("CURRENT USER:", userData.user?.id);
-          console.log("HOST PROPERTIES:", data);
           setProperty(data);
         }
       } catch (err) {
@@ -103,7 +114,7 @@ function HostPropertyPage() {
   if (!property) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-muted-foreground">Vous n&apos;avez encore aucun hébergement.</p>
+        <p className="text-muted-foreground">{"Vous n'avez encore aucun hébergement."}</p>
         <Button className="gradient-primary text-primary-foreground">
           <Plus className="h-4 w-4 mr-1.5" /> Créer mon premier hébergement
         </Button>
