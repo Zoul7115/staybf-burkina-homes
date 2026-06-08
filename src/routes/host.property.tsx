@@ -7,35 +7,62 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Camera, ExternalLink, CheckCircle2, Plus } from "lucide-react";
-import { hostProperty } from "@/lib/staybf-host-data";
 import type { PropertyDetail } from "@/lib/staybf-property-data";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/host/property")({ component: HostPropertyPage });
 
 const LOAD_TIMEOUT_MS = 8_000;
 
-type HostPropertyRecord = PropertyDetail & { hostId: string };
+type PropertyRow = {
+  id: string;
+  host_id: string;
+  city_id: string | null;
+  slug: string | null;
+  name: string | null;
+  description_md: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  status: string | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  min_price_fcfa: number | null;
+};
 
-const hostProperties: HostPropertyRecord[] = [
-  {
-    ...hostProperty,
-    hostId: "host-demo-001",
-  },
-];
-
-function fetchHostProperties(userId: string): Promise<PropertyDetail | null> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // TODO: remplacer par un appel API réel (Lovable Cloud) filtré sur host_id
-      const data = hostProperties.find((property) => property.hostId === userId) ?? null;
-      resolve(data);
-    }, 600);
-  });
-}
-
-function getCurrentUser() {
-  // TODO: remplacer par l'utilisateur connecté réel via Lovable Cloud
-  return { user: { id: "host-demo-001" } };
+function mapRowToProperty(row: PropertyRow): PropertyDetail {
+  return {
+    id: row.id,
+    name: row.name ?? "Hébergement sans nom",
+    city: row.address ?? "",
+    neighborhood: "",
+    rating: row.rating_avg ?? 0,
+    reviews: row.rating_count ?? 0,
+    price: row.min_price_fcfa ?? 0,
+    images: [],
+    host: {
+      name: "",
+      avatar: "",
+      type: "",
+      responseRate: 0,
+      responseTime: "",
+      superhost: false,
+      verified: false,
+      since: "",
+    },
+    description: {
+      overview: row.description_md ?? "",
+      neighborhood: "",
+      rules: [],
+    },
+    amenities: [],
+    rooms: [],
+    unavailableDates: [],
+    reviewsList: [],
+    nearby: [],
+    mapX: 0,
+    mapY: 0,
+  };
 }
 
 function HostPropertyPage() {
@@ -54,8 +81,12 @@ function HostPropertyPage() {
 
     async function load() {
       try {
-        const userData = getCurrentUser();
-        const userId = userData.user?.id;
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        const user = userData.user;
+        const userId = user?.id;
+
+        console.log("CURRENT USER:", userId);
 
         if (!userId) {
           if (!cancelled) {
@@ -66,13 +97,19 @@ function HostPropertyPage() {
           return;
         }
 
-        const data = await fetchHostProperties(userId);
+        const { data, error: queryError } = await supabase
+          .from("properties")
+          .select("*")
+          .eq("host_id", userId)
+          .limit(1)
+          .maybeSingle();
 
-        console.log("CURRENT USER:", userData.user?.id);
         console.log("HOST PROPERTIES:", data);
 
+        if (queryError) throw queryError;
+
         if (!cancelled) {
-          setProperty(data);
+          setProperty(data ? mapRowToProperty(data as PropertyRow) : null);
         }
       } catch (err) {
         if (!cancelled) {
