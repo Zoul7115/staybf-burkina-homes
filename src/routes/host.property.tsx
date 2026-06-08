@@ -114,7 +114,7 @@ function HostPropertyPage() {
   if (!property) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-muted-foreground">Vous n&apos;avez encore aucun hébergement.</p>
+        <p className="text-muted-foreground">{"Vous n'avez encore aucun hébergement."}</p>
         <Button className="gradient-primary text-primary-foreground">
           <Plus className="h-4 w-4 mr-1.5" /> Créer mon premier hébergement
         </Button>
