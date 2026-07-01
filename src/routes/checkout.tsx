@@ -18,7 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { usePropertyDetail, coverImageUrl } from "@/lib/property/usePropertyDetail";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl } from "@/lib/shared";
 
 // ---------------------------------------------------------------------------
 // Types & validation

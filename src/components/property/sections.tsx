@@ -19,12 +19,7 @@ import { cn } from "@/lib/utils";
 import { useProperty } from "@/lib/property/property.context";
 import { useNavigate } from "@tanstack/react-router";
 import type { BedItem, SimilarProperty } from "@/lib/property/types";
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
-
-const PLACEHOLDER_IMG = "https://placehold.co/800x500?text=StayBF";
+import { PLACEHOLDER_IMG } from "@/lib/shared";
 
 const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   wifi: Wifi, ac: Snowflake, parking: Car, restaurant: Utensils, security: ShieldCheck,

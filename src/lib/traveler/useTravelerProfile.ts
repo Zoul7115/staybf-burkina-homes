@@ -2,21 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/lib/supabase/client";
+import { getInitials } from "@/lib/shared";
 import type { TravelerProfile } from "./types";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-export function getInitials(name: string | null | undefined): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function splitName(fullName: string | null): { firstName: string; lastName: string } {
   if (!fullName) return { firstName: "", lastName: "" };

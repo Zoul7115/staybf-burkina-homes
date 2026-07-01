@@ -1,5 +1,3 @@
-import { properties } from "./staybf-property-data";
-
 export const host = {
   name: "Awa Sankara",
   email: "awa.sankara@staybf.com",
@@ -10,7 +8,30 @@ export const host = {
   since: "Janvier 2023",
 };
 
-export const hostProperty = properties[0];
+export const hostProperty = {
+  id: "1",
+  name: "Villa Kaboré",
+  city: "Ouagadougou",
+  neighborhood: "Ouaga 2000",
+  rating: 4.8,
+  description: {
+    overview: "Magnifique villa contemporaine au cœur de Ouaga 2000. Idéale pour les voyages d'affaires et les séjours en famille, elle offre tout le confort nécessaire dans un cadre sécurisé et verdoyant.",
+  },
+  amenities: [
+    { key: "wifi", label: "Wi-Fi haut débit" },
+    { key: "ac", label: "Climatisation" },
+    { key: "parking", label: "Parking sécurisé" },
+    { key: "security", label: "Sécurité 24h/24" },
+    { key: "generator", label: "Groupe électrogène" },
+    { key: "pool", label: "Piscine" },
+  ],
+  images: [
+    "https://placehold.co/800x500?text=StayBF",
+    "https://placehold.co/800x500?text=StayBF",
+    "https://placehold.co/800x500?text=StayBF",
+    "https://placehold.co/800x500?text=StayBF",
+  ],
+};
 
 export const hostStats = {
   monthlyRevenue: 4_287_500,

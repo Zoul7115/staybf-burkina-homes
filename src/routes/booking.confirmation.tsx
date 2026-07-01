@@ -12,13 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  usePropertyDetail,
-  coverImageUrl,
-  getInitials,
-  formatResponseTime,
-  PLACEHOLDER_IMG,
-} from "@/lib/property/usePropertyDetail";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl, getInitials, formatResponseTime, PLACEHOLDER_IMG } from "@/lib/shared";
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { toPublicUrl, PLACEHOLDER_IMG } from "@/lib/property/usePropertyDetail";
+import { toPublicUrl, PLACEHOLDER_IMG } from "@/lib/shared";
 import type { DashboardBooking } from "./types";
 
 const UPCOMING_STATUSES = ["pending_payment", "confirmed", "checked_in"];

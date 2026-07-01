@@ -8,7 +8,8 @@ import { Footer } from "@/components/site/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePropertyDetail, coverImageUrl } from "@/lib/property/usePropertyDetail";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl, PLACEHOLDER_IMG } from "@/lib/shared";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -123,7 +124,7 @@ StayBF — Ouagadougou, Burkina Faso
           ) : (
             <div className="flex flex-col sm:flex-row">
               <img
-                src={property ? coverImageUrl(property.images) : "https://placehold.co/800x500?text=StayBF"}
+                src={property ? coverImageUrl(property.images) : PLACEHOLDER_IMG}
                 alt={property?.name ?? ""}
                 className="h-48 sm:h-auto sm:w-56 object-cover"
               />

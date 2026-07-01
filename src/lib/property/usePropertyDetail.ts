@@ -1,12 +1,6 @@
-// =============================================================================
-// src/lib/property/usePropertyDetail.ts
-// Shared hook: fetch a single published property from Supabase by UUID.
-// Used by: properties.$id.tsx, checkout.tsx, checkout.success.tsx,
-//          booking.confirmation.tsx
-// =============================================================================
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { PLACEHOLDER_IMG, toPublicUrl } from "@/lib/shared";
 import type {
   SupabasePropertyDetail,
   PropertyImage,
@@ -17,37 +11,7 @@ import type {
   SimilarProperty,
 } from "./types";
 
-export const PLACEHOLDER_IMG = "https://placehold.co/800x500?text=StayBF";
-const IMAGE_BUCKET = "property-images";
-
-export function toPublicUrl(storagePath: string): string {
-  const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(storagePath);
-  return data.publicUrl ?? PLACEHOLDER_IMG;
-}
-
-export function coverImageUrl(images: PropertyImage[]): string {
-  const cover = images.find((img) => img.is_cover) ?? images[0] ?? null;
-  return cover ? toPublicUrl(cover.storage_path) : PLACEHOLDER_IMG;
-}
-
-// Initials from "Prénom Nom" → "PN"
-export function getInitials(fullName: string | null | undefined): string {
-  if (!fullName) return "?";
-  return fullName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-export function formatResponseTime(minutes: number | null | undefined): string {
-  if (!minutes) return "—";
-  if (minutes < 60) return "moins d'une heure";
-  if (minutes < 240) return "quelques heures";
-  if (minutes < 1440) return "dans la journée";
-  return "quelques jours";
-}
+export { PLACEHOLDER_IMG, toPublicUrl, coverImageUrl, getInitials, formatResponseTime } from "@/lib/shared";
 
 type UsePropertyDetailResult = {
   data: SupabasePropertyDetail | null;

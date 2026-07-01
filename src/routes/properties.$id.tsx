@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SearchX } from "lucide-react";
 import { PropertyProvider } from "@/lib/property/property.context";
-import { usePropertyDetail, toPublicUrl, PLACEHOLDER_IMG } from "@/lib/property/usePropertyDetail";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { toPublicUrl, PLACEHOLDER_IMG } from "@/lib/shared";
 
 export const Route = createFileRoute("/properties/$id")({
   head: () => ({
