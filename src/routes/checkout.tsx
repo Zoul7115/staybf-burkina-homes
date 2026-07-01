@@ -16,8 +16,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getPropertyById, properties } from "@/lib/staybf-property-data";
+import { usePropertyDetail, coverImageUrl } from "@/lib/property/usePropertyDetail";
+
+// ---------------------------------------------------------------------------
+// Types & validation
+// ---------------------------------------------------------------------------
 
 type CheckoutSearch = {
   propertyId?: string;
@@ -42,6 +47,10 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const methods: { id: string; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
   { id: "orange", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
   { id: "moov", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
@@ -51,25 +60,25 @@ const methods: { id: string; label: string; sub: string; icon: typeof Smartphone
 
 const countries = ["Burkina Faso", "Côte d'Ivoire", "Mali", "Sénégal", "Ghana", "Togo", "Bénin", "Niger", "France", "Canada", "États-Unis", "Autre"];
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 function CheckoutPage() {
   const search = useSearch({ from: "/checkout" }) as CheckoutSearch;
   const navigate = useNavigate();
+  const { data: property, loading } = usePropertyDetail(search.propertyId);
 
-  const property = useMemo(
-    () => (search.propertyId ? getPropertyById(search.propertyId) : undefined) ?? properties[0],
-    [search.propertyId],
-  );
-
-  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+  const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const fromDate = search.from ? new Date(search.from) : new Date(today.getTime() + 7 * 86400000);
   const toDate = search.to ? new Date(search.to) : new Date(fromDate.getTime() + 3 * 86400000);
   const guests = search.guests ?? 2;
   const nights = Math.max(1, differenceInDays(toDate, fromDate));
 
-  const subtotal = nights * property.price;
+  const price = property?.min_price_fcfa ?? 0;
+  const subtotal = nights * price;
   const fee = Math.round(subtotal * 0.1);
-  const taxes = 0;
-  const total = subtotal + fee + taxes;
+  const total = subtotal + fee;
 
   const [method, setMethod] = useState<string>("orange");
   const [accept, setAccept] = useState(false);
@@ -80,6 +89,7 @@ function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
 
   const valid =
+    !loading &&
     accept && form.firstName.trim() && form.lastName.trim() &&
     /\S+@\S+\.\S+/.test(form.email) && form.phone.trim().length > 6;
 
@@ -91,14 +101,22 @@ function CheckoutPage() {
       navigate({
         to: "/booking/confirmation",
         search: {
-          ref, propertyId: property.id, total, method,
+          ref,
+          propertyId: search.propertyId ?? property?.id ?? "",
+          total,
+          method,
           from: fromDate.toISOString().slice(0, 10),
           to: toDate.toISOString().slice(0, 10),
-          guests, email: form.email,
+          guests,
+          email: form.email,
         },
       });
     }, 1800);
   };
+
+  const location = property
+    ? [property.city?.name, property.address].filter(Boolean).join(", ")
+    : "";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -134,7 +152,11 @@ function CheckoutPage() {
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl flex-1">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/properties/$id" params={{ id: property.id }} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1">
+          <Link
+            to="/properties/$id"
+            params={{ id: search.propertyId ?? property?.id ?? "" }}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1"
+          >
             <ChevronLeft className="h-4 w-4" /> Retour à l'hébergement
           </Link>
           <h1 className="mt-3 font-display font-bold text-3xl md:text-4xl tracking-tight">Finaliser votre réservation</h1>
@@ -144,47 +166,69 @@ function CheckoutPage() {
 
         <div className="grid lg:grid-cols-[1fr_400px] gap-10">
           <div className="space-y-8 min-w-0">
-            {/* Booking summary */}
+            {/* Property summary */}
             <Section>
-              <div className="flex gap-4">
-                <img src={property.images[0]} alt={property.name} className="h-24 w-28 md:h-28 md:w-36 rounded-2xl object-cover flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" /> {property.city}, {property.neighborhood}
-                  </div>
-                  <h3 className="font-display font-semibold text-lg mt-1 truncate">{property.name}</h3>
-                  <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
-                    <span className="flex items-center gap-1 font-medium">
-                      <Star className="h-3.5 w-3.5 fill-secondary text-secondary" />
-                      {property.rating} <span className="text-muted-foreground font-normal">· {property.reviews} avis</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <CalendarDays className="h-3.5 w-3.5" /> {nights} nuit{nights > 1 ? "s" : ""}
-                    </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" /> {guests} voyageur{guests > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <Badge variant="secondary" className="rounded-full">
-                      {format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM yyyy", { locale: fr })}
-                    </Badge>
-                    <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié StayBF</Badge>
+              {loading ? (
+                <PropertySummarySkeleton />
+              ) : property ? (
+                <div className="flex gap-4">
+                  <img
+                    src={coverImageUrl(property.images)}
+                    alt={property.name}
+                    className="h-24 w-28 md:h-28 md:w-36 rounded-2xl object-cover flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    {location && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5" /> {location}
+                      </div>
+                    )}
+                    <h3 className="font-display font-semibold text-lg mt-1 truncate">{property.name}</h3>
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
+                      {property.rating_avg !== null && (
+                        <span className="flex items-center gap-1 font-medium">
+                          <Star className="h-3.5 w-3.5 fill-secondary text-secondary" />
+                          {property.rating_avg.toFixed(1)}{" "}
+                          <span className="text-muted-foreground font-normal">· {property.rating_count} avis</span>
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <CalendarDays className="h-3.5 w-3.5" /> {nights} nuit{nights > 1 ? "s" : ""}
+                      </span>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" /> {guests} voyageur{guests > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <Badge variant="secondary" className="rounded-full">
+                        {format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM yyyy", { locale: fr })}
+                      </Badge>
+                      <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié StayBF</Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </Section>
 
             {/* Price breakdown */}
             <Section title="Détails du prix">
-              <Row label={`${property.price.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`} value={`${subtotal.toLocaleString("fr-FR")} FCFA`} />
-              <Row label="Frais de service StayBF (10%)" value={`${fee.toLocaleString("fr-FR")} FCFA`} />
-              <Row label="Taxes" value={`${taxes.toLocaleString("fr-FR")} FCFA`} />
-              <Separator className="my-3" />
-              <div className="flex items-baseline justify-between">
-                <span className="font-display font-semibold text-lg">Total à payer</span>
-                <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
-              </div>
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : (
+                <>
+                  <Row label={`${price.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`} value={`${subtotal.toLocaleString("fr-FR")} FCFA`} />
+                  <Row label="Frais de service StayBF (10%)" value={`${fee.toLocaleString("fr-FR")} FCFA`} />
+                  <Separator className="my-3" />
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-display font-semibold text-lg">Total à payer</span>
+                    <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
+                  </div>
+                </>
+              )}
             </Section>
 
             {/* Payment methods */}
@@ -294,9 +338,15 @@ function CheckoutPage() {
                 <div className="rounded-xl border border-border p-4">
                   <p className="font-semibold">Règles de la maison</p>
                   <ul className="text-muted-foreground mt-1 space-y-1 list-disc pl-5">
-                    <li>Arrivée à partir de 14h00 — Départ avant 11h00</li>
-                    <li>Non-fumeur · Pas d'événement</li>
-                    <li>Pièce d'identité obligatoire à l'arrivée</li>
+                    {property?.house_rules?.length ? (
+                      property.house_rules.slice(0, 3).map((r, i) => <li key={i}>{r}</li>)
+                    ) : (
+                      <>
+                        <li>Arrivée à partir de 14h00 — Départ avant 11h00</li>
+                        <li>Non-fumeur · Pas d'événement</li>
+                        <li>Pièce d'identité obligatoire à l'arrivée</li>
+                      </>
+                    )}
                   </ul>
                 </div>
                 <label className="flex items-start gap-3 rounded-xl border border-border p-4 cursor-pointer hover:bg-muted/40">
@@ -323,24 +373,33 @@ function CheckoutPage() {
               <div className="rounded-3xl border border-border/60 shadow-elevated bg-card p-6">
                 <h3 className="font-display font-semibold text-lg">Récapitulatif</h3>
                 <Separator className="my-4" />
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Dates</span>
-                    <span className="font-medium text-right">{format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM", { locale: fr })}</span>
+                {loading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-2/3" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Voyageurs</span>
-                    <span className="font-medium">{guests}</span>
+                ) : (
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Dates</span>
+                      <span className="font-medium text-right">{format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM", { locale: fr })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Voyageurs</span>
+                      <span className="font-medium">{guests}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Chambre ({nights} nuit{nights > 1 ? "s" : ""})</span>
+                      <span className="font-medium">{subtotal.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Frais de service</span>
+                      <span className="font-medium">{fee.toLocaleString("fr-FR")} FCFA</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Chambre ({nights} nuit{nights > 1 ? "s" : ""})</span>
-                    <span className="font-medium">{subtotal.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Frais de service</span>
-                    <span className="font-medium">{fee.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-                </div>
+                )}
                 <Separator className="my-4" />
                 <div className="flex items-baseline justify-between">
                   <span className="font-display font-semibold">Total</span>
@@ -381,6 +440,27 @@ function CheckoutPage() {
       </div>
 
       <Footer />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function PropertySummarySkeleton() {
+  return (
+    <div className="flex gap-4">
+      <Skeleton className="h-24 w-28 md:h-28 md:w-36 rounded-2xl flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <div className="flex gap-2 pt-1">
+          <Skeleton className="h-5 w-32 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
+        </div>
+      </div>
     </div>
   );
 }
