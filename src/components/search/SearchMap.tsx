@@ -2,11 +2,11 @@ import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import type { Listing } from "@/lib/staybf-search-data";
+import type { SearchResult } from "@/lib/search/types";
 
 type Props = {
-  listings: Listing[];
-  activeId: number | null;
+  listings: SearchResult[];
+  activeId: string | null;
   city: string;
 };
 
@@ -45,14 +45,14 @@ export function SearchMap({ listings, activeId, city }: Props) {
       </div>
 
       {/* Markers */}
-      {listings.map((l) => {
+      {listings.map((l, idx) => {
         const isActive = activeId === l.id;
         return (
           <motion.button
             key={l.id}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.02 * l.id }}
+            transition={{ duration: 0.3, delay: 0.02 * idx }}
             onClick={() => navigate({ to: "/properties/$id", params: { id: String(l.id) } })}
             whileHover={{ scale: 1.1 }}
             className={cn(

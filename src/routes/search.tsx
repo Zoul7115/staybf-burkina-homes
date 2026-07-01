@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Map as MapIcon, X } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
@@ -12,7 +12,7 @@ import { ResultsSkeleton } from "@/components/search/ResultsSkeleton";
 import { EmptyResults } from "@/components/search/EmptyResults";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { generateListings } from "@/lib/staybf-search-data";
+import { useSearch } from "@/lib/search/useSearch";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -36,34 +36,26 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const [city, setCity] = useState("Ouagadougou");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
-  const allListings = useMemo(() => generateListings(city, 18), [city]);
-
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 650);
-    return () => clearTimeout(t);
-  }, [city, filters]);
+  const { results: allListings, loading } = useSearch();
 
   const results = useMemo(() => {
     let r = allListings.filter((l) => {
+      if (city && l.city !== city) return false;
       if (l.price < filters.priceRange[0] || l.price > filters.priceRange[1]) return false;
-      if (filters.types.length && !filters.types.includes(l.type)) return false;
+      if (filters.types.length && !filters.types.includes(l.type as never)) return false;
       if (filters.amenities.length && !filters.amenities.every((a) => l.amenities.includes(a))) return false;
       if (filters.minRating && l.rating < filters.minRating) return false;
-      if (filters.availability === "today" && !l.availableToday) return false;
-      if (filters.availability === "weekend" && !l.availableWeekend) return false;
       return true;
     });
     if (filters.sort === "cheapest") r = [...r].sort((a, b) => a.price - b.price);
     if (filters.sort === "expensive") r = [...r].sort((a, b) => b.price - a.price);
     if (filters.sort === "rated") r = [...r].sort((a, b) => b.rating - a.rating);
     return r;
-  }, [allListings, filters]);
+  }, [allListings, city, filters]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
