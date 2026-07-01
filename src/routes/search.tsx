@@ -13,6 +13,7 @@ import { EmptyResults } from "@/components/search/EmptyResults";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useSearch } from "@/lib/search/useSearch";
+import type { SearchFilters as SearchFiltersType } from "@/lib/search/types";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -40,22 +41,18 @@ function SearchPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
-  const { results: allListings, loading } = useSearch();
+  const searchFilters = useMemo<SearchFiltersType>(() => ({
+    city,
+    types: filters.types,
+    minPrice: filters.priceRange[0],
+    maxPrice: filters.priceRange[1],
+    amenities: filters.amenities,
+    minRating: filters.minRating,
+    sort: filters.sort,
+    searchText: "",
+  }), [city, filters]);
 
-  const results = useMemo(() => {
-    let r = allListings.filter((l) => {
-      if (city && l.city !== city) return false;
-      if (l.price < filters.priceRange[0] || l.price > filters.priceRange[1]) return false;
-      if (filters.types.length && !filters.types.includes(l.type as never)) return false;
-      if (filters.amenities.length && !filters.amenities.every((a) => l.amenities.includes(a))) return false;
-      if (filters.minRating && l.rating < filters.minRating) return false;
-      return true;
-    });
-    if (filters.sort === "cheapest") r = [...r].sort((a, b) => a.price - b.price);
-    if (filters.sort === "expensive") r = [...r].sort((a, b) => b.price - a.price);
-    if (filters.sort === "rated") r = [...r].sort((a, b) => b.rating - a.rating);
-    return r;
-  }, [allListings, city, filters]);
+  const { results, loading } = useSearch(searchFilters);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

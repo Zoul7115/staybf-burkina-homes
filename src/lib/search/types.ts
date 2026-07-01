@@ -17,6 +17,17 @@ export type Amenity =
   | "Groupe électrogène"
   | "Eau chaude";
 
+export type SearchFilters = {
+  city: string;
+  types: AccommodationType[];
+  minPrice: number;
+  maxPrice: number;
+  amenities: Amenity[];
+  minRating: 0 | 3 | 4 | 5;
+  sort: "cheapest" | "expensive" | "rated";
+  searchText: string;
+};
+
 export type SearchResult = {
   id: string;
   name: string;

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { mapRow, type RawPropertyRow } from "./mapper";
-import type { SearchResult } from "./types";
+import type { SearchFilters, SearchResult } from "./types";
 
 const SELECT = `
   id,
@@ -21,7 +21,9 @@ const SELECT = `
   host_profiles!host_id(verified)
 `;
 
-export function useSearch(): {
+const DEBOUNCE_MS = 300;
+
+export function useSearch(filters: SearchFilters): {
   results: SearchResult[];
   loading: boolean;
   error: string | null;
@@ -31,19 +33,54 @@ export function useSearch(): {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const filtersKey = JSON.stringify(filters);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
-    async function load() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: dbErr } = await (supabase as any)
+      let query = (supabase as any)
         .from("properties")
         .select(SELECT)
         .eq("status", "published")
-        .is("deleted_at", null)
-        .order("rating_avg", { ascending: false, nullsFirst: false });
+        .is("deleted_at", null);
+
+      if (filters.city) {
+        query = query.eq("cities.name", filters.city);
+      }
+
+      query = query
+        .gte("min_price_fcfa", filters.minPrice)
+        .lte("min_price_fcfa", filters.maxPrice);
+
+      if (filters.types.length > 0) {
+        query = query.in("type", filters.types);
+      }
+
+      if (filters.minRating > 0) {
+        query = query.gte("rating_avg", filters.minRating);
+      }
+
+      if (filters.searchText.trim()) {
+        query = query.ilike("name", `%${filters.searchText.trim()}%`);
+      }
+
+      if (filters.sort === "cheapest") {
+        query = query.order("min_price_fcfa", { ascending: true, nullsFirst: false });
+      } else if (filters.sort === "expensive") {
+        query = query.order("min_price_fcfa", { ascending: false, nullsFirst: false });
+      } else {
+        query = query.order("rating_avg", { ascending: false, nullsFirst: false });
+      }
+
+      const { data, error: dbErr } = await query;
 
       if (cancelled) return;
 
@@ -53,13 +90,25 @@ export function useSearch(): {
         return;
       }
 
-      setResults(((data ?? []) as RawPropertyRow[]).map(mapRow));
-      setLoading(false);
-    }
+      let rows = ((data ?? []) as RawPropertyRow[]).map(mapRow);
 
-    load();
-    return () => { cancelled = true; };
-  }, []);
+      // Amenities: client-side intersection (PostgREST cannot do ALL-match on junction tables)
+      if (filters.amenities.length > 0) {
+        rows = rows.filter((r) =>
+          filters.amenities.every((a) => r.amenities.includes(a))
+        );
+      }
+
+      setResults(rows);
+      setLoading(false);
+    }, DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
 
   return { results, loading, error, total: results.length };
 }
