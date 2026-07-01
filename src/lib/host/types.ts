@@ -238,6 +238,35 @@ export type PropertyAmenity = {
 
 export type CancellationPolicy = "flexible" | "moderate" | "strict" | "non_refundable";
 
+export type RoomType = "single" | "double" | "twin" | "suite" | "family" | "studio" | "apartment";
+
+export type BedEntry = { type: string; count: number };
+
+export type RoomImage = {
+  id: string;
+  storage_path: string;
+  alt: string | null;
+  position: number;
+  is_cover: boolean;
+};
+
+export type HostRoomDetail = {
+  id: string;
+  property_id: string;
+  name: string;
+  type: RoomType;
+  max_guests: number;
+  beds: BedEntry[];
+  base_price_fcfa: number;
+  status: RoomStatus;
+  instant_book: boolean;
+  created_at: string;
+  updated_at: string;
+  images: RoomImage[];
+  booking_count: number;
+  open_nights_next_30: number;
+};
+
 export type HostPropertyDetail = {
   id: string;
   slug: string | null;

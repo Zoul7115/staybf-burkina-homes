@@ -7,3 +7,4 @@ export { useHostProperties } from "./useHostProperties";
 export { useHostNotifications } from "./useHostNotifications";
 export { useHostDashboard } from "./useHostDashboard";
 export { useHostPropertyDetail } from "./useHostPropertyDetail";
+export { useHostRooms, roomImageUrl } from "./useHostRooms";

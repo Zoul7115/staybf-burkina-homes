@@ -5,52 +5,70 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+} from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Users, BedDouble, ImagePlus } from "lucide-react";
-import { hostRooms, fmtFCFA, type HostRoom } from "@/lib/staybf-host-data";
-import { StatusBadge } from "@/components/dashboard/widgets";
+import { StatusBadge, EmptyState } from "@/components/dashboard/widgets";
+import { useHostRooms, roomImageUrl } from "@/lib/host";
+import { PLACEHOLDER_IMG } from "@/lib/shared";
+import type { HostRoomDetail } from "@/lib/host";
 
 export const Route = createFileRoute("/host/rooms")({ component: HostRoomsPage });
 
-function HostRoomsPage() {
-  const [rooms, setRooms] = useState<HostRoom[]>(hostRooms);
+// ── Helpers ──────────────────────────────────────────────────
 
+function fmtFCFA(n: number): string {
+  return `${n.toLocaleString("fr-FR")} FCFA`;
+}
+
+function roomStatusKey(status: string): string {
+  if (status === "active") return "active";
+  if (status === "paused" || status === "archived") return "suspended";
+  return "pending";
+}
+
+function bedsSummary(beds: { type: string; count: number }[]): string {
+  if (!beds || beds.length === 0) return "—";
+  return beds
+    .map((b) => `${b.count} ${b.type}`)
+    .join(", ");
+}
+
+function coverUrl(room: HostRoomDetail): string {
+  const sorted = [...room.images].sort((a, b) => a.position - b.position);
+  const cover = sorted.find((img) => img.is_cover) ?? sorted[0];
+  return cover ? roomImageUrl(cover.storage_path) : PLACEHOLDER_IMG;
+}
+
+// ── Skeletons ────────────────────────────────────────────────
+
+function RoomsSkeleton() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{rooms.length} types de chambres</p>
-        <RoomDialog
-          trigger={<Button className="gradient-primary text-primary-foreground"><Plus className="h-4 w-4 mr-1" /> Nouvelle chambre</Button>}
-          onSave={(r) => setRooms((rs) => [...rs, { ...r, id: `rm${Date.now()}` }])}
-        />
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-9 w-36 rounded-md" />
       </div>
-
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {rooms.map((r) => (
-          <Card key={r.id} className="overflow-hidden hover:shadow-elevated transition-shadow">
-            <div className="aspect-video bg-gradient-to-br from-primary/15 to-secondary/15 grid place-items-center text-muted-foreground">
-              <BedDouble className="h-10 w-10" />
-            </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="overflow-hidden">
+            <Skeleton className="aspect-video w-full" />
             <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-display font-semibold truncate">{r.name}</h3>
-                  <p className="text-xs text-muted-foreground">{r.type}</p>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
-                <StatusBadge status={r.status === "draft" ? "pending" : r.status === "suspended" ? "suspended" : "active"} />
+                <Skeleton className="h-5 w-14 rounded-full" />
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {r.capacity} pers</span>
-                <span>·</span>
-                <span>{r.available}/{r.total} dispo</span>
-              </div>
+              <Skeleton className="h-3 w-32" />
               <div className="flex items-center justify-between">
-                <p className="font-display font-bold text-lg">{fmtFCFA(r.price)}<span className="text-xs font-normal text-muted-foreground">/nuit</span></p>
-                <div className="flex items-center gap-1">
-                  <Button size="icon" variant="ghost"><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => setRooms((rs) => rs.filter((x) => x.id !== r.id))}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                <Skeleton className="h-6 w-28" />
+                <div className="flex gap-1">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
                 </div>
               </div>
             </div>
@@ -61,13 +79,158 @@ function HostRoomsPage() {
   );
 }
 
-function RoomDialog({ trigger, onSave }: { trigger: React.ReactNode; onSave: (r: Omit<HostRoom, "id">) => void }) {
+// ── Main component ────────────────────────────────────────────
+
+function HostRoomsPage() {
+  const { rooms, loading, error } = useHostRooms();
+
+  if (loading) return <RoomsSkeleton />;
+
+  if (error) {
+    return (
+      <Card className="p-10 text-center text-muted-foreground text-sm">
+        Erreur lors du chargement des chambres : {error}
+      </Card>
+    );
+  }
+
+  if (rooms.length === 0) {
+    return (
+      <EmptyState
+        icon={BedDouble}
+        title="Aucune chambre"
+        description="Vous n'avez pas encore de chambre. Ajoutez votre première chambre pour commencer à recevoir des réservations."
+        action={
+          <RoomDialog
+            trigger={
+              <Button className="gradient-primary text-primary-foreground">
+                <Plus className="h-4 w-4 mr-1" /> Nouvelle chambre
+              </Button>
+            }
+          />
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{rooms.length} type{rooms.length > 1 ? "s" : ""} de chambre{rooms.length > 1 ? "s" : ""}</p>
+        <RoomDialog
+          trigger={
+            <Button className="gradient-primary text-primary-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Nouvelle chambre
+            </Button>
+          }
+        />
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {rooms.map((r) => (
+          <RoomCard key={r.id} room={r} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Room card ─────────────────────────────────────────────────
+
+function RoomCard({ room: r }: { room: HostRoomDetail }) {
+  const imgUrl = coverUrl(r);
+  const hasCover = r.images.length > 0;
+
+  return (
+    <Card className="overflow-hidden hover:shadow-elevated transition-shadow">
+      <div className="aspect-video bg-gradient-to-br from-primary/15 to-secondary/15 relative overflow-hidden">
+        {hasCover ? (
+          <img src={imgUrl} alt={r.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full grid place-items-center text-muted-foreground">
+            <BedDouble className="h-10 w-10" />
+          </div>
+        )}
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="font-display font-semibold truncate">{r.name}</h3>
+            <p className="text-xs text-muted-foreground capitalize">{r.type}</p>
+          </div>
+          <StatusBadge status={roomStatusKey(r.status)} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" /> {r.max_guests} pers
+          </span>
+          {r.beds.length > 0 && (
+            <>
+              <span>·</span>
+              <span>{bedsSummary(r.beds)}</span>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-muted-foreground">
+          <span>
+            {r.booking_count > 0 ? `${r.booking_count} réserv.` : "—"}
+          </span>
+          <span>·</span>
+          <span>
+            {r.open_nights_next_30 > 0
+              ? `${r.open_nights_next_30} nuits dispo (30j)`
+              : "—"}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="font-display font-bold text-lg">
+            {fmtFCFA(r.base_price_fcfa)}
+            <span className="text-xs font-normal text-muted-foreground">/nuit</span>
+          </p>
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="ghost">
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="ghost">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </div>
+
+        {r.images.length > 1 && (
+          <div className="flex gap-1 overflow-x-auto pb-0.5">
+            {r.images.slice(0, 5).map((img) => (
+              <div key={img.id} className="h-10 w-10 rounded-md overflow-hidden shrink-0 bg-muted">
+                <img
+                  src={roomImageUrl(img.storage_path)}
+                  alt={img.alt ?? ""}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+            {r.images.length > 5 && (
+              <div className="h-10 w-10 rounded-md bg-muted shrink-0 grid place-items-center text-[10px] text-muted-foreground font-semibold">
+                +{r.images.length - 5}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ── Create dialog (UI only — mutation out of scope) ───────────
+
+function RoomDialog({ trigger }: { trigger: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [type, setType] = useState("Suite");
+  const [type, setType] = useState("double");
   const [capacity, setCapacity] = useState(2);
   const [price, setPrice] = useState(50000);
-  const [total, setTotal] = useState(1);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -75,21 +238,33 @@ function RoomDialog({ trigger, onSave }: { trigger: React.ReactNode; onSave: (r:
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>Nouvelle chambre</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Nom</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Suite Junior" className="mt-1.5" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Type</Label><Input value={type} onChange={(e) => setType(e.target.value)} className="mt-1.5" /></div>
-            <div><Label>Capacité</Label><Input type="number" value={capacity} onChange={(e) => setCapacity(+e.target.value)} className="mt-1.5" /></div>
-            <div><Label>Prix (FCFA)</Label><Input type="number" value={price} onChange={(e) => setPrice(+e.target.value)} className="mt-1.5" /></div>
-            <div><Label>Quantité</Label><Input type="number" value={total} onChange={(e) => setTotal(+e.target.value)} className="mt-1.5" /></div>
+          <div>
+            <Label>Nom</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Suite Junior" className="mt-1.5" />
           </div>
-          <Button variant="outline" className="w-full"><ImagePlus className="h-4 w-4 mr-1.5" /> Ajouter photos</Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Type</Label>
+              <Input value={type} onChange={(e) => setType(e.target.value)} className="mt-1.5" />
+            </div>
+            <div>
+              <Label>Capacité</Label>
+              <Input type="number" value={capacity} onChange={(e) => setCapacity(+e.target.value)} className="mt-1.5" />
+            </div>
+            <div className="col-span-2">
+              <Label>Prix (FCFA)</Label>
+              <Input type="number" value={price} onChange={(e) => setPrice(+e.target.value)} className="mt-1.5" />
+            </div>
+          </div>
+          <Button variant="outline" className="w-full">
+            <ImagePlus className="h-4 w-4 mr-1.5" /> Ajouter photos
+          </Button>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-          <Button className="gradient-primary text-primary-foreground" onClick={() => {
-            onSave({ name: name || "Nouvelle chambre", type, capacity, price, available: total, total, status: "draft" });
-            setOpen(false);
-          }}>Créer</Button>
+          <Badge variant="outline" className="self-center text-xs text-muted-foreground">
+            Création disponible prochainement
+          </Badge>
         </DialogFooter>
       </DialogContent>
     </Dialog>
