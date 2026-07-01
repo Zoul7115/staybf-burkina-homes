@@ -6,3 +6,4 @@ export { useHostProfile } from "./useHostProfile";
 export { useHostProperties } from "./useHostProperties";
 export { useHostNotifications } from "./useHostNotifications";
 export { useHostDashboard } from "./useHostDashboard";
+export { useHostPropertyDetail } from "./useHostPropertyDetail";

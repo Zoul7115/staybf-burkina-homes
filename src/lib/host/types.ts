@@ -222,6 +222,50 @@ export type HostPayout = {
   created_at: string;
 };
 
+export type PropertyImage = {
+  id: string;
+  storage_path: string;
+  alt: string | null;
+  position: number;
+  is_cover: boolean;
+};
+
+export type PropertyAmenity = {
+  id: string;
+  key: string;
+  label_fr: string;
+};
+
+export type CancellationPolicy = "flexible" | "moderate" | "strict" | "non_refundable";
+
+export type HostPropertyDetail = {
+  id: string;
+  slug: string | null;
+  name: string;
+  type: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  description_md: string | null;
+  status: PropertyStatus;
+  instant_book: boolean;
+  cancellation_policy: CancellationPolicy | null;
+  check_in_from: string | null;
+  check_out_until: string | null;
+  house_rules: Record<string, unknown> | null;
+  rating_avg: number | null;
+  rating_count: number;
+  min_price_fcfa: number | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  city_name: string | null;
+  images: PropertyImage[];
+  amenities: PropertyAmenity[];
+  room_count: number;
+  booking_count: number;
+};
+
 // ── Dashboard aggregates ──────────────────────────────────────
 
 export type DashboardStats = {
