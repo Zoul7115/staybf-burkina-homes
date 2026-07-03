@@ -295,6 +295,31 @@ export type HostPropertyDetail = {
   booking_count: number;
 };
 
+// ── Bookings list ─────────────────────────────────────────────
+
+export type HostBookingItem = {
+  id: string;
+  reference: string;
+  status: BookingStatus;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  guests_adults: number;
+  guests_children: number;
+  guests_infants: number;
+  total_amount: number;
+  currency: string;
+  instant_book: boolean;
+  created_at: string;
+  confirmed_at: string | null;
+  cancelled_at: string | null;
+  traveler_name: string | null;
+  traveler_avatar_url: string | null;
+  room_name: string | null;
+  property_name: string | null;
+  payment_method: PaymentMethod | null;
+};
+
 // ── Dashboard aggregates ──────────────────────────────────────
 
 export type DashboardStats = {

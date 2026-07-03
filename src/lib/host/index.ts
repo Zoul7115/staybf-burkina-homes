@@ -8,3 +8,4 @@ export { useHostNotifications } from "./useHostNotifications";
 export { useHostDashboard } from "./useHostDashboard";
 export { useHostPropertyDetail } from "./useHostPropertyDetail";
 export { useHostRooms, roomImageUrl } from "./useHostRooms";
+export { useHostBookings } from "./useHostBookings";
