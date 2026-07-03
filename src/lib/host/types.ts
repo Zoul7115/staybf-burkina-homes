@@ -222,6 +222,17 @@ export type HostPayout = {
   created_at: string;
 };
 
+export type HostRevenueData = {
+  totalPaidFcfa: number;
+  monthlyRevenueFcfa: number;
+  yearlyProjectedFcfa: number;
+  nextPayoutAmountFcfa: number | null;
+  nextPayoutDate: string | null;
+  revenueChart: { label: string; value: number }[];
+  transactions: HostPayment[];
+  payouts: HostPayout[];
+};
+
 export type PropertyImage = {
   id: string;
   storage_path: string;

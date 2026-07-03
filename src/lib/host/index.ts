@@ -11,3 +11,4 @@ export { useHostRooms, roomImageUrl } from "./useHostRooms";
 export { useHostBookings } from "./useHostBookings";
 export { useHostCalendar } from "./useHostCalendar";
 export { useHostReviews } from "./useHostReviews";
+export { useHostRevenue } from "./useHostRevenue";
