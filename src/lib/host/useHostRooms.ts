@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import type { HostRoomDetail, RoomStatus, RoomType, BedEntry, RoomImage } from "./types";
 
@@ -24,16 +24,32 @@ type RawRoomRow = {
   room_images: { id: string; storage_path: string; alt: string | null; position: number; is_cover: boolean }[];
 };
 
+export type RoomFormParams = {
+  propertyId: string;
+  name: string;
+  type: string;
+  max_guests: number;
+  base_price_fcfa: number;
+};
+
 type UseHostRoomsReturn = {
   rooms: HostRoomDetail[];
+  propertyId: string | null;
   loading: boolean;
   error: string | null;
+  createRoom: (params: RoomFormParams) => Promise<void>;
+  updateRoom: (id: string, params: Omit<RoomFormParams, "propertyId">) => Promise<void>;
+  saving: boolean;
+  saveError: string | null;
 };
 
 export function useHostRooms(): UseHostRoomsReturn {
   const [rooms, setRooms] = useState<HostRoomDetail[]>([]);
+  const [propertyId, setPropertyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +87,7 @@ export function useHostRooms(): UseHostRoomsReturn {
       }
 
       const propertyIds: string[] = ((propData ?? []) as { id: string }[]).map((p) => p.id);
+      if (!cancelled && propertyIds[0]) setPropertyId(propertyIds[0]);
 
       if (propertyIds.length === 0) {
         setRooms([]);
@@ -189,5 +206,74 @@ export function useHostRooms(): UseHostRoomsReturn {
     };
   }, []);
 
-  return { rooms, loading, error };
+  const createRoom = useCallback(async (params: RoomFormParams) => {
+    setSaving(true);
+    setSaveError(null);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: row, error: dbErr } = await (supabase as any)
+      .from("rooms")
+      .insert({
+        property_id: params.propertyId,
+        name: params.name,
+        type: params.type,
+        max_guests: params.max_guests,
+        base_price_fcfa: params.base_price_fcfa,
+        status: "active",
+        instant_book: false,
+        beds: [],
+      })
+      .select("id, property_id, name, type, max_guests, beds, base_price_fcfa, status, instant_book, created_at, updated_at")
+      .single();
+
+    if (dbErr) {
+      setSaveError(dbErr.message);
+      setSaving(false);
+      throw new Error(dbErr.message);
+    }
+
+    const newRoom: HostRoomDetail = {
+      id: row.id,
+      property_id: row.property_id,
+      name: row.name,
+      type: row.type as RoomType,
+      max_guests: row.max_guests,
+      beds: (row.beds ?? []) as BedEntry[],
+      base_price_fcfa: row.base_price_fcfa,
+      status: row.status as RoomStatus,
+      instant_book: row.instant_book,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      images: [],
+      booking_count: 0,
+      open_nights_next_30: 0,
+    };
+
+    setRooms((prev) => [...prev, newRoom]);
+    setSaving(false);
+  }, []);
+
+  const updateRoom = useCallback(async (id: string, params: Omit<RoomFormParams, "propertyId">) => {
+    setSaving(true);
+    setSaveError(null);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: dbErr } = await (supabase as any)
+      .from("rooms")
+      .update({ name: params.name, type: params.type, max_guests: params.max_guests, base_price_fcfa: params.base_price_fcfa })
+      .eq("id", id);
+
+    if (dbErr) {
+      setSaveError(dbErr.message);
+      setSaving(false);
+      throw new Error(dbErr.message);
+    }
+
+    setRooms((prev) =>
+      prev.map((r) => r.id === id ? { ...r, name: params.name, type: params.type as RoomType, max_guests: params.max_guests, base_price_fcfa: params.base_price_fcfa } : r)
+    );
+    setSaving(false);
+  }, []);
+
+  return { rooms, propertyId, loading, error, createRoom, updateRoom, saving, saveError };
 }

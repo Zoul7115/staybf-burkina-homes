@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import type { HostReview, HostReviewReply, HostReviewsData } from "./types";
 
@@ -26,12 +26,17 @@ type UseHostReviewsReturn = {
   data: HostReviewsData | null;
   loading: boolean;
   error: string | null;
+  replyToReview: (reviewId: string, body: string) => Promise<void>;
+  replying: boolean;
+  replyError: string | null;
 };
 
 export function useHostReviews(): UseHostReviewsReturn {
   const [data, setData] = useState<HostReviewsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [replying, setReplying] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,5 +150,40 @@ export function useHostReviews(): UseHostReviewsReturn {
     return () => { cancelled = true; };
   }, []);
 
-  return { data, loading, error };
+  const replyToReview = useCallback(async (reviewId: string, body: string) => {
+    setReplying(true);
+    setReplyError(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setReplying(false);
+      setReplyError("Non authentifié");
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: row, error: dbErr } = await (supabase as any)
+      .from("review_replies")
+      .insert({ review_id: reviewId, author_id: user.id, body: body.trim() })
+      .select("id, body, created_at")
+      .single();
+
+    if (dbErr) {
+      setReplyError(dbErr.message);
+      setReplying(false);
+      return;
+    }
+
+    const reply: HostReviewReply = { id: row.id, body: row.body, createdAt: row.created_at };
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        reviews: prev.reviews.map((r) => r.id === reviewId ? { ...r, reply } : r),
+      };
+    });
+    setReplying(false);
+  }, []);
+
+  return { data, loading, error, replyToReview, replying, replyError };
 }

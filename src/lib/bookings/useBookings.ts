@@ -21,6 +21,7 @@ export interface BookingProperty {
   name: string;
   address: string;
   type: string;
+  host_id: string;
 }
 
 export interface SupabaseBooking {
@@ -78,7 +79,7 @@ export function useBookings(): {
           guests_adults,
           total_amount,
           status,
-          properties(id, name, address, type)
+          properties(id, name, address, type, host_id)
         `)
         .eq("traveler_id", user.id)
         .order("check_in", { ascending: false });

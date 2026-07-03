@@ -59,8 +59,10 @@ function ReviewsSkeleton() {
 // ── Main page ─────────────────────────────────────────────────
 
 function HostReviewsPage() {
-  const { data, loading, error } = useHostReviews();
+  const { data, loading, error, replyToReview, replying, replyError } = useHostReviews();
   const [filter, setFilter] = useState<number | null>(null);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   if (loading) return <ReviewsSkeleton />;
 
@@ -182,22 +184,43 @@ function HostReviewsPage() {
                   )}
 
                   {!r.reply && (
-                    <details className="mt-3">
-                      <summary className="text-xs font-semibold text-primary cursor-pointer hover:underline">
-                        Répondre
-                      </summary>
-                      <div className="mt-2 space-y-2">
-                        <Textarea placeholder="Merci pour votre avis..." rows={2} />
-                        <Button
-                          size="sm"
-                          className="gradient-primary text-primary-foreground"
-                          disabled
-                          title="Requiert une Edge Function — à venir"
+                    <div className="mt-3">
+                      {replyingToId === r.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="Merci pour votre avis..."
+                            rows={2}
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                          />
+                          {replyError && <p className="text-xs text-destructive">{replyError}</p>}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="gradient-primary text-primary-foreground"
+                              disabled={replying || !replyText.trim()}
+                              onClick={async () => {
+                                await replyToReview(r.id, replyText);
+                                setReplyingToId(null);
+                                setReplyText("");
+                              }}
+                            >
+                              {replying ? "Envoi…" : "Publier la réponse"}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setReplyingToId(null)}>
+                              Annuler
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs font-semibold text-primary hover:underline"
+                          onClick={() => { setReplyingToId(r.id); setReplyText(""); }}
                         >
-                          Publier la réponse
-                        </Button>
-                      </div>
-                    </details>
+                          Répondre
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

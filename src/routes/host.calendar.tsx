@@ -115,7 +115,7 @@ function HostCalendarPage() {
   const y = month.getFullYear();
   const m = month.getMonth() + 1; // 1-indexed for hook
 
-  const { data, loading: calLoading, error } = useHostCalendar(activeRoomId, y, m);
+  const { data, loading: calLoading, error, blockDates, unblockDates, setPriceOverride, setSeasonalPricing, mutating, mutationError } = useHostCalendar(activeRoomId, y, m);
 
   const monthName = month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
@@ -129,6 +129,14 @@ function HostCalendarPage() {
   function isoDay(day: number): string {
     return `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
+
+  const [activeAction, setActiveAction] = useState<"block" | "unblock" | "price" | null>(null);
+  const [actionStart, setActionStart] = useState("");
+  const [actionEnd, setActionEnd] = useState("");
+  const [actionPrice, setActionPrice] = useState("");
+  const [seasonStart, setSeasonStart] = useState("");
+  const [seasonEnd, setSeasonEnd] = useState("");
+  const [seasonPrice, setSeasonPrice] = useState("");
 
   const activeRoom = rooms.find((r) => r.id === activeRoomId);
 
@@ -290,31 +298,73 @@ function HostCalendarPage() {
             <CalendarIcon className="h-5 w-5 text-primary" /> Actions rapides
           </h3>
           <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start" disabled title="À venir">
-              Bloquer une plage
-            </Button>
-            <Button variant="outline" className="w-full justify-start" disabled title="À venir">
-              Débloquer une plage
-            </Button>
-            <Button variant="outline" className="w-full justify-start" disabled title="À venir">
-              Modifier les prix
-            </Button>
-            <Button variant="outline" className="w-full justify-start" disabled title="À venir">
+            {(["block", "unblock", "price"] as const).map((action) => (
+              <Button
+                key={action}
+                variant={activeAction === action ? "default" : "outline"}
+                className="w-full justify-start"
+                onClick={() => setActiveAction(activeAction === action ? null : action)}
+              >
+                {action === "block" && "Bloquer une plage"}
+                {action === "unblock" && "Débloquer une plage"}
+                {action === "price" && "Modifier les prix"}
+              </Button>
+            ))}
+            <Button variant="outline" className="w-full justify-start" disabled title="Nécessite une intégration externe">
               Synchroniser iCal
             </Button>
           </div>
+
+          {activeAction && (
+            <div className="mt-3 space-y-2 border-t border-border pt-3">
+              <div><Label>Du</Label><Input type="date" value={actionStart} onChange={(e) => setActionStart(e.target.value)} className="mt-1.5" /></div>
+              <div><Label>Au</Label><Input type="date" value={actionEnd} onChange={(e) => setActionEnd(e.target.value)} className="mt-1.5" /></div>
+              {activeAction === "price" && (
+                <div>
+                  <Label>Prix/nuit (FCFA)</Label>
+                  <Input type="number" placeholder="85 000" value={actionPrice} onChange={(e) => setActionPrice(e.target.value)} className="mt-1.5" />
+                </div>
+              )}
+              {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
+              <Button
+                className="w-full gradient-primary text-primary-foreground"
+                disabled={mutating || !actionStart || !actionEnd || (activeAction === "price" && !actionPrice)}
+                onClick={async () => {
+                  if (activeAction === "block") await blockDates(actionStart, actionEnd);
+                  else if (activeAction === "unblock") await unblockDates(actionStart, actionEnd);
+                  else if (activeAction === "price") await setPriceOverride(actionStart, actionEnd, Number(actionPrice));
+                  setActiveAction(null);
+                  setActionStart("");
+                  setActionEnd("");
+                  setActionPrice("");
+                }}
+              >
+                {mutating ? "En cours…" : "Appliquer"}
+              </Button>
+            </div>
+          )}
         </Card>
 
         <Card className="p-5 space-y-3">
           <h3 className="font-display font-semibold">Tarification saisonnière</h3>
-          <div><Label>Du</Label><Input type="date" className="mt-1.5" /></div>
-          <div><Label>Au</Label><Input type="date" className="mt-1.5" /></div>
+          <div><Label>Du</Label><Input type="date" value={seasonStart} onChange={(e) => setSeasonStart(e.target.value)} className="mt-1.5" /></div>
+          <div><Label>Au</Label><Input type="date" value={seasonEnd} onChange={(e) => setSeasonEnd(e.target.value)} className="mt-1.5" /></div>
           <div>
             <Label>Prix par nuit (FCFA)</Label>
-            <Input type="number" placeholder="85 000" className="mt-1.5" />
+            <Input type="number" placeholder="85 000" value={seasonPrice} onChange={(e) => setSeasonPrice(e.target.value)} className="mt-1.5" />
           </div>
-          <Button className="w-full gradient-primary text-primary-foreground" disabled title="À venir">
-            Appliquer
+          {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
+          <Button
+            className="w-full gradient-primary text-primary-foreground"
+            disabled={mutating || !seasonStart || !seasonEnd || !seasonPrice}
+            onClick={async () => {
+              await setSeasonalPricing(seasonStart, seasonEnd, Number(seasonPrice));
+              setSeasonStart("");
+              setSeasonEnd("");
+              setSeasonPrice("");
+            }}
+          >
+            {mutating ? "En cours…" : "Appliquer"}
           </Button>
         </Card>
 

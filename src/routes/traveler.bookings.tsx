@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useBookings, type SupabaseBooking, type BookingStatus, UPCOMING_STATUSES } from "@/lib/bookings/useBookings";
+import { supabase } from "@/lib/supabase/client";
 import { PLACEHOLDER_IMG } from "@/lib/shared";
 
 // ---------------------------------------------------------------------------
@@ -33,6 +34,8 @@ function BookingsPage() {
   const [review, setReview] = useState<SupabaseBooking | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   return (
     <TravelerShell title="Mes réservations">
@@ -93,11 +96,41 @@ function BookingsPage() {
               />
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReview(null)}>Annuler</Button>
-            <Button onClick={() => setReview(null)} className="gradient-primary text-primary-foreground">
-              Publier l'avis
-            </Button>
+          <DialogFooter className="flex-col items-stretch gap-2">
+            {submitError && <p className="text-xs text-destructive text-center">{submitError}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setReview(null); setSubmitError(null); }}>Annuler</Button>
+              <Button
+                disabled={submitting || !comment.trim()}
+                className="gradient-primary text-primary-foreground"
+                onClick={async () => {
+                  if (!review) return;
+                  setSubmitting(true);
+                  setSubmitError(null);
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) { setSubmitError("Non authentifié"); setSubmitting(false); return; }
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error } = await (supabase as any).from("reviews").insert({
+                    booking_id: review.id,
+                    reviewer_id: user.id,
+                    reviewee_id: review.properties.host_id,
+                    direction: "traveler_to_host",
+                    overall_rating: rating,
+                    body: comment.trim(),
+                    status: "published",
+                    is_published: true,
+                    published_at: new Date().toISOString(),
+                  });
+                  setSubmitting(false);
+                  if (error) { setSubmitError(error.message); return; }
+                  setReview(null);
+                  setComment("");
+                  setRating(5);
+                }}
+              >
+                {submitting ? "Publication…" : "Publier l'avis"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

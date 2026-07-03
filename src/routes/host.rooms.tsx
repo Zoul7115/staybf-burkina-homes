@@ -4,14 +4,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Users, BedDouble, ImagePlus } from "lucide-react";
+import type React from "react";
 import { StatusBadge, EmptyState } from "@/components/dashboard/widgets";
 import { useHostRooms, roomImageUrl } from "@/lib/host";
+import type { RoomFormParams } from "@/lib/host/useHostRooms";
 import { PLACEHOLDER_IMG } from "@/lib/shared";
 import type { HostRoomDetail } from "@/lib/host";
 
@@ -82,7 +83,7 @@ function RoomsSkeleton() {
 // ── Main component ────────────────────────────────────────────
 
 function HostRoomsPage() {
-  const { rooms, loading, error } = useHostRooms();
+  const { rooms, propertyId, loading, error, createRoom, updateRoom, saving, saveError } = useHostRooms();
 
   if (loading) return <RoomsSkeleton />;
 
@@ -101,7 +102,11 @@ function HostRoomsPage() {
         title="Aucune chambre"
         description="Vous n'avez pas encore de chambre. Ajoutez votre première chambre pour commencer à recevoir des réservations."
         action={
-          <RoomDialog
+          <RoomFormDialog
+            propertyId={propertyId}
+            onSubmit={createRoom}
+            saving={saving}
+            saveError={saveError}
             trigger={
               <Button className="gradient-primary text-primary-foreground">
                 <Plus className="h-4 w-4 mr-1" /> Nouvelle chambre
@@ -117,7 +122,11 @@ function HostRoomsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{rooms.length} type{rooms.length > 1 ? "s" : ""} de chambre{rooms.length > 1 ? "s" : ""}</p>
-        <RoomDialog
+        <RoomFormDialog
+          propertyId={propertyId}
+          onSubmit={createRoom}
+          saving={saving}
+          saveError={saveError}
           trigger={
             <Button className="gradient-primary text-primary-foreground">
               <Plus className="h-4 w-4 mr-1" /> Nouvelle chambre
@@ -128,7 +137,13 @@ function HostRoomsPage() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {rooms.map((r) => (
-          <RoomCard key={r.id} room={r} />
+          <RoomCard
+            key={r.id}
+            room={r}
+            onEdit={(params) => updateRoom(r.id, params)}
+            saving={saving}
+            saveError={saveError}
+          />
         ))}
       </div>
     </div>
@@ -137,7 +152,17 @@ function HostRoomsPage() {
 
 // ── Room card ─────────────────────────────────────────────────
 
-function RoomCard({ room: r }: { room: HostRoomDetail }) {
+function RoomCard({
+  room: r,
+  onEdit,
+  saving,
+  saveError,
+}: {
+  room: HostRoomDetail;
+  onEdit: (params: Omit<RoomFormParams, "propertyId">) => Promise<void>;
+  saving: boolean;
+  saveError: string | null;
+}) {
   const imgUrl = coverUrl(r);
   const hasCover = r.images.length > 0;
 
@@ -191,10 +216,18 @@ function RoomCard({ room: r }: { room: HostRoomDetail }) {
             <span className="text-xs font-normal text-muted-foreground">/nuit</span>
           </p>
           <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost">
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost">
+            <RoomFormDialog
+              room={r}
+              onSubmit={onEdit}
+              saving={saving}
+              saveError={saveError}
+              trigger={
+                <Button size="icon" variant="ghost">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <Button size="icon" variant="ghost" disabled title="Suppression non disponible côté client (GRANT INSERT/UPDATE uniquement)">
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
@@ -223,20 +256,54 @@ function RoomCard({ room: r }: { room: HostRoomDetail }) {
   );
 }
 
-// ── Create dialog (UI only — mutation out of scope) ───────────
+// ── Room form dialog (create + edit) ─────────────────────────
 
-function RoomDialog({ trigger }: { trigger: React.ReactNode }) {
+function RoomFormDialog({
+  trigger,
+  room,
+  propertyId,
+  onSubmit,
+  saving,
+  saveError,
+}: {
+  trigger: React.ReactNode;
+  room?: HostRoomDetail;
+  propertyId?: string | null;
+  onSubmit: (params: RoomFormParams | Omit<RoomFormParams, "propertyId">) => Promise<void>;
+  saving: boolean;
+  saveError: string | null;
+}) {
+  const isEdit = !!room;
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [type, setType] = useState("double");
-  const [capacity, setCapacity] = useState(2);
-  const [price, setPrice] = useState(50000);
+  const [name, setName] = useState(room?.name ?? "");
+  const [type, setType] = useState(room?.type ?? "double");
+  const [capacity, setCapacity] = useState(room?.max_guests ?? 2);
+  const [price, setPrice] = useState(room?.base_price_fcfa ?? 50000);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const effectivePropId = propertyId ?? room?.property_id ?? null;
+
+  async function handleSubmit() {
+    if (!name.trim()) { setLocalError("Le nom est requis."); return; }
+    if (!effectivePropId && !isEdit) { setLocalError("Aucune propriété trouvée."); return; }
+    setLocalError(null);
+    try {
+      if (isEdit) {
+        await (onSubmit as (p: Omit<RoomFormParams, "propertyId">) => Promise<void>)({ name: name.trim(), type, max_guests: capacity, base_price_fcfa: price });
+      } else {
+        await (onSubmit as (p: RoomFormParams) => Promise<void>)({ propertyId: effectivePropId!, name: name.trim(), type, max_guests: capacity, base_price_fcfa: price });
+      }
+      setOpen(false);
+    } catch {
+      // saveError surfaces the message from the hook
+    }
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setLocalError(null); }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Nouvelle chambre</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Modifier la chambre" : "Nouvelle chambre"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
             <Label>Nom</Label>
@@ -256,15 +323,24 @@ function RoomDialog({ trigger }: { trigger: React.ReactNode }) {
               <Input type="number" value={price} onChange={(e) => setPrice(+e.target.value)} className="mt-1.5" />
             </div>
           </div>
-          <Button variant="outline" className="w-full">
-            <ImagePlus className="h-4 w-4 mr-1.5" /> Ajouter photos
-          </Button>
+          {!isEdit && (
+            <Button variant="outline" className="w-full" disabled title="Upload de photos non disponible sans Edge Function">
+              <ImagePlus className="h-4 w-4 mr-1.5" /> Ajouter photos
+            </Button>
+          )}
+          {(localError ?? saveError) && (
+            <p className="text-xs text-destructive">{localError ?? saveError}</p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-          <Badge variant="outline" className="self-center text-xs text-muted-foreground">
-            Création disponible prochainement
-          </Badge>
+          <Button
+            className="gradient-primary text-primary-foreground"
+            disabled={saving || !name.trim()}
+            onClick={handleSubmit}
+          >
+            {saving ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
