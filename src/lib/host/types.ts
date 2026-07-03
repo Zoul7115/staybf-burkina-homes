@@ -327,6 +327,35 @@ export type RoomAvailabilityData = {
   openCount: number;
 };
 
+// ── Messages ─────────────────────────────────────────────────
+
+export type HostThread = {
+  id: string;
+  travelerId: string;
+  roomId: string;
+  bookingId: string | null;
+  subject: string | null;
+  lastMessageAt: string | null;
+  lastMessageBody: string | null;
+  lastMessageSenderId: string | null;
+  hostUnreadCount: number;
+  isFrozen: boolean;
+  travelerName: string | null;
+  travelerAvatarUrl: string | null;
+  roomName: string | null;
+  propertyName: string | null;
+};
+
+export type HostMessage = {
+  id: string;
+  threadId: string;
+  senderId: string | null;
+  body: string | null;
+  isRead: boolean;
+  isSystemMessage: boolean;
+  createdAt: string;
+};
+
 // ── Reviews ──────────────────────────────────────────────────
 
 export type HostReviewReply = {

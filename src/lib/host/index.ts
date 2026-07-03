@@ -12,3 +12,4 @@ export { useHostBookings } from "./useHostBookings";
 export { useHostCalendar } from "./useHostCalendar";
 export { useHostReviews } from "./useHostReviews";
 export { useHostRevenue } from "./useHostRevenue";
+export { useHostThreads, useHostThreadMessages } from "./useHostMessages";
