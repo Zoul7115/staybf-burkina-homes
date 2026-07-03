@@ -295,6 +295,27 @@ export type HostPropertyDetail = {
   booking_count: number;
 };
 
+// ── Calendar ─────────────────────────────────────────────────
+
+export type AvailabilityStatus = "open" | "booked" | "blocked";
+
+export type CalendarDay = {
+  date: string;
+  status: AvailabilityStatus;
+  bookingId: string | null;
+  bookingReference: string | null;
+  bookingCheckIn: string | null;
+  bookingCheckOut: string | null;
+  priceOverride: number | null;
+};
+
+export type RoomAvailabilityData = {
+  days: Record<string, CalendarDay>;
+  bookedCount: number;
+  blockedCount: number;
+  openCount: number;
+};
+
 // ── Bookings list ─────────────────────────────────────────────
 
 export type HostBookingItem = {
