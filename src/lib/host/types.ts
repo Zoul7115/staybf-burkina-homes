@@ -316,6 +316,41 @@ export type RoomAvailabilityData = {
   openCount: number;
 };
 
+// ── Reviews ──────────────────────────────────────────────────
+
+export type HostReviewReply = {
+  id: string;
+  body: string;
+  createdAt: string;
+};
+
+export type HostReview = {
+  id: string;
+  bookingId: string;
+  reviewerName: string | null;
+  reviewerAvatarUrl: string | null;
+  overallRating: number;
+  cleanlinessRating: number | null;
+  accuracyRating: number | null;
+  locationRating: number | null;
+  valueRating: number | null;
+  communicationRating: number | null;
+  body: string;
+  publishedAt: string | null;
+  createdAt: string;
+  roomName: string | null;
+  propertyName: string | null;
+  reply: HostReviewReply | null;
+};
+
+export type HostReviewsData = {
+  reviews: HostReview[];
+  avgRating: number | null;
+  totalCount: number;
+  fiveStarPct: number | null;
+  distribution: { stars: number; count: number; pct: number }[];
+};
+
 // ── Bookings list ─────────────────────────────────────────────
 
 export type HostBookingItem = {
