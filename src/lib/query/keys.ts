@@ -41,6 +41,14 @@ export const queryKeys = {
   bookingPrice: (roomId: string, checkIn: string, checkOut: string) =>
                                                         ["booking", "price", roomId, checkIn, checkOut] as const,
 
+  // ── Wallet ────────────────────────────────────────────────────
+  hostWallet: (hostId: string)                         => ["wallet", "host", hostId]               as const,
+  hostPaymentTransactions: (hostId: string)            => ["wallet", "payments", hostId]           as const,
+  hostRefundTransactions: (hostId: string)             => ["wallet", "refunds", hostId]            as const,
+  hostWithdrawals: (hostId: string)                    => ["wallet", "withdrawals", hostId]        as const,
+  adminWallet: ()                                      => ["wallet", "platform"]                   as const,
+  adminFinancialDashboard: ()                          => ["wallet", "admin", "dashboard"]         as const,
+
   // ── Admin ─────────────────────────────────────────────────────
   adminDashboard: ()                                 => ["admin", "dashboard"]                  as const,
   adminHosts: ()                                     => ["admin", "hosts"]                      as const,
