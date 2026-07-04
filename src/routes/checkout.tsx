@@ -5,7 +5,7 @@ import { differenceInDays, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Star, MapPin, Users, CalendarDays, Check, ShieldCheck, Lock,
-  Headphones, Zap, ChevronLeft, Loader2, CreditCard, Smartphone,
+  Headphones, Zap, ChevronLeft, Loader2, CreditCard, Smartphone, AlertCircle,
 } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
 import { coverImageUrl } from "@/lib/shared";
+import { usePricing, useCreateBooking } from "@/lib/booking/hooks";
 
 // ---------------------------------------------------------------------------
 // Types & validation
@@ -27,6 +28,7 @@ import { coverImageUrl } from "@/lib/shared";
 
 type CheckoutSearch = {
   propertyId?: string;
+  roomId?: string;
   from?: string;
   to?: string;
   guests?: number;
@@ -35,6 +37,7 @@ type CheckoutSearch = {
 export const Route = createFileRoute("/checkout")({
   validateSearch: (s: Record<string, unknown>): CheckoutSearch => ({
     propertyId: typeof s.propertyId === "string" ? s.propertyId : undefined,
+    roomId: typeof s.roomId === "string" ? s.roomId : undefined,
     from: typeof s.from === "string" ? s.from : undefined,
     to: typeof s.to === "string" ? s.to : undefined,
     guests: typeof s.guests === "number" ? s.guests : s.guests ? Number(s.guests) : undefined,
@@ -52,9 +55,11 @@ export const Route = createFileRoute("/checkout")({
 // Constants
 // ---------------------------------------------------------------------------
 
-const methods: { id: string; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
-  { id: "orange", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
-  { id: "moov", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
+type PaymentMethodId = "orange_money" | "moov_money" | "visa" | "mastercard";
+
+const methods: { id: PaymentMethodId; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
+  { id: "orange_money", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
+  { id: "moov_money", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
   { id: "visa", label: "Visa", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-indigo-600 to-indigo-800" },
   { id: "mastercard", label: "Mastercard", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-rose-600 to-orange-500" },
 ];
@@ -68,7 +73,7 @@ const countries = ["Burkina Faso", "Côte d'Ivoire", "Mali", "Sénégal", "Ghana
 function CheckoutPage() {
   const search = useSearch({ from: "/checkout" }) as CheckoutSearch;
   const navigate = useNavigate();
-  const { data: property, loading } = usePropertyDetail(search.propertyId);
+  const { data: property, loading: propertyLoading } = usePropertyDetail(search.propertyId);
 
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const fromDate = search.from ? new Date(search.from) : new Date(today.getTime() + 7 * 86400000);
@@ -76,48 +81,73 @@ function CheckoutPage() {
   const guests = search.guests ?? 2;
   const nights = Math.max(1, differenceInDays(toDate, fromDate));
 
-  const price = property?.min_price_fcfa ?? 0;
-  const subtotal = nights * price;
-  const fee = Math.round(subtotal * 0.1);
-  const total = subtotal + fee;
+  const checkIn = fromDate.toISOString().slice(0, 10);
+  const checkOut = toDate.toISOString().slice(0, 10);
 
-  const [method, setMethod] = useState<string>("orange");
+  // Resolve roomId: explicit param or first room from property
+  const roomId = search.roomId ?? (property?.rooms?.[0]?.id ?? null);
+
+  const { pricing, loading: pricingLoading } = usePricing(roomId, checkIn, checkOut);
+  const createBooking = useCreateBooking();
+
+  const loading = propertyLoading || (!!roomId && pricingLoading);
+
+  const [method, setMethod] = useState<PaymentMethodId>("orange_money");
   const [accept, setAccept] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "+226 ",
     country: "Burkina Faso", note: "",
   });
-  const [processing, setProcessing] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   const valid =
     !loading &&
-    accept && form.firstName.trim() && form.lastName.trim() &&
-    /\S+@\S+\.\S+/.test(form.email) && form.phone.trim().length > 6;
+    !!roomId &&
+    accept &&
+    form.firstName.trim() !== "" &&
+    form.lastName.trim() !== "" &&
+    /\S+@\S+\.\S+/.test(form.email) &&
+    form.phone.trim().length > 6;
 
-  const handlePay = () => {
-    if (!valid || processing) return;
-    setProcessing(true);
-    setTimeout(() => {
-      const ref = "STBF-" + Math.random().toString(36).slice(2, 8).toUpperCase() + "-" + Date.now().toString().slice(-4);
+  const handlePay = async () => {
+    if (!valid || createBooking.isPending || !roomId) return;
+    setBookingError(null);
+
+    try {
+      const result = await createBooking.mutateAsync({
+        room_id: roomId,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests_adults: guests,
+        guests_children: 0,
+        guests_infants: 0,
+        payment_method: method,
+        notes: form.note.trim() || undefined,
+      });
+
       navigate({
         to: "/booking/confirmation",
         search: {
-          ref,
+          ref: result.booking.reference,
           propertyId: search.propertyId ?? property?.id ?? "",
-          total,
+          total: result.booking.totalAmount,
           method,
-          from: fromDate.toISOString().slice(0, 10),
-          to: toDate.toISOString().slice(0, 10),
+          from: checkIn,
+          to: checkOut,
           guests,
           email: form.email,
         },
       });
-    }, 1800);
+    } catch (e) {
+      setBookingError((e as Error).message);
+    }
   };
 
   const location = property
     ? [property.city?.name, property.address].filter(Boolean).join(", ")
     : "";
+
+  const isProcessing = createBooking.isPending;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -125,7 +155,7 @@ function CheckoutPage() {
 
       {/* Processing overlay */}
       <AnimatePresence>
-        {processing && (
+        {isProcessing && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm grid place-items-center"
@@ -140,10 +170,10 @@ function CheckoutPage() {
                   <Loader2 className="h-7 w-7 text-primary-foreground animate-spin" />
                 </div>
               </div>
-              <h3 className="font-display font-bold text-xl">Traitement du paiement…</h3>
+              <h3 className="font-display font-bold text-xl">Traitement de la réservation…</h3>
               <p className="text-sm text-muted-foreground mt-2">Veuillez patienter, ne fermez pas cette page.</p>
               <div className="mt-5 h-1.5 bg-muted rounded-full overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1.7 }} className="h-full gradient-primary" />
+                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 2.5 }} className="h-full gradient-primary" />
               </div>
             </motion.div>
           </motion.div>
@@ -219,16 +249,41 @@ function CheckoutPage() {
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
-              ) : (
+              ) : pricing ? (
                 <>
-                  <Row label={`${price.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`} value={`${subtotal.toLocaleString("fr-FR")} FCFA`} />
-                  <Row label="Frais de service StayBF (10%)" value={`${fee.toLocaleString("fr-FR")} FCFA`} />
+                  {/* Show per-night breakdown if pricing varies */}
+                  {pricing.nightPricing.some((n) => n.priceSource !== "base") ? (
+                    <div className="space-y-1.5 mb-3">
+                      {pricing.nightPricing.map((n) => (
+                        <div key={n.date} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {format(new Date(n.date), "d MMM", { locale: fr })}
+                            {n.priceSource === "seasonal" && (
+                              <span className="ml-1 text-[10px] bg-secondary/20 text-secondary-foreground px-1.5 py-0.5 rounded-full">saisonnier</span>
+                            )}
+                            {n.priceSource === "override" && (
+                              <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">prix spécial</span>
+                            )}
+                          </span>
+                          <span className="font-medium">{n.priceFcfa.toLocaleString("fr-FR")} FCFA</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Row
+                      label={`${pricing.nightPricing[0]?.priceFcfa.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`}
+                      value={`${pricing.accommodationAmount.toLocaleString("fr-FR")} FCFA`}
+                    />
+                  )}
+                  <Row label={`Frais de service StayBF (${Math.round(pricing.serviceFeeRate * 100)}%)`} value={`${pricing.serviceFeeAmount.toLocaleString("fr-FR")} FCFA`} />
                   <Separator className="my-3" />
                   <div className="flex items-baseline justify-between">
                     <span className="font-display font-semibold text-lg">Total à payer</span>
-                    <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
+                    <span className="font-display font-bold text-2xl text-primary">{pricing.totalAmount.toLocaleString("fr-FR")} FCFA</span>
                   </div>
                 </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sélectionnez des dates pour voir le prix.</p>
               )}
             </Section>
 
@@ -270,9 +325,9 @@ function CheckoutPage() {
                 })}
               </div>
 
-              {(method === "orange" || method === "moov") && (
+              {(method === "orange_money" || method === "moov_money") && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-muted/50 border border-border p-4">
-                  <Label htmlFor="mobileNumber" className="text-sm">Numéro {method === "orange" ? "Orange Money" : "Moov Money"}</Label>
+                  <Label htmlFor="mobileNumber" className="text-sm">Numéro {method === "orange_money" ? "Orange Money" : "Moov Money"}</Label>
                   <Input id="mobileNumber" placeholder="+226 70 00 00 00" className="mt-2 h-11" />
                   <p className="text-xs text-muted-foreground mt-2">Vous recevrez un code USSD pour confirmer le paiement.</p>
                 </motion.div>
@@ -339,8 +394,8 @@ function CheckoutPage() {
                 <div className="rounded-xl border border-border p-4">
                   <p className="font-semibold">Règles de la maison</p>
                   <ul className="text-muted-foreground mt-1 space-y-1 list-disc pl-5">
-                    {property?.house_rules?.length ? (
-                      property.house_rules.slice(0, 3).map((r, i) => <li key={i}>{r}</li>)
+                    {(property?.house_rules as string[] | null | undefined)?.length ? (
+                      (property!.house_rules as string[]).slice(0, 3).map((r, i) => <li key={i}>{r}</li>)
                     ) : (
                       <>
                         <li>Arrivée à partir de 14h00 — Départ avant 11h00</li>
@@ -358,6 +413,13 @@ function CheckoutPage() {
                 </label>
               </div>
             </Section>
+
+            {bookingError && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <p className="text-sm text-destructive">{bookingError}</p>
+              </div>
+            )}
 
             {/* Trust */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -393,26 +455,28 @@ function CheckoutPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Chambre ({nights} nuit{nights > 1 ? "s" : ""})</span>
-                      <span className="font-medium">{subtotal.toLocaleString("fr-FR")} FCFA</span>
+                      <span className="font-medium">{pricing?.accommodationAmount.toLocaleString("fr-FR") ?? "—"} FCFA</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Frais de service</span>
-                      <span className="font-medium">{fee.toLocaleString("fr-FR")} FCFA</span>
+                      <span className="font-medium">{pricing?.serviceFeeAmount.toLocaleString("fr-FR") ?? "—"} FCFA</span>
                     </div>
                   </div>
                 )}
                 <Separator className="my-4" />
                 <div className="flex items-baseline justify-between">
                   <span className="font-display font-semibold">Total</span>
-                  <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
+                  <span className="font-display font-bold text-2xl text-primary">
+                    {pricing ? `${pricing.totalAmount.toLocaleString("fr-FR")} FCFA` : "—"}
+                  </span>
                 </div>
                 <Button
                   size="lg"
-                  disabled={!valid || processing}
+                  disabled={!valid || isProcessing}
                   onClick={handlePay}
                   className="w-full mt-5 h-12 gradient-primary text-primary-foreground rounded-xl font-semibold text-base shadow-card"
                 >
-                  {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Traitement…</> : "Payer maintenant"}
+                  {isProcessing ? <><Loader2 className="h-4 w-4 animate-spin" /> Traitement…</> : "Réserver maintenant"}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
                   <Lock className="h-3 w-3" /> Paiement chiffré SSL 256 bits
@@ -428,14 +492,16 @@ function CheckoutPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-muted-foreground">Total à payer</p>
-            <p className="font-display font-bold text-lg leading-tight">{total.toLocaleString("fr-FR")} FCFA</p>
+            <p className="font-display font-bold text-lg leading-tight">
+              {pricing ? `${pricing.totalAmount.toLocaleString("fr-FR")} FCFA` : "—"}
+            </p>
           </div>
           <Button
-            disabled={!valid || processing}
+            disabled={!valid || isProcessing}
             onClick={handlePay}
             className="h-12 px-6 gradient-primary text-primary-foreground rounded-xl font-semibold shadow-card"
           >
-            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Payer maintenant"}
+            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Réserver"}
           </Button>
         </div>
       </div>

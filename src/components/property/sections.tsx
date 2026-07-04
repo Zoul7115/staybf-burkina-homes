@@ -413,6 +413,7 @@ export function RoomInfo() {
                       to: "/checkout",
                       search: {
                         propertyId: property.id,
+                        roomId: activeRoom.id,
                         from: range.from!.toISOString().slice(0, 10),
                         to: range.to!.toISOString().slice(0, 10),
                         guests,

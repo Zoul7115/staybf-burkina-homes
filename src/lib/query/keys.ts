@@ -37,6 +37,10 @@ export const queryKeys = {
   // ── Property ─────────────────────────────────────────────────
   propertyDetail: (id: string)                       => ["property", id]                        as const,
 
+  // ── Booking ───────────────────────────────────────────────────
+  bookingPrice: (roomId: string, checkIn: string, checkOut: string) =>
+                                                        ["booking", "price", roomId, checkIn, checkOut] as const,
+
   // ── Admin ─────────────────────────────────────────────────────
   adminDashboard: ()                                 => ["admin", "dashboard"]                  as const,
   adminHosts: ()                                     => ["admin", "hosts"]                      as const,
