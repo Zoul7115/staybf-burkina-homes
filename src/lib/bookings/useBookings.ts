@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query/keys";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,7 +38,27 @@ export interface SupabaseBooking {
   properties: BookingProperty;
 }
 
-const UPCOMING_STATUSES: BookingStatus[] = ["pending_payment", "confirmed", "checked_in"];
+export const UPCOMING_STATUSES: BookingStatus[] = ["pending_payment", "confirmed", "checked_in"];
+
+// ---------------------------------------------------------------------------
+// Fetcher
+// ---------------------------------------------------------------------------
+
+async function fetchBookings(): Promise<SupabaseBooking[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Non authentifié");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error: dbErr } = await (supabase as any)
+    .from("bookings")
+    .select(`id,reference,property_id,check_in,check_out,nights,guests_adults,total_amount,status,properties(id,name,address,type,host_id)`)
+    .eq("traveler_id", user.id)
+    .order("check_in", { ascending: false });
+
+  if (dbErr) throw new Error(dbErr.message);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any) as SupabaseBooking[];
+}
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -49,60 +70,15 @@ export function useBookings(): {
   loading: boolean;
   error: string | null;
 } {
-  const [bookings, setBookings] = useState<SupabaseBooking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: queryKeys.travelerBookings(),
+    queryFn: fetchBookings,
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        if (!cancelled) { setLoading(false); setError("Non authentifié"); }
-        return;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: dbErr } = await (supabase as any)
-        .from("bookings")
-        .select(`
-          id,
-          reference,
-          property_id,
-          check_in,
-          check_out,
-          nights,
-          guests_adults,
-          total_amount,
-          status,
-          properties(id, name, address, type, host_id)
-        `)
-        .eq("traveler_id", user.id)
-        .order("check_in", { ascending: false });
-
-      if (!cancelled) {
-        if (dbErr) {
-          setError(dbErr.message);
-        } else {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setBookings((data ?? []) as any as SupabaseBooking[]);
-        }
-        setLoading(false);
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, []);
-
+  const bookings = data ?? [];
   const upcoming = bookings.filter((b) => UPCOMING_STATUSES.includes(b.status));
   const past = bookings.filter((b) => !UPCOMING_STATUSES.includes(b.status));
 
-  return { upcoming, past, loading, error };
+  return { upcoming, past, loading: isLoading, error: error?.message ?? null };
 }
-
-export { UPCOMING_STATUSES };

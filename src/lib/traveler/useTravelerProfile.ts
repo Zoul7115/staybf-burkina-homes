@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/lib/supabase/client";
+import { queryKeys } from "@/lib/query/keys";
 import { getInitials } from "@/lib/shared";
 import type { TravelerProfile } from "./types";
 
@@ -10,10 +11,6 @@ function splitName(fullName: string | null): { firstName: string; lastName: stri
   const parts = fullName.trim().split(" ");
   return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
 }
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
 
 type ProfileUpdates = {
   firstName?: string;
@@ -29,62 +26,52 @@ type UseProfileResult = {
   save: (updates: ProfileUpdates) => Promise<void>;
 };
 
+async function fetchTravelerProfile(): Promise<TravelerProfile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row } = await (supabase as any)
+    .from("profiles")
+    .select("id, full_name, avatar_url, phone_number, country, language, created_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { firstName, lastName } = splitName(row?.full_name ?? null);
+  const fullName = row?.full_name ?? "";
+  const joinedLabel = row?.created_at
+    ? format(new Date(row.created_at), "MMMM yyyy", { locale: fr })
+    : "";
+
+  return {
+    id: user.id,
+    firstName,
+    lastName,
+    fullName,
+    email: user.email ?? null,
+    phone: row?.phone_number ?? null,
+    country: row?.country ?? null,
+    language: row?.language ?? "Français",
+    avatarUrl: row?.avatar_url ?? null,
+    initials: getInitials(fullName || user.email),
+    joinedLabel,
+  };
+}
+
 export function useTravelerProfile(): UseProfileResult {
-  const [profile, setProfile] = useState<TravelerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const KEY = queryKeys.travelerProfile();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const { data, isLoading } = useQuery({ queryKey: KEY, queryFn: fetchTravelerProfile });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: row } = await (supabase as any)
-      .from("profiles")
-      .select("id, full_name, avatar_url, phone_number, country, language, created_at")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const { firstName, lastName } = splitName(row?.full_name ?? null);
-    const fullName = row?.full_name ?? "";
-    const joinedLabel = row?.created_at
-      ? format(new Date(row.created_at), "MMMM yyyy", { locale: fr })
-      : "";
-
-    setProfile({
-      id: user.id,
-      firstName,
-      lastName,
-      fullName,
-      email: user.email ?? null,
-      phone: row?.phone_number ?? null,
-      country: row?.country ?? null,
-      language: row?.language ?? "Français",
-      avatarUrl: row?.avatar_url ?? null,
-      initials: getInitials(fullName || user.email),
-      joinedLabel,
-    });
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const save = useCallback(
-    async (updates: ProfileUpdates) => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const saveMutation = useMutation({
+    mutationFn: async (updates: ProfileUpdates) => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const newFirstName = updates.firstName ?? profile?.firstName ?? "";
-      const newLastName = updates.lastName ?? profile?.lastName ?? "";
+      const prev = queryClient.getQueryData<TravelerProfile | null>(KEY);
+      const newFirstName = updates.firstName ?? prev?.firstName ?? "";
+      const newLastName = updates.lastName ?? prev?.lastName ?? "";
       const fullName = `${newFirstName} ${newLastName}`.trim() || undefined;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,11 +84,31 @@ export function useTravelerProfile(): UseProfileResult {
           ...(updates.language !== undefined && { language: updates.language }),
         })
         .eq("id", user.id);
-
-      await load();
     },
-    [profile, load],
-  );
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<TravelerProfile | null>(KEY);
+      queryClient.setQueryData<TravelerProfile | null>(KEY, (old) => {
+        if (!old) return old;
+        const newFirstName = updates.firstName ?? old.firstName;
+        const newLastName = updates.lastName ?? old.lastName;
+        const fullName = `${newFirstName} ${newLastName}`.trim();
+        return {
+          ...old,
+          firstName: newFirstName,
+          lastName: newLastName,
+          fullName,
+          initials: getInitials(fullName || old.email),
+          phone: updates.phone ?? old.phone,
+          country: updates.country ?? old.country,
+          language: updates.language ?? old.language,
+        };
+      });
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev !== undefined) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
 
-  return { profile, loading, save };
+  return { profile: data ?? null, loading: isLoading, save: saveMutation.mutateAsync };
 }
