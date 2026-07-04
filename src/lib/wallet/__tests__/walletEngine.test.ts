@@ -41,8 +41,8 @@ describe("booking_completed", () => {
     const op = booking_completed(BOOKING);
     expect(op.walletDelta.hostPendingDelta).toBe(-85_000);
     expect(op.walletDelta.hostAvailableDelta).toBe(85_000);
-    expect(op.walletDelta.platformPendingDelta).toBe(-15_000);
-    expect(op.walletDelta.platformAvailableDelta).toBe(15_000);
+    expect(op.walletDelta.platformPendingDelta).toBe(-25_000); // commission + service_fee
+    expect(op.walletDelta.platformAvailableDelta).toBe(25_000);
   });
 });
 

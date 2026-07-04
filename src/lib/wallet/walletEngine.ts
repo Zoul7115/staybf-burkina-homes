@@ -102,8 +102,10 @@ export function booking_completed(booking: {
   reference: string;
   hostPayoutAmount: number;
   commissionAmount: number;
+  serviceFeeAmount: number;
 }): WalletOperation {
   const entries = ledgerBookingCompleted(booking);
+  const platformRelease = booking.commissionAmount + booking.serviceFeeAmount;
   return {
     event: "booking_completed",
     entries,
@@ -111,8 +113,8 @@ export function booking_completed(booking: {
       ...emptyDelta(),
       hostPendingDelta: -booking.hostPayoutAmount,
       hostAvailableDelta: booking.hostPayoutAmount,
-      platformPendingDelta: -booking.commissionAmount,
-      platformAvailableDelta: booking.commissionAmount,
+      platformPendingDelta: -platformRelease,
+      platformAvailableDelta: platformRelease,
     },
     auditMetadata: { bookingId: booking.id, reference: booking.reference },
     timestamp: new Date().toISOString(),

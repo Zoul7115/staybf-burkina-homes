@@ -76,7 +76,7 @@ describe("ledgerBookingCompleted", () => {
 
     expect(platformRelease.debitWallet).toBe("platform_pending");
     expect(platformRelease.creditWallet).toBe("platform_available");
-    expect(platformRelease.amountFcfa).toBe(15_000);
+    expect(platformRelease.amountFcfa).toBe(25_000); // commission + service_fee
   });
 });
 
@@ -140,10 +140,9 @@ describe("computeBalanceFromEntries — full lifecycle", () => {
     // host pending fully released
     expect(bal.hostPending).toBe(0);
     expect(bal.hostAvailable).toBe(85_000);
-    // commission released; service fee (10_000) stays in platform_pending
-    // (service fee is collected separately from commission)
-    expect(bal.platformPending).toBe(10_000);
-    expect(bal.platformAvailable).toBe(15_000);
+    // both commission and service_fee released together on completion
+    expect(bal.platformPending).toBe(0);
+    expect(bal.platformAvailable).toBe(25_000);
   });
 
   it("computes correct balance after payout", () => {

@@ -98,7 +98,11 @@ export function ledgerBookingCompleted(booking: {
   reference: string;
   hostPayoutAmount: number;
   commissionAmount: number;
+  serviceFeeAmount: number;
 }): LedgerEntry[] {
+  // Platform release = commission + service_fee (both were credited to platform_pending at booking time)
+  const platformReleaseAmount = booking.commissionAmount + booking.serviceFeeAmount;
+
   return [
     createLedgerEntry({
       type: "booking_completed_release",
@@ -113,10 +117,10 @@ export function ledgerBookingCompleted(booking: {
       type: "booking_completed_release",
       debitWallet: "platform_pending",
       creditWallet: "platform_available",
-      amountFcfa: booking.commissionAmount,
+      amountFcfa: platformReleaseAmount,
       bookingId: booking.id,
       reference: booking.reference,
-      description: `Checkout ${booking.reference} — commission disponible`,
+      description: `Checkout ${booking.reference} — commission + frais disponibles`,
     }),
   ];
 }
