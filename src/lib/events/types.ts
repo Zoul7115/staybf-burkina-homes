@@ -139,6 +139,71 @@ export type ReviewSubmittedEvent = BaseEvent<"REVIEW_SUBMITTED", {
   rating: number;
 }>;
 
+// ── Ledger events ─────────────────────────────────────────────
+
+export type LedgerEntryCreatedEvent = BaseEvent<"LEDGER_ENTRY_CREATED", {
+  entryId: string;
+  entryType: string;
+  amountFcfa: number;
+  bookingId: string | null;
+  payoutId: string | null;
+  refundId: string | null;
+  hostId: string | null;
+}>;
+
+// ── Granular payment events ───────────────────────────────────
+
+export type PaymentCapturedEvent = BaseEvent<"PAYMENT_CAPTURED", {
+  paymentId: string;
+  bookingId: string;
+  amountFcfa: number;
+  processorFeeFcfa: number;
+  method: string;
+  provider: string;
+  capturedAt: string;
+}>;
+
+export type PaymentRefundedEvent = BaseEvent<"PAYMENT_REFUNDED", {
+  paymentId: string;
+  refundId: string;
+  bookingId: string;
+  amountFcfa: number;
+  refundType: string;
+}>;
+
+// ── Webhook lifecycle events ──────────────────────────────────
+
+export type WebhookReceivedEvent = BaseEvent<"WEBHOOK_RECEIVED", {
+  webhookLogId: string;
+  provider: string;
+  providerEventId: string | null;
+  paymentId: string | null;
+}>;
+
+export type WebhookFailedEvent = BaseEvent<"WEBHOOK_FAILED", {
+  webhookLogId: string;
+  provider: string;
+  reason: string;
+  attempts: number;
+}>;
+
+// ── Payout events ─────────────────────────────────────────────
+
+export type PayoutCreatedEvent = BaseEvent<"PAYOUT_CREATED", {
+  payoutId: string;
+  hostId: string;
+  amountFcfa: number;
+  method: string;
+  scheduledFor: string | null;
+}>;
+
+export type PayoutCompletedEvent = BaseEvent<"PAYOUT_COMPLETED", {
+  payoutId: string;
+  hostId: string;
+  amountFcfa: number;
+  paidAt: string;
+}>;
+
 // ── Union ─────────────────────────────────────────────────────
 
 export type StayBFEvent =
@@ -149,6 +214,8 @@ export type StayBFEvent =
   | PaymentIntentCreatedEvent
   | PaymentReceivedEvent
   | PaymentFailedEvent
+  | PaymentCapturedEvent
+  | PaymentRefundedEvent
   | FundsReleasedEvent
   | WithdrawalRequestedEvent
   | WithdrawalApprovedEvent
@@ -156,7 +223,12 @@ export type StayBFEvent =
   | WithdrawalFailedEvent
   | RefundCreatedEvent
   | RefundCompletedEvent
-  | ReviewSubmittedEvent;
+  | ReviewSubmittedEvent
+  | LedgerEntryCreatedEvent
+  | WebhookReceivedEvent
+  | WebhookFailedEvent
+  | PayoutCreatedEvent
+  | PayoutCompletedEvent;
 
 export type StayBFEventType = StayBFEvent["type"];
 export type EventPayload<T extends StayBFEventType> = Extract<StayBFEvent, { type: T }>["payload"];

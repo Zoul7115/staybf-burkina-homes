@@ -3,6 +3,7 @@ export * from "./ledger";
 export * from "./walletEngine";
 export * from "./withdrawals";
 export * from "./reconciliation";
+export * from "./projection";
 export * from "./audit";
 export * from "./utils";
 export { useHostWallet, usePlatformWallet } from "./useWallet";
