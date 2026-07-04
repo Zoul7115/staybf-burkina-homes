@@ -3,12 +3,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
 
-export function useRealtimeReviews(propertyId?: string) {
+// Note: the `reviews` table has no `property_id` column — reviews are linked
+// to bookings → room → property. Realtime subscriptions therefore use only
+// `reviewer_id` or `reviewee_id` filters, not a property filter.
+
+export function useRealtimeReviews(opts?: { revieweeId?: string }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const filter = propertyId ? `property_id=eq.${propertyId}` : undefined;
-    const channelName = propertyId ? `reviews:property:${propertyId}` : "reviews:all";
+    const channelName = opts?.revieweeId
+      ? `reviews:reviewee:${opts.revieweeId}`
+      : "reviews:global";
+
+    const filter = opts?.revieweeId
+      ? `reviewee_id=eq.${opts.revieweeId}`
+      : undefined;
 
     const channel = supabase
       .channel(channelName)
@@ -18,13 +27,18 @@ export function useRealtimeReviews(propertyId?: string) {
         () => {
           queryClient.invalidateQueries({ queryKey: queryKeys.hostReviews() });
           queryClient.invalidateQueries({ queryKey: queryKeys.adminReviews() });
-          if (propertyId) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.propertyDetail(propertyId) });
-          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "review_replies" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.hostReviews() });
+          queryClient.invalidateQueries({ queryKey: queryKeys.adminReviews() });
         },
       )
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };
-  }, [propertyId, queryClient]);
+  }, [opts?.revieweeId, queryClient]);
 }

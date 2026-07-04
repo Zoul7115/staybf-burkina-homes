@@ -3,7 +3,10 @@ import { LayoutDashboard, Home, BedDouble, Calendar, Receipt, Wallet, Crown, Sta
 import { DashboardShell, type NavItem, type ShellNotification } from "@/components/dashboard/DashboardShell";
 import { useRouterState } from "@tanstack/react-router";
 import { useHostProfile, useHostNotifications } from "@/lib/host";
+import { useRealtimeNotifications, useRealtimeBookings } from "@/lib/realtime";
 import { getInitials } from "@/lib/shared";
+import { supabase } from "@/lib/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/host")({
   component: HostLayout,
@@ -58,6 +61,17 @@ function HostLayout() {
 
   const { profile } = useHostProfile();
   const { notifications } = useHostNotifications();
+
+  // Resolve userId once for Realtime subscriptions
+  const { data: userId } = useQuery({
+    queryKey: ["auth", "userId"],
+    queryFn: async () => { const { data: { user } } = await supabase.auth.getUser(); return user?.id ?? null; },
+    staleTime: Infinity,
+  });
+
+  // Realtime: notifications + bookings propagated instantly across the whole host shell
+  useRealtimeNotifications(userId ?? null, "host");
+  useRealtimeBookings(userId ?? null, "host");
 
   const displayName = profile?.full_name ?? profile?.display_name ?? "Hôte";
   const email = profile?.email ?? "";

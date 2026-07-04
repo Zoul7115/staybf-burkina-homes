@@ -15,44 +15,48 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: fetchErr } = await db
       .from("bookings")
-      .select("id, traveler_id, host_id, room_id, check_in, check_out, status")
+      .select("id, traveler_id, property_id, status")
       .eq("id", booking_id)
       .single();
 
     if (fetchErr || !booking) return err("Booking not found", 404);
 
-    const isOwner = booking.traveler_id === user.id || booking.host_id === user.id;
-    if (!isOwner) return err("Forbidden", 403);
+    // Load property to get host_id
+    const { data: prop } = await db.from("properties").select("host_id").eq("id", booking.property_id).single();
+    const hostId = prop?.host_id;
 
-    if (!["pending", "confirmed"].includes(booking.status)) {
+    const isTraveler = booking.traveler_id === user.id;
+    const isHost = hostId === user.id;
+
+    if (!isTraveler && !isHost) return err("Forbidden", 403);
+
+    const cancellableStatuses = ["pending_payment", "payment_processing", "awaiting_host", "confirmed"];
+    if (!cancellableStatuses.includes(booking.status)) {
       return err("Booking cannot be cancelled in its current state");
     }
 
+    const newStatus = isTraveler ? "cancelled_by_traveler" : "cancelled_by_host";
+
     const { error: updateErr } = await db.from("bookings").update({
-      status: "cancelled",
-      cancellation_reason: reason ?? null,
-      cancelled_at: new Date().toISOString(),
-      cancelled_by: user.id,
+      status: newStatus,
     }).eq("id", booking_id);
 
     if (updateErr) return err(updateErr.message);
 
-    // Release availability
-    await db.rpc("release_availability", {
-      p_room_id: booking.room_id,
-      p_check_in: booking.check_in,
-      p_check_out: booking.check_out,
-    });
+    // Release availability (1 arg: booking_id)
+    await db.rpc("release_availability", { p_booking_id: booking_id });
 
     // Notify the other party
-    const notifyId = booking.traveler_id === user.id ? booking.host_id : booking.traveler_id;
-    await db.from("notifications").insert({
-      user_id: notifyId,
-      type: "booking_cancelled",
-      title: "Réservation annulée",
-      body: "Une réservation a été annulée.",
-      data: { booking_id },
-    });
+    const notifyId = isTraveler ? hostId : booking.traveler_id;
+    if (notifyId) {
+      await db.from("notifications").insert({
+        user_id: notifyId,
+        type: "booking_cancelled",
+        title: "Réservation annulée",
+        body: reason ?? "Une réservation a été annulée.",
+        data: { booking_id },
+      });
+    }
 
     return ok({ success: true });
   } catch (e) {

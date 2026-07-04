@@ -13,34 +13,32 @@ Deno.serve(async (req) => {
 
     const db = makeServiceClient();
 
-    // Verify ownership
     const { data: prop } = await db.from("properties").select("host_id").eq("id", property_id).single();
     if (!prop || prop.host_id !== user.id) return err("Forbidden", 403);
 
     const storagePath = `${property_id}/${crypto.randomUUID()}-${file_name}`;
 
-    // Create signed upload URL
     const { data: signedData, error: signedErr } = await db.storage
       .from("property-images")
       .createSignedUploadUrl(storagePath);
 
     if (signedErr || !signedData) return err("Failed to create upload URL");
 
-    // Register storage object
+    // Register storage object (correct param names: p_bucket_id, p_size_bytes)
     await db.rpc("register_storage_object", {
-      p_bucket: "property-images",
-      p_path: storagePath,
+      p_bucket_id: "property-images",
+      p_storage_path: storagePath,
       p_owner_id: user.id,
-      p_file_size_bytes: file_size_bytes ?? 0,
-      p_content_type: content_type,
+      p_mime_type: content_type,
+      p_size_bytes: file_size_bytes ?? null,
     });
 
-    // Insert property_images record
+    // Insert property_images record (column is `position`, not `display_order`)
     const { data: imgRecord, error: imgErr } = await db.from("property_images").insert({
       property_id,
       storage_path: storagePath,
       is_cover: is_cover ?? false,
-      display_order: 0,
+      position: 0,
     }).select().single();
 
     if (imgErr) return err(imgErr.message);

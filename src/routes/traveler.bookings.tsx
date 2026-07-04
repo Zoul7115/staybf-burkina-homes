@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useBookings, type SupabaseBooking, type BookingStatus, UPCOMING_STATUSES } from "@/lib/bookings/useBookings";
-import { supabase } from "@/lib/supabase/client";
+import { callEdgeFunction } from "@/lib/storage";
 import { PLACEHOLDER_IMG } from "@/lib/shared";
 
 // ---------------------------------------------------------------------------
@@ -107,25 +107,20 @@ function BookingsPage() {
                   if (!review) return;
                   setSubmitting(true);
                   setSubmitError(null);
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) { setSubmitError("Non authentifié"); setSubmitting(false); return; }
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const { error } = await (supabase as any).from("reviews").insert({
-                    booking_id: review.id,
-                    reviewer_id: user.id,
-                    reviewee_id: review.properties.host_id,
-                    direction: "traveler_to_host",
-                    overall_rating: rating,
-                    body: comment.trim(),
-                    status: "published",
-                    is_published: true,
-                    published_at: new Date().toISOString(),
-                  });
-                  setSubmitting(false);
-                  if (error) { setSubmitError(error.message); return; }
-                  setReview(null);
-                  setComment("");
-                  setRating(5);
+                  try {
+                    await callEdgeFunction("create-review", {
+                      booking_id: review.id,
+                      overall_rating: rating,
+                      body: comment.trim(),
+                    });
+                    setReview(null);
+                    setComment("");
+                    setRating(5);
+                  } catch (e) {
+                    setSubmitError((e as Error).message);
+                  } finally {
+                    setSubmitting(false);
+                  }
                 }}
               >
                 {submitting ? "Publication…" : "Publier l'avis"}

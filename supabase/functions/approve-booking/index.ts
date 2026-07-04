@@ -15,17 +15,22 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: fetchErr } = await db
       .from("bookings")
-      .select("id, traveler_id, host_id, status")
+      .select("id, traveler_id, property_id, status")
       .eq("id", booking_id)
       .single();
 
     if (fetchErr || !booking) return err("Booking not found", 404);
-    if (booking.host_id !== user.id) return err("Forbidden", 403);
-    if (booking.status !== "pending") return err("Booking is not pending");
+
+    const { data: prop } = await db.from("properties").select("host_id").eq("id", booking.property_id).single();
+    if (!prop || prop.host_id !== user.id) return err("Forbidden", 403);
+
+    // Host can only approve bookings in the 'awaiting_host' status
+    if (booking.status !== "awaiting_host") {
+      return err(`Booking is not awaiting host confirmation (current status: ${booking.status})`);
+    }
 
     const { error: updateErr } = await db.from("bookings").update({
       status: "confirmed",
-      confirmed_at: new Date().toISOString(),
     }).eq("id", booking_id);
 
     if (updateErr) return err(updateErr.message);

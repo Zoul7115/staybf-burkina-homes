@@ -10,34 +10,35 @@ Deno.serve(async (req) => {
     const user = await requireAuth(req);
     const body = await req.json();
     const {
-      title, description, property_type, city_id, address, latitude, longitude,
-      amenities, house_rules, max_guests, instant_book,
+      name, description_md, type, city_id, address,
+      latitude, longitude, amenities, house_rules, instant_book,
     } = body;
 
-    if (!title || !property_type || !city_id || !address) {
-      return err("Missing required fields");
-    }
+    if (!name || !type || !city_id) return err("Missing required fields: name, type, city_id");
 
     const db = makeServiceClient();
 
     // Verify host profile exists
     const { data: hostProfile } = await db.from("host_profiles").select("id").eq("id", user.id).maybeSingle();
-    if (!hostProfile) return err("Host profile not found. Please complete your host profile first.", 403);
+    if (!hostProfile) return err("Host profile required. Complete your host profile first.", 403);
+
+    // Generate slug from name
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
 
     const { data: property, error: propErr } = await db.from("properties").insert({
       host_id: user.id,
-      title,
-      description: description ?? null,
-      property_type,
+      name,
+      slug,
+      description_md: description_md ?? null,
+      type,
       city_id,
-      address,
+      address: address ?? null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
       amenities: amenities ?? [],
       house_rules: house_rules ?? null,
-      max_guests: max_guests ?? 1,
       instant_book: instant_book ?? false,
-      status: "pending_review",
+      status: "draft",
     }).select().single();
 
     if (propErr) return err(propErr.message);

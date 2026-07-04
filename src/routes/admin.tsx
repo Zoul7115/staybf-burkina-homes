@@ -1,12 +1,13 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, Building2, Receipt, UserCog, Crown, CreditCard,
   Wallet, Star, MapPin, LifeBuoy, Bell, FileBarChart, Settings, ShieldCheck,
 } from "lucide-react";
 import { DashboardShell, type NavItem, type ShellNotification } from "@/components/dashboard/DashboardShell";
+import { useAdminProfile, useAdminNotifications } from "@/lib/admin";
+import { useRealtimeNotifications } from "@/lib/realtime";
 import { supabase } from "@/lib/supabase/client";
-import { getInitials } from "@/lib/shared";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -48,75 +49,35 @@ const titles: Record<string, { title: string; bc: { label: string; to?: string }
   "/admin/settings": { title: "Paramètres plateforme", bc: [{ label: "Admin" }, { label: "Paramètres" }] },
 };
 
-type AdminUser = { name: string; email: string; avatar: string; role: string };
-
 function AdminLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const info = titles[path] ?? { title: "Admin", bc: [{ label: "Admin" }] };
 
-  const [adminUser, setAdminUser] = useState<AdminUser>({
-    name: "Admin",
-    email: "",
-    avatar: "AD",
-    role: "admin",
+  const { profile } = useAdminProfile();
+  const { notifications } = useAdminNotifications();
+
+  // Resolve current user id for Realtime subscription
+  const { data: userId } = useQuery({
+    queryKey: ["auth", "userId"],
+    queryFn: async () => { const { data: { user } } = await supabase.auth.getUser(); return user?.id ?? null; },
+    staleTime: Infinity,
   });
-  const [notifications, setNotifications] = useState<ShellNotification[]>([]);
 
-  useEffect(() => {
-    async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  useRealtimeNotifications(userId ?? null, "host");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const [profileRes, rolesRes] = await Promise.all([
-        (supabase as any).from("profiles").select("full_name, display_name, email").eq("id", user.id).maybeSingle(),
-        (supabase as any).from("user_roles").select("role").eq("user_id", user.id).limit(1).maybeSingle(),
-      ]);
-
-      const p = profileRes.data;
-      const name = p?.full_name ?? p?.display_name ?? user.email ?? "Admin";
-      setAdminUser({
-        name,
-        email: p?.email ?? user.email ?? "",
-        avatar: getInitials(name),
-        role: rolesRes.data?.role ?? "admin",
-      });
-    }
-
-    async function loadNotifications() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("notifications")
-        .select("id, title, body, type, is_read, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (!data) return;
-      setNotifications(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data as any[]).map((n) => ({
-          id: n.id,
-          title: n.title ?? "Notification",
-          text: n.body ?? "",
-          time: new Date(n.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
-          unread: !n.is_read,
-        }))
-      );
-    }
-
-    loadUser();
-    loadNotifications();
-  }, []);
+  const shellNotifications: ShellNotification[] = notifications.map((n) => ({
+    id: n.id,
+    title: n.title ?? "Notification",
+    text: n.body ?? "",
+    time: new Date(n.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
+    unread: !n.is_read,
+  }));
 
   return (
     <DashboardShell
       navItems={adminNav}
-      user={adminUser}
-      notifications={notifications}
+      user={profile}
+      notifications={shellNotifications}
       title={info.title}
       breadcrumbs={info.bc}
     >

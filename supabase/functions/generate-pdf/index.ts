@@ -22,9 +22,17 @@ Deno.serve(async (req) => {
 
     if (!booking) return err("Booking not found", 404);
 
-    const travelerId = user.id;
-    const hostId = (booking as { host_id?: string }).host_id;
-    if (travelerId !== user.id && hostId !== user.id) return err("Forbidden", 403);
+    const isTraveler = (booking as { traveler_id?: string }).traveler_id === user.id;
+    if (!isTraveler) {
+      // Check if user is the host via property
+      const propertyId = (booking.rooms as { property_id?: string } | null)?.property_id;
+      if (propertyId) {
+        const { data: prop } = await db.from("properties").select("host_id").eq("id", propertyId).single();
+        if (!prop || prop.host_id !== user.id) return err("Forbidden", 403);
+      } else {
+        return err("Forbidden", 403);
+      }
+    }
 
     // Return structured data for client-side PDF generation
     return ok({ booking });

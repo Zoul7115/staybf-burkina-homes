@@ -15,34 +15,33 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: fetchErr } = await db
       .from("bookings")
-      .select("id, traveler_id, host_id, room_id, check_in, check_out, status")
+      .select("id, traveler_id, property_id, status")
       .eq("id", booking_id)
       .single();
 
     if (fetchErr || !booking) return err("Booking not found", 404);
-    if (booking.host_id !== user.id) return err("Forbidden", 403);
-    if (booking.status !== "pending") return err("Booking is not pending");
+
+    const { data: prop } = await db.from("properties").select("host_id").eq("id", booking.property_id).single();
+    if (!prop || prop.host_id !== user.id) return err("Forbidden", 403);
+
+    if (booking.status !== "awaiting_host") {
+      return err(`Booking is not awaiting host confirmation (current status: ${booking.status})`);
+    }
 
     const { error: updateErr } = await db.from("bookings").update({
-      status: "rejected",
-      cancellation_reason: reason ?? null,
-      cancelled_at: new Date().toISOString(),
-      cancelled_by: user.id,
+      status: "cancelled_by_host",
     }).eq("id", booking_id);
 
     if (updateErr) return err(updateErr.message);
 
-    await db.rpc("release_availability", {
-      p_room_id: booking.room_id,
-      p_check_in: booking.check_in,
-      p_check_out: booking.check_out,
-    });
+    // Release availability (1 arg: booking_id)
+    await db.rpc("release_availability", { p_booking_id: booking_id });
 
     await db.from("notifications").insert({
       user_id: booking.traveler_id,
       type: "booking_rejected",
-      title: "Réservation refusée",
-      body: "Votre demande de réservation a été refusée par l'hôte.",
+      title: "Demande refusée",
+      body: reason ?? "L'hôte n'a pas accepté votre demande de réservation.",
       data: { booking_id },
     });
 

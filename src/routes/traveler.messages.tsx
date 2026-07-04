@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, Send, MessageSquare } from "lucide-react";
 import { TravelerShell } from "@/components/traveler/TravelerShell";
@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useTravelerMessages, useThreadMessages } from "@/lib/traveler/useTravelerMessages";
+import { useRealtimeMessages } from "@/lib/realtime";
+import { supabase } from "@/lib/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/traveler/messages")({
   head: () => ({ meta: [{ title: "Messages — StayBF" }] }),
@@ -20,11 +23,26 @@ function MessagesPage() {
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { data: userId } = useQuery({
+    queryKey: ["auth", "userId"],
+    queryFn: async () => { const { data: { user } } = await supabase.auth.getUser(); return user?.id ?? null; },
+    staleTime: Infinity,
+  });
 
   const filtered = threads.filter((c) => c.hostName.toLowerCase().includes(query.toLowerCase()));
   const active = threads.find((c) => c.id === activeId);
 
   const { messages, loading: messagesLoading, send } = useThreadMessages(activeId);
+
+  // Realtime: push incoming messages directly into cache
+  useRealtimeMessages(activeId ?? null, "traveler", userId ?? null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const switchConv = (id: string) => {
     setActiveId(id);
@@ -123,6 +141,7 @@ function MessagesPage() {
                   </motion.div>
                 ))
               )}
+              <div ref={bottomRef} />
             </div>
             <div className="p-3 border-t border-border flex gap-2">
               <Input

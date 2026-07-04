@@ -21,11 +21,11 @@ Deno.serve(async (req) => {
     if (signedErr || !signedData) return err("Failed to create upload URL");
 
     await db.rpc("register_storage_object", {
-      p_bucket: "avatars",
-      p_path: storagePath,
+      p_bucket_id: "avatars",
+      p_storage_path: storagePath,
       p_owner_id: user.id,
-      p_file_size_bytes: file_size_bytes ?? 0,
-      p_content_type: content_type,
+      p_mime_type: content_type,
+      p_size_bytes: file_size_bytes ?? null,
     });
 
     return ok({ signedUrl: signedData.signedUrl, token: signedData.token, storagePath });

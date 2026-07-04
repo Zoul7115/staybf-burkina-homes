@@ -10,30 +10,35 @@ Deno.serve(async (req) => {
     const admin = await requireRole(req, "admin");
     const { payment_id, reason } = await req.json();
     if (!payment_id) return err("Missing payment_id");
+    if (!reason || reason.length < 10) return err("reason must be at least 10 characters");
 
     const db = makeServiceClient();
 
-    const { data: payment } = await db.from("payments").select("id, status, amount_fcfa, cinetpay_transaction_id").eq("id", payment_id).single();
-    if (!payment) return err("Payment not found", 404);
-    if (payment.status !== "captured") return err("Payment cannot be refunded");
+    const { data: payment } = await db
+      .from("payments")
+      .select("id, status, amount_fcfa, cinetpay_transaction_id")
+      .eq("id", payment_id)
+      .single();
 
-    // Mark as refunded in DB
+    if (!payment) return err("Payment not found", 404);
+    if (payment.status !== "captured") return err("Only captured payments can be refunded");
+
+    // Transition: captured → refund_pending → (async) refunded
     const { error: updateErr } = await db.from("payments").update({
-      status: "refunded",
-      refunded_at: new Date().toISOString(),
+      status: "refund_pending",
     }).eq("id", payment_id);
 
     if (updateErr) return err(updateErr.message);
 
     await db.from("admin_actions").insert({
-      actor_id: admin.id,
-      action_type: "refund_payment",
-      target_table: "payments",
+      admin_id: admin.id,
+      action_type: "refund_issue",
+      target_type: "payment",
       target_id: payment_id,
-      notes: reason ?? null,
+      reason,
     });
 
-    return ok({ success: true });
+    return ok({ success: true, status: "refund_pending" });
   } catch (e) {
     return err((e as Error).message, 500);
   }

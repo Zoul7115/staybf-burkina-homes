@@ -50,4 +50,6 @@ export const queryKeys = {
   adminSubscriptions: ()                             => ["admin", "subscriptions"]              as const,
   adminCities: ()                                    => ["admin", "cities"]                     as const,
   adminRoles: ()                                     => ["admin", "roles"]                      as const,
+  adminNotifications: ()                             => ["admin", "notifications"]               as const,
+  adminProfile: ()                                   => ["admin", "profile"]                    as const,
 } as const;

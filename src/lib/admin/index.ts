@@ -13,3 +13,7 @@ export { useAdminRevenue } from "./useAdminRevenue";
 export { useAdminSubscriptions } from "./useAdminSubscriptions";
 export { useAdminCities } from "./useAdminCities";
 export { useAdminRoles } from "./useAdminRoles";
+export { useAdminNotifications } from "./useAdminNotifications";
+export type { AdminNotification } from "./useAdminNotifications";
+export { useAdminProfile } from "./useAdminProfile";
+export type { AdminProfile } from "./useAdminProfile";

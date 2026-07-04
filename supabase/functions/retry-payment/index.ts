@@ -13,22 +13,32 @@ Deno.serve(async (req) => {
 
     const db = makeServiceClient();
 
-    const { data: payment } = await db.from("payments").select("id, status, booking_id, bookings(traveler_id)").eq("id", payment_id).single();
+    const { data: payment } = await db
+      .from("payments")
+      .select("id, status, booking_id, retry_count, bookings!booking_id(traveler_id)")
+      .eq("id", payment_id)
+      .single();
+
     if (!payment) return err("Payment not found", 404);
 
-    const travelerId = (payment.bookings as { traveler_id: string } | null)?.traveler_id;
-    if (travelerId !== user.id) return err("Forbidden", 403);
-    if (!["failed", "cancelled"].includes(payment.status)) return err("Payment cannot be retried");
+    const booking = Array.isArray(payment.bookings) ? payment.bookings[0] : payment.bookings as { traveler_id: string } | null;
+    if (!booking || booking.traveler_id !== user.id) return err("Forbidden", 403);
 
-    // Reset to pending so checkout flow can restart
+    if (!["failed", "cancelled"].includes(payment.status)) {
+      return err("Payment cannot be retried");
+    }
+
+    const newRetryCount = (payment.retry_count ?? 0) + 1;
+    if (newRetryCount > 3) return err("Maximum retry attempts reached");
+
     const { error: updateErr } = await db.from("payments").update({
       status: "pending",
-      retry_count: db.rpc("increment", { row_id: payment_id }),
+      retry_count: newRetryCount,
     }).eq("id", payment_id);
 
     if (updateErr) return err(updateErr.message);
 
-    return ok({ success: true, payment_id });
+    return ok({ success: true, payment_id, retry_count: newRetryCount });
   } catch (e) {
     return err((e as Error).message, 500);
   }

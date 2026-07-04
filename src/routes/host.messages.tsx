@@ -7,9 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Paperclip, Send, Search, MessageSquare } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/widgets";
 import { useHostThreads, useHostThreadMessages } from "@/lib/host";
+import { useRealtimeMessages } from "@/lib/realtime";
 import { getInitials } from "@/lib/shared";
 import { cn } from "@/lib/utils";
 import type { HostThread } from "@/lib/host";
+import { supabase } from "@/lib/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/host/messages")({ component: HostMessagesPage });
 
@@ -148,6 +151,9 @@ function MessagePanel({
 
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Realtime: push incoming messages directly into cache
+  useRealtimeMessages(thread.id, "host", hostUserId);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -288,14 +294,16 @@ function HostMessagesPage() {
   const [q, setQ] = useState("");
   const [hostUserId, setHostUserId] = useState<string>("");
 
-  // Resolve host user id once for "isMe" detection in messages
+  // Resolve host user id once — used for "isMe" detection and Realtime subscription
+  const { data: resolvedUserId } = useQuery({
+    queryKey: ["auth", "userId"],
+    queryFn: async () => { const { data: { user } } = await supabase.auth.getUser(); return user?.id ?? null; },
+    staleTime: Infinity,
+  });
+  // Keep local state in sync so it can be passed to MessagePanel
   useEffect(() => {
-    import("@/lib/supabase/client").then(({ supabase }) => {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) setHostUserId(data.user.id);
-      });
-    });
-  }, []);
+    if (resolvedUserId) setHostUserId(resolvedUserId);
+  }, [resolvedUserId]);
 
   // Auto-select first thread once loaded
   useEffect(() => {

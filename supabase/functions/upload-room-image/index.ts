@@ -13,9 +13,16 @@ Deno.serve(async (req) => {
 
     const db = makeServiceClient();
 
-    const { data: room } = await db.from("rooms").select("id, property_id, properties(host_id)").eq("id", room_id).single();
+    const { data: room } = await db
+      .from("rooms")
+      .select("id, property_id, properties!property_id(host_id)")
+      .eq("id", room_id)
+      .single();
+
     if (!room) return err("Room not found", 404);
-    if ((room.properties as { host_id: string }).host_id !== user.id) return err("Forbidden", 403);
+
+    const prop = Array.isArray(room.properties) ? room.properties[0] : room.properties as { host_id: string } | null;
+    if (!prop || prop.host_id !== user.id) return err("Forbidden", 403);
 
     const storagePath = `${room.property_id}/${room_id}/${crypto.randomUUID()}-${file_name}`;
 
@@ -26,18 +33,18 @@ Deno.serve(async (req) => {
     if (signedErr || !signedData) return err("Failed to create upload URL");
 
     await db.rpc("register_storage_object", {
-      p_bucket: "room-images",
-      p_path: storagePath,
+      p_bucket_id: "room-images",
+      p_storage_path: storagePath,
       p_owner_id: user.id,
-      p_file_size_bytes: file_size_bytes ?? 0,
-      p_content_type: content_type,
+      p_mime_type: content_type,
+      p_size_bytes: file_size_bytes ?? null,
     });
 
     const { data: imgRecord, error: imgErr } = await db.from("room_images").insert({
       room_id,
       storage_path: storagePath,
       is_cover: is_cover ?? false,
-      display_order: 0,
+      position: 0,
     }).select().single();
 
     if (imgErr) return err(imgErr.message);
