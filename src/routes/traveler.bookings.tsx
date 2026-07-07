@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Download, Star, MessageSquare, CalendarCheck } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { TravelerShell } from "@/components/traveler/TravelerShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useBookings, type SupabaseBooking, type BookingStatus, UPCOMING_STATUSES } from "@/lib/bookings/useBookings";
 import { callEdgeFunction } from "@/lib/storage";
-import { PLACEHOLDER_IMG } from "@/lib/shared";
+import { coverImageUrl } from "@/lib/shared";
+import { queryKeys } from "@/lib/query/keys";
 
 // ---------------------------------------------------------------------------
 // Route
@@ -31,11 +33,23 @@ export const Route = createFileRoute("/traveler/bookings")({
 
 function BookingsPage() {
   const { upcoming, past, loading } = useBookings();
+  const queryClient = useQueryClient();
   const [review, setReview] = useState<SupabaseBooking | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const reviewMutation = useMutation({
+    mutationFn: async ({ bookingId, overallRating, body }: { bookingId: string; overallRating: number; body: string }) =>
+      callEdgeFunction("create-review", { booking_id: bookingId, overall_rating: overallRating, body }),
+    onSuccess: () => {
+      setReview(null);
+      setComment("");
+      setRating(5);
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerBookings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerNotifications() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerStats() });
+    },
+  });
 
   return (
     <TravelerShell title="Mes réservations">
@@ -97,33 +111,20 @@ function BookingsPage() {
             </div>
           )}
           <DialogFooter className="flex-col items-stretch gap-2">
-            {submitError && <p className="text-xs text-destructive text-center">{submitError}</p>}
+            {reviewMutation.isError && (
+              <p className="text-xs text-destructive text-center">{(reviewMutation.error as Error)?.message}</p>
+            )}
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => { setReview(null); setSubmitError(null); }}>Annuler</Button>
+              <Button variant="outline" onClick={() => { setReview(null); reviewMutation.reset(); }}>Annuler</Button>
               <Button
-                disabled={submitting || !comment.trim()}
+                disabled={reviewMutation.isPending || !comment.trim()}
                 className="gradient-primary text-primary-foreground"
-                onClick={async () => {
+                onClick={() => {
                   if (!review) return;
-                  setSubmitting(true);
-                  setSubmitError(null);
-                  try {
-                    await callEdgeFunction("create-review", {
-                      booking_id: review.id,
-                      overall_rating: rating,
-                      body: comment.trim(),
-                    });
-                    setReview(null);
-                    setComment("");
-                    setRating(5);
-                  } catch (e) {
-                    setSubmitError((e as Error).message);
-                  } finally {
-                    setSubmitting(false);
-                  }
+                  reviewMutation.mutate({ bookingId: review.id, overallRating: rating, body: comment.trim() });
                 }}
               >
-                {submitting ? "Publication…" : "Publier l'avis"}
+                {reviewMutation.isPending ? "Publication…" : "Publier l'avis"}
               </Button>
             </div>
           </DialogFooter>
@@ -184,10 +185,9 @@ function BookingRow({
       transition={{ delay: idx * 0.05 }}
       className="rounded-2xl bg-card border border-border overflow-hidden shadow-card flex flex-col md:flex-row"
     >
-      {/* Placeholder image — property_images table is currently empty */}
       <Link to="/properties/$id" params={{ id: b.properties.id }} className="md:w-56 shrink-0">
         <img
-          src={PLACEHOLDER_IMG}
+          src={coverImageUrl(b.properties.property_images ?? [])}
           alt={b.properties.name}
           className="h-44 md:h-full w-full object-cover"
         />

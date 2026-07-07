@@ -47,7 +47,7 @@ export const Route = createFileRoute("/checkout/success")({
 });
 
 const methodLabels: Record<string, string> = {
-  orange: "Orange Money", moov: "Moov Money", visa: "Visa", mastercard: "Mastercard",
+  orange_money: "Orange Money", moov_money: "Moov Money", visa: "Visa", mastercard: "Mastercard",
 };
 
 // ---------------------------------------------------------------------------

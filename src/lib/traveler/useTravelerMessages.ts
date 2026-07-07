@@ -107,6 +107,7 @@ export function useThreadMessages(threadId: string | undefined): {
   messages: MessageItem[];
   loading: boolean;
   send: (body: string) => Promise<void>;
+  markRead: () => void;
 } {
   const queryClient = useQueryClient();
   const KEY = queryKeys.travelerMessages(threadId ?? "");
@@ -152,9 +153,28 @@ export function useThreadMessages(threadId: string | undefined): {
     },
   });
 
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      if (!threadId) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("messages")
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq("thread_id", threadId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerThreads() });
+    },
+  });
+
   return {
     messages: data?.messages ?? [],
     loading: isLoading,
     send: async (body: string) => { await sendMutation.mutateAsync(body); },
+    markRead: () => { markReadMutation.mutate(); },
   };
 }

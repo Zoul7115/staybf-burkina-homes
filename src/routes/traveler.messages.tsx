@@ -34,7 +34,7 @@ function MessagesPage() {
   const filtered = threads.filter((c) => c.hostName.toLowerCase().includes(query.toLowerCase()));
   const active = threads.find((c) => c.id === activeId);
 
-  const { messages, loading: messagesLoading, send } = useThreadMessages(activeId);
+  const { messages, loading: messagesLoading, send, markRead } = useThreadMessages(activeId);
 
   // Realtime: push incoming messages directly into cache
   useRealtimeMessages(activeId ?? null, "traveler", userId ?? null);
@@ -43,6 +43,12 @@ function MessagesPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Mark messages as read when a thread becomes active
+  useEffect(() => {
+    if (activeId && !messagesLoading) markRead();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, messagesLoading]);
 
   const switchConv = (id: string) => {
     setActiveId(id);

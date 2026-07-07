@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check } from "lucide-react";
+import { Camera, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TravelerShell } from "@/components/traveler/TravelerShell";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTravelerProfile } from "@/lib/traveler/useTravelerProfile";
+import { callEdgeFunction } from "@/lib/storage";
+import { supabase } from "@/lib/supabase/client";
 
 export const Route = createFileRoute("/traveler/profile")({
   head: () => ({ meta: [{ title: "Profil — StayBF" }] }),
@@ -30,6 +32,32 @@ function ProfilePage() {
     firstName: "", lastName: "", email: "", phone: "", country: "", language: "",
   });
   const [saved, setSaved] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { signedUrl, storagePath } = await callEdgeFunction<{ signedUrl: string; storagePath: string; token: string }>(
+        "upload-avatar",
+        { file_name: file.name, content_type: file.type, file_size_bytes: file.size }
+      );
+      await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(storagePath);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await (supabase as any).from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      }
+      toast.success("Photo de profil mise à jour");
+    } catch {
+      toast.error("Erreur lors du téléchargement de la photo");
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -95,8 +123,20 @@ function ProfilePage() {
                 profile?.initials ?? "?"
               )}
             </div>
-            <button type="button" className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-card border border-border grid place-items-center shadow-card hover:scale-110 transition">
-              <Camera className="h-4 w-4" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+            <button
+              type="button"
+              disabled={avatarUploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-card border border-border grid place-items-center shadow-card hover:scale-110 transition disabled:opacity-60"
+            >
+              {avatarUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </button>
           </div>
           <div className="text-center sm:text-left">

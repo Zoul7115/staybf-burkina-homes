@@ -17,12 +17,19 @@ export type BookingStatus =
   | "no_show"
   | "disputed";
 
+export interface BookingPropertyImage {
+  storage_path: string;
+  is_cover: boolean;
+  position: number;
+}
+
 export interface BookingProperty {
   id: string;
   name: string;
   address: string;
   type: string;
   host_id: string;
+  property_images: BookingPropertyImage[];
 }
 
 export interface SupabaseBooking {
@@ -51,7 +58,7 @@ async function fetchBookings(): Promise<SupabaseBooking[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbErr } = await (supabase as any)
     .from("bookings")
-    .select(`id,reference,property_id,check_in,check_out,nights,guests_adults,total_amount,status,properties(id,name,address,type,host_id)`)
+    .select(`id,reference,property_id,check_in,check_out,nights,guests_adults,total_amount,status,properties(id,name,address,type,host_id,property_images(storage_path,is_cover,position))`)
     .eq("traveler_id", user.id)
     .order("check_in", { ascending: false });
 
