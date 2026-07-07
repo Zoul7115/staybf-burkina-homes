@@ -4,13 +4,85 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Check, Crown, Sparkles, Download, Calculator } from "lucide-react";
-import { subscriptionPlans, hostInvoices, fmtFCFA } from "@/lib/staybf-host-data";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase/client";
 import { StatusBadge } from "@/components/dashboard/widgets";
 import { cn } from "@/lib/utils";
+
+function fmtFCFA(n: number): string {
+  return `${n.toLocaleString("fr-FR")} FCFA`;
+}
+
+// ── Subscription plan config (UI configuration, not DB data) ──
+const SUBSCRIPTION_PLANS = [
+  {
+    id: "free",
+    name: "Gratuit",
+    price: 0,
+    period: "FCFA / mois",
+    commission: "15%",
+    popular: false,
+    current: false,
+    cta: "Commencer",
+    features: ["1 propriété", "Commission 15%", "Support email", "Dashboard basique"],
+  },
+  {
+    id: "starter",
+    name: "Démarrage",
+    price: 15_000,
+    period: "FCFA / mois",
+    commission: "0%",
+    popular: false,
+    current: false,
+    cta: "Choisir",
+    features: ["3 propriétés", "Commission 0%", "Support prioritaire", "Calendrier avancé"],
+  },
+  {
+    id: "growth",
+    name: "Croissance",
+    price: 25_000,
+    period: "FCFA / mois",
+    commission: "0%",
+    popular: true,
+    current: true,
+    cta: "Choisir",
+    features: ["10 propriétés", "Commission 0%", "Support dédié", "Analytics avancées", "Paiements accélérés"],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: 50_000,
+    period: "FCFA / mois",
+    commission: "0%",
+    popular: false,
+    current: false,
+    cta: "Contacter",
+    features: ["Propriétés illimitées", "Commission 0%", "Manager dédié", "API accès", "Contrat sur-mesure"],
+  },
+];
 
 export const Route = createFileRoute("/host/subscription")({ component: HostSubscriptionPage });
 
 function HostSubscriptionPage() {
+  const { data: subscriptions } = useQuery({
+    queryKey: ["host", "subscriptions"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await (supabase as any)
+        .from("billing.subscriptions")
+        .select("id, status, current_period_start, current_period_end, created_at, billing_subscription_plans(name, price_fcfa)")
+        .eq("host_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(24);
+      if (error) return [];
+      return (data ?? []) as any[];
+    },
+    staleTime: 300_000,
+  });
+
+  const currentPlan = SUBSCRIPTION_PLANS.find((p) => p.current);
+
   return (
     <div className="space-y-6">
       <Card className="p-5 bg-gradient-to-br from-primary/10 via-secondary/5 to-background border-primary/20">
@@ -18,8 +90,8 @@ function HostSubscriptionPage() {
           <span className="h-14 w-14 rounded-2xl gradient-primary text-primary-foreground grid place-items-center"><Crown className="h-7 w-7" /></span>
           <div className="flex-1 text-center sm:text-left">
             <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Plan actuel</p>
-            <h2 className="font-display font-bold text-xl">Croissance · 25 000 FCFA / mois</h2>
-            <p className="text-sm text-muted-foreground">Renouvellement automatique le 01 Juillet 2026</p>
+            <h2 className="font-display font-bold text-xl">{currentPlan?.name} · {fmtFCFA(currentPlan?.price ?? 0)} / mois</h2>
+            <p className="text-sm text-muted-foreground">Renouvellement automatique le 01 Août 2026</p>
           </div>
           <Button variant="outline">Annuler l'abonnement</Button>
         </div>
@@ -28,7 +100,7 @@ function HostSubscriptionPage() {
       <div>
         <h3 className="font-display font-bold text-lg mb-4">Choisissez votre plan</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {subscriptionPlans.map((p) => (
+          {SUBSCRIPTION_PLANS.map((p) => (
             <Card key={p.id} className={cn("p-5 relative flex flex-col", p.popular && "border-primary shadow-elevated")}>
               {p.popular && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 gradient-primary text-primary-foreground border-0"><Sparkles className="h-3 w-3 mr-1" /> Populaire</Badge>}
               <h4 className="font-display font-bold text-lg">{p.name}</h4>
@@ -76,32 +148,36 @@ function HostSubscriptionPage() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-semibold">Historique de facturation</h3>
-          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1.5" /> Tout exporter</Button>
+          <Button variant="outline" size="sm" disabled title="À venir"><Download className="h-4 w-4 mr-1.5" /> Tout exporter</Button>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>N°</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Montant</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {hostInvoices.map((inv) => (
-              <TableRow key={inv.id}>
-                <TableCell className="text-xs">{inv.date}</TableCell>
-                <TableCell className="font-mono text-xs">{inv.number}</TableCell>
-                <TableCell className="text-sm">{inv.plan}</TableCell>
-                <TableCell><StatusBadge status="paid" /></TableCell>
-                <TableCell className="text-right font-semibold">{fmtFCFA(inv.amount)}</TableCell>
-                <TableCell className="text-right"><Button size="icon" variant="ghost"><Download className="h-4 w-4" /></Button></TableCell>
+        {(!subscriptions || subscriptions.length === 0) ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Aucune facture disponible.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Montant</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {subscriptions.map((s) => {
+                const plan = Array.isArray(s.billing_subscription_plans) ? s.billing_subscription_plans[0] : s.billing_subscription_plans;
+                const date = new Date(s.current_period_start).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-xs">{date}</TableCell>
+                    <TableCell className="text-sm">{plan?.name ?? "—"}</TableCell>
+                    <TableCell><StatusBadge status={s.status === "active" ? "active" : s.status === "cancelled" ? "cancelled" : "pending"} /></TableCell>
+                    <TableCell className="text-right font-semibold">{plan?.price_fcfa ? fmtFCFA(plan.price_fcfa) : "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </Card>
     </div>
   );

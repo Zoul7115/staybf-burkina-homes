@@ -44,6 +44,7 @@ export const queryKeys = {
 
   // ── Wallet ────────────────────────────────────────────────────
   hostWallet: (hostId: string)                         => ["wallet", "host", hostId]               as const,
+  hostFinancialDashboard: (hostId: string)             => ["wallet", "host", hostId, "dashboard"]  as const,
   hostPaymentTransactions: (hostId: string)            => ["wallet", "payments", hostId]           as const,
   hostRefundTransactions: (hostId: string)             => ["wallet", "refunds", hostId]            as const,
   hostWithdrawals: (hostId: string)                    => ["wallet", "withdrawals", hostId]        as const,

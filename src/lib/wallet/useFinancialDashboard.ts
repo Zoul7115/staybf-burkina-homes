@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
 import { groupByMonth, isThisMonth } from "./utils";
+import { getHostWallet } from "./projection";
 import type { HostFinancialDashboard, AdminFinancialDashboard } from "./types";
 
 // ── Host financial dashboard ──────────────────────────────────
@@ -13,32 +14,33 @@ import type { HostFinancialDashboard, AdminFinancialDashboard } from "./types";
 async function fetchHostFinancialDashboard(hostId: string): Promise<HostFinancialDashboard> {
   const db = supabase as any;
 
-  const [propertyRes, payoutRes] = await Promise.all([
+  // Wallet balance from ledger only — never from bookings/payouts
+  const [walletResult, propertyRes, payoutRes] = await Promise.all([
+    getHostWallet(hostId),
     db.from("properties").select("id").eq("host_id", hostId).is("deleted_at", null),
     db.from("payouts").select("amount_fcfa, status, created_at, paid_at").eq("host_id", hostId).order("created_at", { ascending: false }),
   ]);
+
+  const wallet = walletResult ?? {
+    hostId, pendingBalance: 0, availableBalance: 0, withdrawnBalance: 0,
+    totalEarned: 0, currency: "XOF" as const, computedAt: new Date().toISOString(),
+  };
 
   if (propertyRes.error) throw new Error(propertyRes.error.message);
   const propertyIds: string[] = ((propertyRes.data ?? []) as { id: string }[]).map((p) => p.id);
 
   if (propertyIds.length === 0) {
-    const emptyWallet = { hostId, pendingBalance: 0, availableBalance: 0, withdrawnBalance: 0, totalEarned: 0, currency: "XOF" as const, computedAt: new Date().toISOString() };
-    return { wallet: emptyWallet, monthlyRevenueFcfa: 0, monthlyBookingCount: 0, pendingPayouts: [], recentTransactions: [], revenueChart: [] };
+    return { wallet, monthlyRevenueFcfa: 0, monthlyBookingCount: 0, pendingPayouts: [], recentTransactions: [], revenueChart: [] };
   }
 
-  const [pendingRes, availableRes, completedRes] = await Promise.all([
-    db.from("bookings").select("host_payout_amount").in("property_id", propertyIds).in("status", ["confirmed", "checked_in"]).eq("payout_status", "pending"),
-    db.from("bookings").select("host_payout_amount").in("property_id", propertyIds).in("status", ["completed"]).eq("payout_status", "pending"),
-    db.from("bookings").select("host_payout_amount, completed_at").in("property_id", propertyIds).eq("status", "completed").order("completed_at", { ascending: false }).limit(200),
-  ]);
-
-  const sum = (rows: { host_payout_amount: number }[]) =>
-    (rows ?? []).reduce((acc, r) => acc + r.host_payout_amount, 0);
-
-  const pendingBalance = sum(pendingRes.data ?? []);
-  const availableBalance = sum(availableRes.data ?? []);
-  const payouts = (payoutRes.data ?? []) as any[];
-  const withdrawnBalance = payouts.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount_fcfa, 0);
+  // Chart and monthly stats come from bookings (analytics, not wallet source of truth)
+  const completedRes = await db
+    .from("bookings")
+    .select("host_payout_amount, completed_at")
+    .in("property_id", propertyIds)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+    .limit(200);
 
   const completedBookings = (completedRes.data ?? []) as { host_payout_amount: number; completed_at: string }[];
   const monthlyRevenueFcfa = completedBookings
@@ -50,6 +52,7 @@ async function fetchHostFinancialDashboard(hostId: string): Promise<HostFinancia
     completedBookings.map((b) => ({ createdAt: b.completed_at, amountFcfa: b.host_payout_amount }))
   ).slice(-6);
 
+  const payouts = (payoutRes.data ?? []) as any[];
   const pendingPayouts = payouts
     .filter((p) => p.status === "pending" || p.status === "scheduled")
     .map((p) => ({
@@ -60,22 +63,12 @@ async function fetchHostFinancialDashboard(hostId: string): Promise<HostFinancia
       failedAt: p.failed_at, failureReason: p.failure_reason, retryCount: p.retry_count ?? 0, createdAt: p.created_at,
     }));
 
-  return {
-    wallet: {
-      hostId, pendingBalance, availableBalance, withdrawnBalance,
-      totalEarned: availableBalance + withdrawnBalance, currency: "XOF", computedAt: new Date().toISOString(),
-    },
-    monthlyRevenueFcfa,
-    monthlyBookingCount,
-    pendingPayouts,
-    recentTransactions: [],
-    revenueChart,
-  };
+  return { wallet, monthlyRevenueFcfa, monthlyBookingCount, pendingPayouts, recentTransactions: [], revenueChart };
 }
 
 export function useHostFinancialDashboard(hostId: string | null) {
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.hostWallet(hostId ?? ""),
+    queryKey: queryKeys.hostFinancialDashboard(hostId ?? ""),
     queryFn: () => fetchHostFinancialDashboard(hostId!),
     enabled: !!hostId,
     staleTime: 30_000,

@@ -31,7 +31,14 @@ async function fetchSearch(filters: SearchFilters): Promise<SearchResult[]> {
     .eq("status", "published")
     .is("deleted_at", null);
 
-  if (filters.city) query = query.eq("cities.name", filters.city);
+  if (filters.city) {
+    const { data: cityRow } = await (supabase as any)
+      .from("cities")
+      .select("id")
+      .eq("name", filters.city)
+      .maybeSingle();
+    if (cityRow?.id) query = query.eq("city_id", cityRow.id);
+  }
 
   query = query.gte("min_price_fcfa", filters.minPrice).lte("min_price_fcfa", filters.maxPrice);
 

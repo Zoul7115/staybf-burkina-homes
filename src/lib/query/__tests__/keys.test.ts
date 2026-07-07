@@ -12,6 +12,12 @@ describe("queryKeys — shape and stability", () => {
     expect(queryKeys.hostWallet("h-2")).toEqual(["wallet", "host", "h-2"]);
   });
 
+  it("hostFinancialDashboard is nested under hostWallet key", () => {
+    const wallet = queryKeys.hostWallet("h-1");
+    const dash = queryKeys.hostFinancialDashboard("h-1");
+    expect(dash.slice(0, wallet.length)).toEqual([...wallet]);
+  });
+
   it("different hostIds produce different keys", () => {
     const a = queryKeys.hostWallet("h-1");
     const b = queryKeys.hostWallet("h-2");

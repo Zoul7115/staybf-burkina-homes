@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase/client";
 import { useHostDashboard } from "@/lib/host";
+import { useHostFinancialDashboard } from "@/lib/wallet/useFinancialDashboard";
 import { getInitials } from "@/lib/shared";
 
 export const Route = createFileRoute("/host/dashboard")({ component: HostDashboard });
@@ -91,6 +94,15 @@ function SectionsSkeleton() {
 
 function HostDashboard() {
   const { data, loading, error } = useHostDashboard();
+  const { data: hostId } = useQuery({
+    queryKey: ["auth", "hostId"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.id ?? null;
+    },
+    staleTime: Infinity,
+  });
+  const { dashboard: financialDashboard } = useHostFinancialDashboard(hostId ?? null);
 
   if (loading) {
     return (
@@ -154,12 +166,12 @@ function HostDashboard() {
         />
       </div>
 
-      {/* Charts — données temps-réel à venir */}
+      {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <MiniLineChart
             label="Revenus mensuels (en milliers FCFA)"
-            data={[]}
+            data={financialDashboard?.revenueChart ?? []}
             height={200}
           />
         </div>

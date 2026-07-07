@@ -12,37 +12,45 @@ import type { PaymentTransaction, RefundTransaction, WithdrawalTransaction } fro
 async function fetchPaymentTransactions(propertyIds: string[]): Promise<PaymentTransaction[]> {
   if (propertyIds.length === 0) return [];
 
+  // Step 1: resolve booking IDs — PostgREST cannot filter on joined columns
+  const { data: bookingData, error: bookingError } = await (supabase as any)
+    .from("bookings")
+    .select("id, reference")
+    .in("property_id", propertyIds);
+
+  if (bookingError) throw new Error(bookingError.message);
+
+  const bookingRows = (bookingData ?? []) as { id: string; reference: string }[];
+  if (bookingRows.length === 0) return [];
+
+  const bookingIds = bookingRows.map((b) => b.id);
+  const refMap = Object.fromEntries(bookingRows.map((b) => [b.id, b.reference]));
+
+  // Step 2: fetch payments filtered by booking_id
   const { data, error } = await (supabase as any)
     .from("payments")
-    .select(`
-      id, booking_id, payer_id, method, status, amount_fcfa, processor_fee_fcfa,
-      captured_at, created_at,
-      bookings!booking_id(reference, property_id)
-    `)
-    .in("bookings.property_id", propertyIds)
+    .select("id, booking_id, payer_id, method, status, amount_fcfa, processor_fee_fcfa, captured_at, created_at")
+    .in("booking_id", bookingIds)
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (error) throw new Error(error.message);
 
-  return ((data ?? []) as any[]).map((r) => {
-    const booking = Array.isArray(r.bookings) ? r.bookings[0] : r.bookings;
-    return {
-      id: r.id,
-      bookingId: r.booking_id,
-      bookingReference: booking?.reference ?? "—",
-      payerId: r.payer_id,
-      method: r.method,
-      status: r.status,
-      amountFcfa: r.amount_fcfa,
-      processorFeeFcfa: r.processor_fee_fcfa,
-      netAmountFcfa: r.amount_fcfa - (r.processor_fee_fcfa ?? 0),
-      currency: "XOF" as const,
-      capturedAt: r.captured_at,
-      createdAt: r.created_at,
-      metadata: {},
-    };
-  });
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    bookingId: r.booking_id,
+    bookingReference: refMap[r.booking_id] ?? "—",
+    payerId: r.payer_id,
+    method: r.method,
+    status: r.status,
+    amountFcfa: r.amount_fcfa,
+    processorFeeFcfa: r.processor_fee_fcfa,
+    netAmountFcfa: r.amount_fcfa - (r.processor_fee_fcfa ?? 0),
+    currency: "XOF" as const,
+    capturedAt: r.captured_at,
+    createdAt: r.created_at,
+    metadata: {},
+  }));
 }
 
 export function usePaymentTransactions(hostId: string | null) {
@@ -77,40 +85,47 @@ export function usePaymentTransactions(hostId: string | null) {
 async function fetchRefundTransactions(propertyIds: string[]): Promise<RefundTransaction[]> {
   if (propertyIds.length === 0) return [];
 
+  // Step 1: resolve booking IDs — PostgREST cannot filter on joined columns
+  const { data: bookingData, error: bookingError } = await (supabase as any)
+    .from("bookings")
+    .select("id, reference")
+    .in("property_id", propertyIds);
+
+  if (bookingError) throw new Error(bookingError.message);
+
+  const bookingRows = (bookingData ?? []) as { id: string; reference: string }[];
+  if (bookingRows.length === 0) return [];
+
+  const bookingIds = bookingRows.map((b) => b.id);
+  const refMap = Object.fromEntries(bookingRows.map((b) => [b.id, b.reference]));
+
+  // Step 2: fetch refunds filtered by booking_id
   const { data, error } = await (supabase as any)
     .from("refunds")
-    .select(`
-      id, payment_id, booking_id, reason, refund_type, status,
-      refund_amount_fcfa, processor_fee_fcfa, approved_by, processed_at, created_at,
-      requested_by,
-      bookings!booking_id(reference, property_id)
-    `)
-    .in("bookings.property_id", propertyIds)
+    .select("id, payment_id, booking_id, reason, refund_type, status, refund_amount_fcfa, processor_fee_fcfa, approved_by, processed_at, created_at, requested_by")
+    .in("booking_id", bookingIds)
     .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) throw new Error(error.message);
 
-  return ((data ?? []) as any[]).map((r) => {
-    const booking = Array.isArray(r.bookings) ? r.bookings[0] : r.bookings;
-    return {
-      id: r.id,
-      paymentId: r.payment_id,
-      bookingId: r.booking_id,
-      bookingReference: booking?.reference ?? "—",
-      refundType: r.refund_type,
-      status: r.status,
-      refundAmountFcfa: r.refund_amount_fcfa,
-      processorFeeFcfa: r.processor_fee_fcfa,
-      netRefundFcfa: r.refund_amount_fcfa - (r.processor_fee_fcfa ?? 0),
-      currency: "XOF" as const,
-      reason: r.reason,
-      requestedBy: r.requested_by,
-      approvedBy: r.approved_by,
-      processedAt: r.processed_at,
-      createdAt: r.created_at,
-    };
-  });
+  return ((data ?? []) as any[]).map((r) => ({
+    id: r.id,
+    paymentId: r.payment_id,
+    bookingId: r.booking_id,
+    bookingReference: refMap[r.booking_id] ?? "—",
+    refundType: r.refund_type,
+    status: r.status,
+    refundAmountFcfa: r.refund_amount_fcfa,
+    processorFeeFcfa: r.processor_fee_fcfa,
+    netRefundFcfa: r.refund_amount_fcfa - (r.processor_fee_fcfa ?? 0),
+    currency: "XOF" as const,
+    reason: r.reason,
+    requestedBy: r.requested_by,
+    approvedBy: r.approved_by,
+    processedAt: r.processed_at,
+    createdAt: r.created_at,
+  }));
 }
 
 export function useRefundTransactions(hostId: string | null) {
