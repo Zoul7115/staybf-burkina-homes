@@ -36,7 +36,7 @@ async function fetchPaymentTransactions(propertyIds: string[]): Promise<PaymentT
       status: r.status,
       amountFcfa: r.amount_fcfa,
       processorFeeFcfa: r.processor_fee_fcfa,
-      netAmountFcfa: r.amount_fcfa - r.processor_fee_fcfa,
+      netAmountFcfa: r.amount_fcfa - (r.processor_fee_fcfa ?? 0),
       currency: "XOF" as const,
       capturedAt: r.captured_at,
       createdAt: r.created_at,
@@ -47,10 +47,11 @@ async function fetchPaymentTransactions(propertyIds: string[]): Promise<PaymentT
 
 export function usePaymentTransactions(hostId: string | null) {
   const propertyQuery = useQuery({
-    queryKey: ["host", "propertyIds", hostId ?? ""],
+    queryKey: queryKeys.hostPropertyIds(hostId ?? ""),
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("properties").select("id").eq("host_id", hostId).is("deleted_at", null);
+      if (error) throw new Error(error.message);
       return ((data ?? []) as { id: string }[]).map((p) => p.id);
     },
     enabled: !!hostId,
@@ -101,7 +102,7 @@ async function fetchRefundTransactions(propertyIds: string[]): Promise<RefundTra
       status: r.status,
       refundAmountFcfa: r.refund_amount_fcfa,
       processorFeeFcfa: r.processor_fee_fcfa,
-      netRefundFcfa: r.refund_amount_fcfa - r.processor_fee_fcfa,
+      netRefundFcfa: r.refund_amount_fcfa - (r.processor_fee_fcfa ?? 0),
       currency: "XOF" as const,
       reason: r.reason,
       requestedBy: r.requested_by,
@@ -114,10 +115,11 @@ async function fetchRefundTransactions(propertyIds: string[]): Promise<RefundTra
 
 export function useRefundTransactions(hostId: string | null) {
   const propertyQuery = useQuery({
-    queryKey: ["host", "propertyIds", hostId ?? ""],
+    queryKey: queryKeys.hostPropertyIds(hostId ?? ""),
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("properties").select("id").eq("host_id", hostId).is("deleted_at", null);
+      if (error) throw new Error(error.message);
       return ((data ?? []) as { id: string }[]).map((p) => p.id);
     },
     enabled: !!hostId,

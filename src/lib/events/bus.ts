@@ -24,7 +24,7 @@ type Subscription = {
 
 let _subscriptionCounter = 0;
 
-class EventBus {
+export class EventBus {
   private subscriptions: Subscription[] = [];
 
   emit(event: StayBFEvent): void {
@@ -33,7 +33,9 @@ class EventBus {
     for (const sub of this.subscriptions) {
       if (sub.type === "*" || sub.type === enriched.type) {
         try {
-          void sub.handler(enriched);
+          Promise.resolve(sub.handler(enriched)).catch((err) => {
+            console.error(`[EventBus] Async subscriber error for ${enriched.type}:`, err);
+          });
         } catch (err) {
           console.error(`[EventBus] Subscriber error for ${enriched.type}:`, err);
         }

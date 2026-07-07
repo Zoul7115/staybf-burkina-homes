@@ -32,12 +32,25 @@ export function useRealtimeBookings(userId: string | null, role: Role) {
 
           // For status updates, patch each relevant cache key
           if (ev.eventType === "UPDATE") {
+            // Only patch scalar columns present in the DB row — never spread ev.new
+            // directly or it overwrites cached join fields (rooms, profiles, etc.)
+            // with undefined.
+            const SAFE_SCALAR_FIELDS = [
+              "status", "confirmed_at", "cancelled_at", "checked_in_at",
+              "completed_at", "updated_at", "payout_status",
+            ] as const;
+            type SafeField = (typeof SAFE_SCALAR_FIELDS)[number];
+            const patch = Object.fromEntries(
+              SAFE_SCALAR_FIELDS
+                .filter((f) => f in ev.new)
+                .map((f) => [f, ev.new[f as SafeField]])
+            );
             bookingKeys.forEach((key) => {
               queryClient.setQueryData<unknown[]>(key, (old) => {
                 if (!Array.isArray(old)) return old;
                 return old.map((b) => {
-                  const booking = b as { id: string; status?: string };
-                  return booking.id === ev.new.id ? { ...booking, ...ev.new } : booking;
+                  const booking = b as { id: string };
+                  return booking.id === ev.new.id ? { ...booking, ...patch } : booking;
                 });
               });
             });

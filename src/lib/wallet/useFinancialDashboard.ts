@@ -75,7 +75,7 @@ async function fetchHostFinancialDashboard(hostId: string): Promise<HostFinancia
 
 export function useHostFinancialDashboard(hostId: string | null) {
   const { data, isLoading, error } = useQuery({
-    queryKey: [...queryKeys.hostRevenue(), hostId ?? ""],
+    queryKey: queryKeys.hostWallet(hostId ?? ""),
     queryFn: () => fetchHostFinancialDashboard(hostId!),
     enabled: !!hostId,
     staleTime: 30_000,

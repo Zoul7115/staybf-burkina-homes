@@ -70,7 +70,7 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
 
   const hostId = user.id;
 
-  const [bookingsRes, reviewsRes, threadsRes] = await Promise.all([
+  const [bookingsRes, reviewsRes, threadsRes, confirmedThisMonthRes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("bookings")
@@ -81,6 +81,14 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
       .order("check_in", { ascending: true })
       .limit(20),
 
+    // Separate count for "confirmed this month" — not limited to 7-day check-in window
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["confirmed", "checked_in", "completed"])
+      .gte("confirmed_at", startOfMonth()),
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("reviews")
@@ -90,7 +98,7 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
       .eq("status", "published")
       .eq("reviewee_id", hostId)
       .order("created_at", { ascending: false })
-      .limit(3),
+      .limit(5),
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
@@ -102,7 +110,7 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
       .limit(3),
   ]);
 
-  const errors = [bookingsRes.error, reviewsRes.error, threadsRes.error].filter(Boolean);
+  const errors = [bookingsRes.error, confirmedThisMonthRes.error, reviewsRes.error, threadsRes.error].filter(Boolean);
   if (errors.length > 0) throw new Error(errors.map((e: { message: string }) => e.message).join("; "));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,15 +121,15 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
     .eq("status", "paid")
     .gte("period_start", startOfMonth());
 
+  if (payoutsRes.error) throw new Error(payoutsRes.error.message);
+
   const allBookings = (bookingsRes.data ?? []) as RawBookingRow[];
   const allReviews = (reviewsRes.data ?? []) as RawReviewRow[];
   const allThreads = (threadsRes.data ?? []) as RawThreadRow[];
   const allPayouts = (payoutsRes.data ?? []) as { amount_fcfa: number }[];
 
   const monthlyRevenueFcfa = allPayouts.reduce((sum, p) => sum + (p.amount_fcfa ?? 0), 0);
-  const confirmedThisMonth = allBookings.filter(
-    (b) => (b.status === "confirmed" || b.status === "checked_in") && b.confirmed_at != null && b.confirmed_at >= startOfMonth()
-  ).length;
+  const confirmedThisMonth = confirmedThisMonthRes.count ?? 0;
   const pendingBookings = allBookings.filter(
     (b) => b.status === "awaiting_host" || b.status === "pending_payment"
   ).length;

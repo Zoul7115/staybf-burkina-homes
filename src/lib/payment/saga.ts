@@ -110,6 +110,7 @@ export type FinalizeSagaInput = {
   paymentId: string;
   bookingId: string;
   bookingReference: string;
+  travelerId: string;
   hostId: string;
   amountFcfa: number;
   processorFeeFcfa: number;
@@ -155,7 +156,7 @@ export function emitCaptureEvents(input: FinalizeSagaInput, queryClient?: QueryC
     payload: {
       bookingId: input.bookingId,
       reference: input.bookingReference,
-      travelerId: "",
+      travelerId: input.travelerId,
       hostId: input.hostId,
     },
     timestamp: now,

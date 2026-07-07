@@ -98,7 +98,20 @@ function CheckoutPage() {
     firstName: "", lastName: "", email: "", phone: "+226 ",
     country: "Burkina Faso", note: "",
   });
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const isMobileMoney = method === "orange_money" || method === "moov_money";
+  const isCard = method === "visa" || method === "mastercard";
+
+  const paymentFieldsValid = isMobileMoney
+    ? mobileNumber.trim().replace(/\s/g, "").length >= 8
+    : isCard
+      ? cardNumber.replace(/\s/g, "").length >= 16 && cardExp.trim().length >= 4 && cardCvc.trim().length >= 3
+      : true;
 
   const valid =
     !loading &&
@@ -107,7 +120,8 @@ function CheckoutPage() {
     form.firstName.trim() !== "" &&
     form.lastName.trim() !== "" &&
     /\S+@\S+\.\S+/.test(form.email) &&
-    form.phone.trim().length > 6;
+    form.phone.trim().length > 6 &&
+    paymentFieldsValid;
 
   const handlePay = async () => {
     if (!valid || createBooking.isPending || !roomId) return;
@@ -328,7 +342,7 @@ function CheckoutPage() {
               {(method === "orange_money" || method === "moov_money") && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-muted/50 border border-border p-4">
                   <Label htmlFor="mobileNumber" className="text-sm">Numéro {method === "orange_money" ? "Orange Money" : "Moov Money"}</Label>
-                  <Input id="mobileNumber" placeholder="+226 70 00 00 00" className="mt-2 h-11" />
+                  <Input id="mobileNumber" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} placeholder="+226 70 00 00 00" className="mt-2 h-11" />
                   <p className="text-xs text-muted-foreground mt-2">Vous recevrez un code USSD pour confirmer le paiement.</p>
                 </motion.div>
               )}
@@ -337,16 +351,16 @@ function CheckoutPage() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-muted/50 border border-border p-4 space-y-3">
                   <div>
                     <Label htmlFor="card" className="text-sm">Numéro de carte</Label>
-                    <Input id="card" placeholder="1234 5678 9012 3456" className="mt-2 h-11" />
+                    <Input id="card" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="1234 5678 9012 3456" className="mt-2 h-11" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="exp" className="text-sm">Expiration</Label>
-                      <Input id="exp" placeholder="MM / AA" className="mt-2 h-11" />
+                      <Input id="exp" value={cardExp} onChange={(e) => setCardExp(e.target.value)} placeholder="MM / AA" className="mt-2 h-11" />
                     </div>
                     <div>
                       <Label htmlFor="cvc" className="text-sm">CVC</Label>
-                      <Input id="cvc" placeholder="123" className="mt-2 h-11" />
+                      <Input id="cvc" value={cardCvc} onChange={(e) => setCardCvc(e.target.value)} placeholder="123" className="mt-2 h-11" />
                     </div>
                   </div>
                 </motion.div>

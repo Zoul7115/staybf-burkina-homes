@@ -20,6 +20,7 @@ export const queryKeys = {
   hostCalendar: (roomId: string, year: number, month: number) =>
                                                         ["host", "calendar", roomId, year, month] as const,
   hostRooms: ()                                      => ["host", "rooms"]                       as const,
+  hostPropertyIds: (hostId: string)                  => ["host", "propertyIds", hostId]         as const,
 
   // ── Traveler ──────────────────────────────────────────────────
   travelerProfile: ()                                => ["traveler", "profile"]                 as const,

@@ -179,11 +179,17 @@ export function ledgerRefund(refund: {
   refundAmountFcfa: number;
   commissionReversal: number;
   serviceFeeReversal: number;
+  // Where host funds currently sit — pending if booking not yet completed, available if completed
+  sourceWallet?: "host_pending" | "host_available";
+  // Where platform funds sit — pending if not yet completed, available if completed
+  platformSourceWallet?: "platform_pending" | "platform_available";
 }): LedgerEntry[] {
+  const hostSourceWallet = refund.sourceWallet ?? "host_pending";
+  const platformSourceWallet = refund.platformSourceWallet ?? "platform_pending";
   return [
     createLedgerEntry({
       type: "refund_accommodation_debit",
-      debitWallet: "host_pending",
+      debitWallet: hostSourceWallet,
       creditWallet: null,
       amountFcfa: refund.refundAmountFcfa,
       bookingId: refund.bookingId,
@@ -194,7 +200,7 @@ export function ledgerRefund(refund: {
     ...(refund.commissionReversal > 0
       ? [createLedgerEntry({
           type: "refund_commission_debit",
-          debitWallet: "platform_pending",
+          debitWallet: platformSourceWallet,
           creditWallet: null,
           amountFcfa: refund.commissionReversal,
           bookingId: refund.bookingId,
@@ -206,7 +212,7 @@ export function ledgerRefund(refund: {
     ...(refund.serviceFeeReversal > 0
       ? [createLedgerEntry({
           type: "refund_service_fee_debit",
-          debitWallet: "platform_pending",
+          debitWallet: platformSourceWallet,
           creditWallet: null,
           amountFcfa: refund.serviceFeeReversal,
           bookingId: refund.bookingId,

@@ -35,7 +35,6 @@ export function useRealtimeNotifications(userId: string | null, role: "host" | "
           if (role === "host") {
             // Prepend new notification into cache immediately
             queryClient.setQueryData<HostNotification[]>(key, (old) => {
-              if (!old) return old;
               const newNotif: HostNotification = {
                 id: raw.id,
                 user_id: raw.user_id,
@@ -48,7 +47,7 @@ export function useRealtimeNotifications(userId: string | null, role: "host" | "
                 resource_id: raw.resource_id,
                 created_at: raw.created_at,
               };
-              return [newNotif, ...old];
+              return [newNotif, ...(old ?? [])];
             });
           } else {
             // Traveler notifications are derived from bookings — invalidate
