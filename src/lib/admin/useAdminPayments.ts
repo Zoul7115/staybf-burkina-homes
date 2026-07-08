@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
+import { callEdgeFunction } from "@/lib/storage";
 import type { AdminPaymentRow } from "./types";
 
 type RawRow = {
@@ -41,9 +42,38 @@ export type UseAdminPaymentsReturn = {
   payments: AdminPaymentRow[];
   loading: boolean;
   error: string | null;
+  refundPayment: (paymentId: string, reason: string) => Promise<void>;
+  actioning: boolean;
+  actionError: string | null;
 };
 
 export function useAdminPayments(): UseAdminPaymentsReturn {
-  const { data, isLoading, error } = useQuery({ queryKey: queryKeys.adminPayments(), queryFn: fetchAdminPayments });
-  return { payments: data ?? [], loading: isLoading, error: error?.message ?? null };
+  const queryClient = useQueryClient();
+  const KEY = queryKeys.adminPayments();
+
+  const { data, isLoading, error } = useQuery({ queryKey: KEY, queryFn: fetchAdminPayments });
+
+  const refundMutation = useMutation({
+    mutationFn: ({ paymentId, reason }: { paymentId: string; reason: string }) =>
+      callEdgeFunction("refund-payment", { payment_id: paymentId, reason }),
+    onMutate: async ({ paymentId }) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<AdminPaymentRow[]>(KEY);
+      queryClient.setQueryData<AdminPaymentRow[]>(KEY, (old) =>
+        (old ?? []).map((p) => p.id === paymentId ? { ...p, status: "refund_pending" } : p)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  return {
+    payments: data ?? [],
+    loading: isLoading,
+    error: error?.message ?? null,
+    refundPayment: (paymentId, reason) => refundMutation.mutateAsync({ paymentId, reason }).then(() => undefined),
+    actioning: refundMutation.isPending,
+    actionError: refundMutation.error?.message ?? null,
+  };
 }

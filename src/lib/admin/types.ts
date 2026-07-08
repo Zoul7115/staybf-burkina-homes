@@ -71,6 +71,7 @@ export type AdminBookingRow = {
   totalAmount: number;
   currency: string;
   paymentStatus: string | null;
+  capturedPaymentId: string | null;
   travelerName: string | null;
   hostName: string | null;
   propertyName: string | null;

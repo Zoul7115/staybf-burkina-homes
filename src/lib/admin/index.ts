@@ -17,3 +17,5 @@ export { useAdminNotifications } from "./useAdminNotifications";
 export type { AdminNotification } from "./useAdminNotifications";
 export { useAdminProfile } from "./useAdminProfile";
 export type { AdminProfile } from "./useAdminProfile";
+export { useAdminSettings } from "./useAdminSettings";
+export type { AdminSettings, PlatformConfig, CommissionsConfig, SecurityConfig } from "./useAdminSettings";

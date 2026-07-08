@@ -63,7 +63,7 @@ function AdminLayout() {
     staleTime: Infinity,
   });
 
-  useRealtimeNotifications(userId ?? null, "host");
+  useRealtimeNotifications(userId ?? null, "admin");
 
   const shellNotifications: ShellNotification[] = notifications.map((n) => ({
     id: n.id,

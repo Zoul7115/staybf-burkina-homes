@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
+import { callEdgeFunction } from "@/lib/storage";
 import type { AdminPropertyRow } from "./types";
 
 type RawRow = {
@@ -36,9 +37,55 @@ export type UseAdminPropertiesReturn = {
   properties: AdminPropertyRow[];
   loading: boolean;
   error: string | null;
+  approveProperty: (propertyId: string, reason: string) => Promise<void>;
+  rejectProperty: (propertyId: string, reason: string) => Promise<void>;
+  actioning: boolean;
+  actionError: string | null;
 };
 
 export function useAdminProperties(): UseAdminPropertiesReturn {
-  const { data, isLoading, error } = useQuery({ queryKey: queryKeys.adminProperties(), queryFn: fetchAdminProperties });
-  return { properties: data ?? [], loading: isLoading, error: error?.message ?? null };
+  const queryClient = useQueryClient();
+  const KEY = queryKeys.adminProperties();
+
+  const { data, isLoading, error } = useQuery({ queryKey: KEY, queryFn: fetchAdminProperties });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ propertyId, reason }: { propertyId: string; reason: string }) =>
+      callEdgeFunction("approve-property", { property_id: propertyId, reason }),
+    onMutate: async ({ propertyId }) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<AdminPropertyRow[]>(KEY);
+      queryClient.setQueryData<AdminPropertyRow[]>(KEY, (old) =>
+        (old ?? []).map((p) => p.id === propertyId ? { ...p, status: "published" } : p)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ propertyId, reason }: { propertyId: string; reason: string }) =>
+      callEdgeFunction("reject-property", { property_id: propertyId, reason }),
+    onMutate: async ({ propertyId }) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<AdminPropertyRow[]>(KEY);
+      queryClient.setQueryData<AdminPropertyRow[]>(KEY, (old) =>
+        (old ?? []).map((p) => p.id === propertyId ? { ...p, status: "rejected" } : p)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  return {
+    properties: data ?? [],
+    loading: isLoading,
+    error: error?.message ?? null,
+    approveProperty: (propertyId, reason) => approveMutation.mutateAsync({ propertyId, reason }).then(() => undefined),
+    rejectProperty: (propertyId, reason) => rejectMutation.mutateAsync({ propertyId, reason }).then(() => undefined),
+    actioning: approveMutation.isPending || rejectMutation.isPending,
+    actionError: (approveMutation.error ?? rejectMutation.error)?.message ?? null,
+  };
 }

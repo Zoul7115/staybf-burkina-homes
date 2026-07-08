@@ -1,15 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, RotateCcw, AlertOctagon, Eye } from "lucide-react";
+import { Search, RotateCcw, Eye, Loader2 } from "lucide-react";
 import { useAdminReservations } from "@/lib/admin";
 import { StatusBadge } from "@/components/dashboard/widgets";
+import type { AdminBookingRow } from "@/lib/admin";
 
 export const Route = createFileRoute("/admin/reservations")({ component: AdminReservationsPage });
 
@@ -21,11 +25,67 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// bookings and payments mutations (refund, dispute) require a service_role Edge Function
-// because bookings/payments only have SELECT GRANT for admin role.
+// ── Refund dialog ─────────────────────────────────────────────
+
+function RefundDialog({
+  booking,
+  onRefund,
+  actioning,
+}: {
+  booking: AdminBookingRow;
+  onRefund: (paymentId: string, reason: string) => Promise<void>;
+  actioning: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  if (!booking.capturedPaymentId) return null;
+
+  async function handleRefund() {
+    try {
+      await onRefund(booking.capturedPaymentId!, reason);
+      toast.success("Remboursement initié");
+      setOpen(false);
+      setReason("");
+    } catch (e) {
+      toast.error((e as Error).message ?? "Erreur");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setReason(""); }}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="flex-1">
+          <RotateCcw className="h-4 w-4 mr-1.5" /> Rembourser
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Rembourser {booking.reference}</DialogTitle>
+          <DialogDescription>
+            Le paiement passera en statut «&nbsp;remboursement en attente&nbsp;». Indiquez le motif.
+          </DialogDescription>
+        </DialogHeader>
+        <div>
+          <Label>Motif <span className="text-muted-foreground text-xs">(10 caractères min)</span></Label>
+          <Textarea rows={3} className="mt-1.5" placeholder="Motif du remboursement..." value={reason} onChange={(e) => setReason(e.target.value)} />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
+          <Button variant="destructive" disabled={actioning || reason.trim().length < 10} onClick={handleRefund}>
+            {actioning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            Confirmer le remboursement
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────
 
 function AdminReservationsPage() {
-  const { bookings, loading, error } = useAdminReservations();
+  const { bookings, loading, error, refundPayment, actioning } = useAdminReservations();
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -112,14 +172,8 @@ function AdminReservationsPage() {
                         <div><p className="text-xs text-muted-foreground">Nuits</p><p className="font-medium">{b.nights}</p></div>
                         <div className="col-span-2"><p className="text-xs text-muted-foreground">Total</p><p className="font-display font-bold text-lg">{fmtFCFA(b.totalAmount)}</p></div>
                       </div>
-                      {/* Refund/dispute require service_role Edge Function — bookings has SELECT GRANT only */}
                       <div className="flex gap-2 pt-2">
-                        <Button variant="outline" className="flex-1" disabled title="Nécessite une Edge Function service_role">
-                          <RotateCcw className="h-4 w-4 mr-1.5" /> Rembourser
-                        </Button>
-                        <Button variant="outline" className="flex-1" disabled title="Nécessite une Edge Function service_role">
-                          <AlertOctagon className="h-4 w-4 mr-1.5" /> Ouvrir un litige
-                        </Button>
+                        <RefundDialog booking={b} onRefund={refundPayment} actioning={actioning} />
                       </div>
                     </DialogContent>
                   </Dialog>

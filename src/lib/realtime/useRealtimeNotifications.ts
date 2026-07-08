@@ -16,13 +16,17 @@ type RealtimeUpdate = {
   new: { id: string; is_read: boolean; read_at: string | null };
 };
 
-export function useRealtimeNotifications(userId: string | null, role: "host" | "traveler") {
+export function useRealtimeNotifications(userId: string | null, role: "host" | "traveler" | "admin") {
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!userId) return;
 
-    const key = role === "host" ? queryKeys.hostNotifications() : queryKeys.travelerNotifications();
+    const key = role === "host"
+      ? queryKeys.hostNotifications()
+      : role === "admin"
+        ? queryKeys.adminNotifications()
+        : queryKeys.travelerNotifications();
 
     const channel = supabase
       .channel(`notifications:${userId}`)
@@ -32,8 +36,7 @@ export function useRealtimeNotifications(userId: string | null, role: "host" | "
         (payload) => {
           const raw = (payload as unknown as RealtimeInsert).new;
 
-          if (role === "host") {
-            // Prepend new notification into cache immediately
+          if (role === "host" || role === "admin") {
             queryClient.setQueryData<HostNotification[]>(key, (old) => {
               const newNotif: HostNotification = {
                 id: raw.id,
@@ -50,7 +53,6 @@ export function useRealtimeNotifications(userId: string | null, role: "host" | "
               return [newNotif, ...(old ?? [])];
             });
           } else {
-            // Traveler notifications are derived from bookings — invalidate
             queryClient.invalidateQueries({ queryKey: key });
           }
         },
@@ -61,7 +63,7 @@ export function useRealtimeNotifications(userId: string | null, role: "host" | "
         (payload) => {
           const raw = (payload as unknown as RealtimeUpdate).new;
 
-          if (role === "host") {
+          if (role === "host" || role === "admin") {
             queryClient.setQueryData<HostNotification[]>(key, (old) =>
               (old ?? []).map((n) =>
                 n.id === raw.id ? { ...n, is_read: raw.is_read, read_at: raw.read_at } : n

@@ -88,11 +88,12 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
   const recentBookings: AdminBookingRow[] = ((recentBookingsRes.data ?? []) as RawBookingRow[]).map((b) => {
     const traveler = unwrap(b.profiles);
     const room = unwrap(b.rooms as RawBookingRow["rooms"]);
-    const prop = room ? unwrap((room as { name: string; properties: unknown }).properties as RawBookingRow["rooms"]) : null;
-    const host = prop ? unwrap((prop as { name: string; profiles: unknown }).profiles as RawBookingRow["profiles"]) : null;
+    const prop = room ? unwrap((room as { name: string; properties: unknown }).properties as unknown as RawBookingRow["rooms"]) : null;
+    const host = prop ? unwrap((prop as unknown as { name: string; profiles: unknown }).profiles as unknown as RawBookingRow["profiles"]) : null;
     return {
       id: b.id, reference: b.reference, status: b.status, checkIn: b.check_in, checkOut: b.check_out,
       nights: b.nights, totalAmount: b.total_amount, currency: b.currency, paymentStatus: b.payment_status,
+      capturedPaymentId: null,
       travelerName: traveler?.full_name ?? null, hostName: host?.full_name ?? null,
       propertyName: prop ? (prop as { name: string }).name : null,
       roomName: room ? (room as { name: string }).name : null, createdAt: b.created_at,

@@ -66,4 +66,5 @@ export const queryKeys = {
   adminRoles: ()                                     => ["admin", "roles"]                      as const,
   adminNotifications: ()                             => ["admin", "notifications"]               as const,
   adminProfile: ()                                   => ["admin", "profile"]                    as const,
+  adminSettings: ()                                  => ["admin", "settings"]                   as const,
 } as const;

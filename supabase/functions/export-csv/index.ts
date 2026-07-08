@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     if (entity === "bookings") {
       const { data } = await db.from("bookings")
-        .select("id,status,check_in,check_out,guests_count,total_amount_fcfa,created_at")
+        .select("id,status,check_in,check_out,guests_adults,total_amount,created_at")
         .gte("created_at", since ?? "2000-01-01")
         .lte("created_at", until ?? new Date().toISOString())
         .order("created_at", { ascending: false });

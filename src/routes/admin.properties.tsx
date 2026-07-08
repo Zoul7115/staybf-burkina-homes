@@ -1,23 +1,91 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Search, Eye } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Search, Eye, Loader2 } from "lucide-react";
 import { useAdminProperties } from "@/lib/admin";
 import { StatusBadge } from "@/components/dashboard/widgets";
 
 export const Route = createFileRoute("/admin/properties")({ component: AdminPropertiesPage });
 
-// Properties mutations (approve/reject/suspend) require a service_role Edge Function
-// because properties table only has SELECT GRANT for admin role.
-// Buttons are shown but disabled to communicate intent.
+// ── Reason dialog ─────────────────────────────────────────────
+
+function ReasonDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  confirmVariant = "default",
+  onConfirm,
+  saving,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmVariant?: "default" | "destructive";
+  onConfirm: (reason: string) => Promise<void>;
+  saving: boolean;
+}) {
+  const [reason, setReason] = useState("");
+
+  async function handleConfirm() {
+    await onConfirm(reason);
+    setReason("");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setReason(""); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div>
+          <Label>Motif <span className="text-muted-foreground text-xs">(10 caractères min)</span></Label>
+          <Textarea
+            rows={3}
+            className="mt-1.5"
+            placeholder="Expliquez la décision..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+          <Button
+            variant={confirmVariant}
+            className={confirmVariant === "default" ? "gradient-primary text-primary-foreground" : ""}
+            disabled={saving || reason.trim().length < 10}
+            onClick={handleConfirm}
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────
 
 function AdminPropertiesPage() {
-  const { properties, loading, error } = useAdminProperties();
+  const { properties, loading, error, approveProperty, rejectProperty, actioning } = useAdminProperties();
   const [q, setQ] = useState("");
+  const [approveTarget, setApproveTarget] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
 
   const filt = (s: string) =>
     properties.filter((p) => (s === "all" || p.status === s) && p.name.toLowerCase().includes(q.toLowerCase()));
@@ -42,6 +110,26 @@ function AdminPropertiesPage() {
 
   if (error) {
     return <Card className="p-10 text-center text-muted-foreground text-sm">Erreur : {error}</Card>;
+  }
+
+  async function handleApprove(propertyId: string, reason: string) {
+    try {
+      await approveProperty(propertyId, reason);
+      toast.success("Propriété approuvée et publiée");
+      setApproveTarget(null);
+    } catch (e) {
+      toast.error((e as Error).message ?? "Erreur");
+    }
+  }
+
+  async function handleReject(propertyId: string, reason: string) {
+    try {
+      await rejectProperty(propertyId, reason);
+      toast.success("Propriété refusée");
+      setRejectTarget(null);
+    } catch (e) {
+      toast.error((e as Error).message ?? "Erreur");
+    }
   }
 
   return (
@@ -81,11 +169,20 @@ function AdminPropertiesPage() {
                   <div className="flex items-center gap-2">
                     {value === "pending_review" ? (
                       <>
-                        {/* Mutations disabled: properties.status UPDATE requires service_role Edge Function */}
-                        <Button size="sm" className="flex-1" disabled title="Nécessite une Edge Function service_role">
+                        <Button
+                          size="sm"
+                          className="flex-1 gradient-primary text-primary-foreground"
+                          disabled={actioning}
+                          onClick={() => setApproveTarget(p.id)}
+                        >
                           Approuver
                         </Button>
-                        <Button size="sm" variant="outline" disabled title="Nécessite une Edge Function service_role">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={actioning}
+                          onClick={() => setRejectTarget(p.id)}
+                        >
                           Refuser
                         </Button>
                       </>
@@ -94,12 +191,17 @@ function AdminPropertiesPage() {
                         <Button size="sm" variant="outline" className="flex-1">
                           <Eye className="h-4 w-4 mr-1" /> Voir
                         </Button>
-                        <Button size="sm" variant="outline" disabled title="Nécessite une Edge Function service_role">
-                          Suspendre
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={actioning}
+                          onClick={() => setRejectTarget(p.id)}
+                        >
+                          Dépublier
                         </Button>
                       </>
                     ) : (
-                      <Button size="sm" variant="outline" className="flex-1" disabled title="Nécessite une Edge Function service_role">
+                      <Button size="sm" variant="outline" className="flex-1" disabled title="Contactez le support pour réactiver">
                         Réactiver
                       </Button>
                     )}
@@ -115,6 +217,27 @@ function AdminPropertiesPage() {
           </TabsContent>
         ))}
       </Tabs>
+
+      <ReasonDialog
+        open={approveTarget !== null}
+        onOpenChange={(v) => { if (!v) setApproveTarget(null); }}
+        title="Approuver la propriété"
+        description="La propriété sera publiée et visible par les voyageurs. Précisez le motif d'approbation."
+        confirmLabel="Approuver"
+        onConfirm={(reason) => handleApprove(approveTarget!, reason)}
+        saving={actioning}
+      />
+
+      <ReasonDialog
+        open={rejectTarget !== null}
+        onOpenChange={(v) => { if (!v) setRejectTarget(null); }}
+        title="Refuser / Dépublier la propriété"
+        description="La propriété sera retirée de la plateforme. L'hôte sera notifié avec le motif."
+        confirmLabel="Confirmer"
+        confirmVariant="destructive"
+        onConfirm={(reason) => handleReject(rejectTarget!, reason)}
+        saving={actioning}
+      />
     </div>
   );
 }
