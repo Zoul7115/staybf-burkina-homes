@@ -146,7 +146,7 @@ function MessagePanel({
   thread: HostThread;
   hostUserId: string;
 }) {
-  const { messages, loading, error, sendMessage, sending, sendError } =
+  const { messages, loading, error, sendMessage, sending, sendError, markRead } =
     useHostThreadMessages(thread.id);
 
   const [draft, setDraft] = useState("");
@@ -154,6 +154,12 @@ function MessagePanel({
 
   // Realtime: push incoming messages directly into cache
   useRealtimeMessages(thread.id, "host", hostUserId);
+
+  // Mark messages as read when this thread is opened
+  useEffect(() => {
+    markRead();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread.id]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
+import { callEdgeFunction } from "@/lib/storage";
 import type { HostRoomDetail, RoomStatus, RoomType, BedEntry, RoomImage } from "./types";
 
 const ROOM_IMAGES_BUCKET = "room-images";
@@ -88,6 +89,8 @@ type UseHostRoomsReturn = {
   loading: boolean; error: string | null;
   createRoom: (params: RoomFormParams) => Promise<void>;
   updateRoom: (id: string, params: Omit<RoomFormParams, "propertyId">) => Promise<void>;
+  deleteRoom: (id: string) => Promise<void>;
+  addRoomImage: (roomId: string, file: File, isCover: boolean) => Promise<void>;
   saving: boolean; saveError: string | null;
 };
 
@@ -144,14 +147,44 @@ export function useHostRooms(): UseHostRoomsReturn {
     onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
   });
 
-  const saving = createMutation.isPending || updateMutation.isPending;
-  const saveError = (createMutation.error ?? updateMutation.error)?.message ?? null;
+  const deleteMutation = useMutation({
+    mutationFn: async (roomId: string) => {
+      await callEdgeFunction("delete-room", { room_id: roomId });
+    },
+    onMutate: async (roomId) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<RoomsPayload>(KEY);
+      queryClient.setQueryData<RoomsPayload>(KEY, (old) =>
+        old ? { ...old, rooms: old.rooms.filter((r) => r.id !== roomId) } : old
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  const addRoomImageMutation = useMutation({
+    mutationFn: async ({ roomId, file, isCover }: { roomId: string; file: File; isCover: boolean }) => {
+      const { signedUrl, storagePath } = await callEdgeFunction<{ signedUrl: string; storagePath: string; token: string; image: RoomImage }>(
+        "upload-room-image",
+        { room_id: roomId, file_name: file.name, content_type: file.type, file_size_bytes: file.size, is_cover: isCover }
+      );
+      await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      return { roomId, storagePath, isCover };
+    },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  const saving = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  const saveError = (createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? addRoomImageMutation.error)?.message ?? null;
 
   return {
     rooms: data?.rooms ?? [], propertyId: data?.propertyId ?? null,
     loading: isLoading, error: error?.message ?? null,
-    createRoom: createMutation.mutateAsync,
+    createRoom: (params) => createMutation.mutateAsync(params).then(() => undefined),
     updateRoom: (id, params) => updateMutation.mutateAsync({ id, params }),
+    deleteRoom: (id) => deleteMutation.mutateAsync(id).then(() => undefined),
+    addRoomImage: (roomId, file, isCover) => addRoomImageMutation.mutateAsync({ roomId, file, isCover }).then(() => undefined),
     saving, saveError,
   };
 }

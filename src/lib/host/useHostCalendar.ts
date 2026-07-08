@@ -173,7 +173,7 @@ export function useHostCalendar(roomId: string | null, year: number, month: numb
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbErr } = await (supabase as any)
         .from("seasonal_pricing")
-        .upsert({ room_id: roomId, start_date: start, end_date: end, price_fcfa: price, is_active: true }, { onConflict: "room_id,start_date,end_date" });
+        .upsert({ room_id: roomId, starts_on: start, ends_on: end, price_fcfa: price }, { onConflict: "room_id,starts_on,ends_on" });
       if (dbErr) throw new Error(dbErr.message);
     },
     onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },

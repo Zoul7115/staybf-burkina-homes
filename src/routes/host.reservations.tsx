@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Check, X, Search, Phone, MessageSquare, Eye, Receipt } from "lucide-react";
+import { Check, X, Search, Phone, MessageSquare, Eye, Receipt, Loader2 } from "lucide-react";
 import { StatusBadge, EmptyState } from "@/components/dashboard/widgets";
 import { useHostBookings } from "@/lib/host";
 import { getInitials } from "@/lib/shared";
@@ -179,7 +180,17 @@ function BookingDialog({ booking: r }: { booking: HostBookingItem }) {
 
 // ── List ──────────────────────────────────────────────────────
 
-function ReservationList({ items }: { items: HostBookingItem[] }) {
+function ReservationList({
+  items,
+  acceptBooking,
+  rejectBooking,
+  actioning,
+}: {
+  items: HostBookingItem[];
+  acceptBooking: (id: string) => Promise<void>;
+  rejectBooking: (id: string, reason?: string) => Promise<void>;
+  actioning: boolean;
+}) {
   if (items.length === 0) {
     return (
       <Card className="p-10 text-center text-muted-foreground text-sm">
@@ -243,18 +254,34 @@ function ReservationList({ items }: { items: HostBookingItem[] }) {
                     <Button
                       size="sm"
                       className="gradient-primary text-primary-foreground"
-                      disabled
-                      title="Requiert une Edge Function — à venir"
+                      disabled={actioning}
+                      onClick={async () => {
+                        try {
+                          await acceptBooking(r.id);
+                          toast.success("Réservation acceptée");
+                        } catch (e) {
+                          toast.error((e as Error).message ?? "Erreur");
+                        }
+                      }}
                     >
-                      <Check className="h-4 w-4 mr-1" /> Accepter
+                      {actioning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
+                      Accepter
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled
-                      title="Requiert une Edge Function — à venir"
+                      disabled={actioning}
+                      onClick={async () => {
+                        try {
+                          await rejectBooking(r.id);
+                          toast.success("Réservation refusée");
+                        } catch (e) {
+                          toast.error((e as Error).message ?? "Erreur");
+                        }
+                      }}
                     >
-                      <X className="h-4 w-4 mr-1" /> Refuser
+                      {actioning ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <X className="h-4 w-4 mr-1" />}
+                      Refuser
                     </Button>
                   </>
                 )}
@@ -315,7 +342,7 @@ function ReservationsSkeleton() {
 // ── Main page ─────────────────────────────────────────────────
 
 function HostReservationsPage() {
-  const { bookings, loading, error } = useHostBookings();
+  const { bookings, loading, error, acceptBooking, rejectBooking, actioning } = useHostBookings();
   const [q, setQ] = useState("");
 
   const byTab = useMemo<Record<TabKey, HostBookingItem[]>>(() => {
@@ -398,7 +425,12 @@ function HostReservationsPage() {
 
         {(["pending", "confirmed", "completed", "cancelled"] as const).map((tab) => (
           <TabsContent key={tab} value={tab}>
-            <ReservationList items={byTab[tab]} />
+            <ReservationList
+              items={byTab[tab]}
+              acceptBooking={acceptBooking}
+              rejectBooking={rejectBooking}
+              actioning={actioning}
+            />
           </TabsContent>
         ))}
       </Tabs>

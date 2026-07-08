@@ -81,6 +81,7 @@ export function useHostThreads(): { threads: HostThread[]; loading: boolean; err
 type UseHostThreadMessagesReturn = {
   messages: HostMessage[]; loading: boolean; error: string | null;
   sendMessage: (body: string) => Promise<void>; sending: boolean; sendError: string | null;
+  markRead: () => void;
 };
 
 export function useHostThreadMessages(threadId: string | null): UseHostThreadMessagesReturn {
@@ -121,9 +122,28 @@ export function useHostThreadMessages(threadId: string | null): UseHostThreadMes
     },
   });
 
+  const markReadMutation = useMutation({
+    mutationFn: async () => {
+      if (!threadId) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from("messages")
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq("thread_id", threadId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostThreads() });
+    },
+  });
+
   return {
     messages: data ?? [], loading: isLoading, error: error?.message ?? null,
     sendMessage: sendMutation.mutateAsync,
     sending: sendMutation.isPending, sendError: sendMutation.error?.message ?? null,
+    markRead: () => { markReadMutation.mutate(); },
   };
 }

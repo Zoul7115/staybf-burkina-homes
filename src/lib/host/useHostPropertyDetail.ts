@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
+import { callEdgeFunction } from "@/lib/storage";
 import type { HostPropertyDetail, PropertyImage, PropertyAmenity, CancellationPolicy, PropertyStatus } from "./types";
 
 type RawPropertyRow = {
@@ -62,13 +63,62 @@ async function fetchHostPropertyDetail(): Promise<HostPropertyDetail | null> {
   };
 }
 
+// ── Updatable fields ──────────────────────────────────────────
+
+export type PropertyUpdateParams = {
+  name?: string;
+  description_md?: string;
+  address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  house_rules?: Record<string, unknown> | null;
+  check_in_from?: string | null;
+  check_out_until?: string | null;
+  instant_book?: boolean;
+  cancellation_policy?: string | null;
+};
+
 // ── Hook ─────────────────────────────────────────────────────
 
-export function useHostPropertyDetail(): { property: HostPropertyDetail | null; loading: boolean; error: string | null } {
+type UseHostPropertyDetailReturn = {
+  property: HostPropertyDetail | null;
+  loading: boolean;
+  error: string | null;
+  updateProperty: (params: PropertyUpdateParams) => Promise<void>;
+  updating: boolean;
+  updateError: string | null;
+};
+
+export function useHostPropertyDetail(): UseHostPropertyDetailReturn {
+  const queryClient = useQueryClient();
+  const KEY = queryKeys.hostPropertyDetail("own");
+
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.hostPropertyDetail("own"),
+    queryKey: KEY,
     queryFn: fetchHostPropertyDetail,
   });
 
-  return { property: data ?? null, loading: isLoading, error: error?.message ?? null };
+  const updateMutation = useMutation({
+    mutationFn: async (params: PropertyUpdateParams) => {
+      if (!data?.id) throw new Error("Aucune propriété à mettre à jour");
+      await callEdgeFunction("update-property", { property_id: data.id, ...params });
+    },
+    onMutate: async (params) => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      const prev = queryClient.getQueryData<HostPropertyDetail>(KEY);
+      if (prev) queryClient.setQueryData<HostPropertyDetail>(KEY, { ...prev, ...params } as HostPropertyDetail);
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(KEY, ctx.prev); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: KEY }); },
+  });
+
+  return {
+    property: data ?? null,
+    loading: isLoading,
+    error: error?.message ?? null,
+    updateProperty: updateMutation.mutateAsync,
+    updating: updateMutation.isPending,
+    updateError: updateMutation.error?.message ?? null,
+  };
 }

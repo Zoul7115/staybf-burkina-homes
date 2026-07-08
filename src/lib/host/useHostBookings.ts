@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query/keys";
+import { callEdgeFunction } from "@/lib/storage";
 import type { HostBookingItem, BookingStatus, PaymentMethod } from "./types";
 
 type RawPaymentRow = { method: string; status: string };
@@ -62,11 +63,67 @@ async function fetchHostBookings(): Promise<HostBookingItem[]> {
 
 // ── Hook ─────────────────────────────────────────────────────
 
-export function useHostBookings(): { bookings: HostBookingItem[]; loading: boolean; error: string | null } {
+type UseHostBookingsReturn = {
+  bookings: HostBookingItem[];
+  loading: boolean;
+  error: string | null;
+  acceptBooking: (bookingId: string) => Promise<void>;
+  rejectBooking: (bookingId: string, reason?: string) => Promise<void>;
+  actioning: boolean;
+  actionError: string | null;
+};
+
+export function useHostBookings(): UseHostBookingsReturn {
+  const queryClient = useQueryClient();
+
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.hostBookings(),
     queryFn: fetchHostBookings,
   });
 
-  return { bookings: data ?? [], loading: isLoading, error: error?.message ?? null };
+  const acceptMutation = useMutation({
+    mutationFn: (bookingId: string) =>
+      callEdgeFunction("approve-booking", { booking_id: bookingId }),
+    onMutate: async (bookingId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.hostBookings() });
+      const prev = queryClient.getQueryData<HostBookingItem[]>(queryKeys.hostBookings());
+      queryClient.setQueryData<HostBookingItem[]>(queryKeys.hostBookings(), (old) =>
+        (old ?? []).map((b) => b.id === bookingId ? { ...b, status: "confirmed" as BookingStatus } : b)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(queryKeys.hostBookings(), ctx.prev); },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostBookings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostDashboard() });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) =>
+      callEdgeFunction("reject-booking", { booking_id: bookingId, reason }),
+    onMutate: async ({ bookingId }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.hostBookings() });
+      const prev = queryClient.getQueryData<HostBookingItem[]>(queryKeys.hostBookings());
+      queryClient.setQueryData<HostBookingItem[]>(queryKeys.hostBookings(), (old) =>
+        (old ?? []).map((b) => b.id === bookingId ? { ...b, status: "cancelled_by_host" as BookingStatus } : b)
+      );
+      return { prev };
+    },
+    onError: (_, __, ctx) => { if (ctx?.prev) queryClient.setQueryData(queryKeys.hostBookings(), ctx.prev); },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostBookings() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostDashboard() });
+    },
+  });
+
+  return {
+    bookings: data ?? [],
+    loading: isLoading,
+    error: error?.message ?? null,
+    acceptBooking: (id) => acceptMutation.mutateAsync(id).then(() => undefined),
+    rejectBooking: (id, reason) => rejectMutation.mutateAsync({ bookingId: id, reason }).then(() => undefined),
+    actioning: acceptMutation.isPending || rejectMutation.isPending,
+    actionError: (acceptMutation.error ?? rejectMutation.error)?.message ?? null,
+  };
 }

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Users, BedDouble, ImagePlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, BedDouble, ImagePlus, Loader2 } from "lucide-react";
 import type React from "react";
 import { StatusBadge, EmptyState } from "@/components/dashboard/widgets";
 import { useHostRooms, roomImageUrl } from "@/lib/host";
@@ -83,7 +85,7 @@ function RoomsSkeleton() {
 // ── Main component ────────────────────────────────────────────
 
 function HostRoomsPage() {
-  const { rooms, propertyId, loading, error, createRoom, updateRoom, saving, saveError } = useHostRooms();
+  const { rooms, propertyId, loading, error, createRoom, updateRoom, deleteRoom, addRoomImage, saving, saveError } = useHostRooms();
 
   if (loading) return <RoomsSkeleton />;
 
@@ -141,6 +143,8 @@ function HostRoomsPage() {
             key={r.id}
             room={r}
             onEdit={(params) => updateRoom(r.id, params)}
+            onDelete={() => deleteRoom(r.id)}
+            onAddImage={(file) => addRoomImage(r.id, file, r.images.length === 0)}
             saving={saving}
             saveError={saveError}
           />
@@ -155,16 +159,52 @@ function HostRoomsPage() {
 function RoomCard({
   room: r,
   onEdit,
+  onDelete,
+  onAddImage,
   saving,
   saveError,
 }: {
   room: HostRoomDetail;
   onEdit: (params: Omit<RoomFormParams, "propertyId">) => Promise<void>;
+  onDelete: () => Promise<void>;
+  onAddImage: (file: File) => Promise<void>;
   saving: boolean;
   saveError: string | null;
 }) {
   const imgUrl = coverUrl(r);
   const hasCover = r.images.length > 0;
+  const [delOpen, setDelOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [imgUploading, setImgUploading] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await onDelete();
+      toast.success("Chambre supprimée");
+      setDelOpen(false);
+    } catch (e) {
+      toast.error((e as Error).message ?? "Erreur");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImgUploading(true);
+    try {
+      await onAddImage(file);
+      toast.success("Photo ajoutée");
+    } catch (err) {
+      toast.error((err as Error).message ?? "Erreur lors du téléchargement");
+    } finally {
+      setImgUploading(false);
+      if (imgInputRef.current) imgInputRef.current.value = "";
+    }
+  }
 
   return (
     <Card className="overflow-hidden hover:shadow-elevated transition-shadow">
@@ -216,6 +256,10 @@ function RoomCard({
             <span className="text-xs font-normal text-muted-foreground">/nuit</span>
           </p>
           <div className="flex items-center gap-1">
+            <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleImageChange} />
+            <Button size="icon" variant="ghost" disabled={imgUploading} onClick={() => imgInputRef.current?.click()} title="Ajouter une photo">
+              {imgUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+            </Button>
             <RoomFormDialog
               room={r}
               onSubmit={onEdit}
@@ -227,9 +271,28 @@ function RoomCard({
                 </Button>
               }
             />
-            <Button size="icon" variant="ghost" disabled title="Suppression non disponible côté client (GRANT INSERT/UPDATE uniquement)">
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            <Dialog open={delOpen} onOpenChange={setDelOpen}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Supprimer la chambre</DialogTitle>
+                  <DialogDescription>
+                    Supprimer « {r.name} » ? Cette action est irréversible. Les réservations actives empêchent la suppression.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDelOpen(false)}>Annuler</Button>
+                  <Button variant="destructive" disabled={deleting} onClick={handleDelete}>
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                    Supprimer
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -276,7 +339,7 @@ function RoomFormDialog({
   const isEdit = !!room;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(room?.name ?? "");
-  const [type, setType] = useState(room?.type ?? "double");
+  const [type, setType] = useState<string>(room?.type ?? "double");
   const [capacity, setCapacity] = useState(room?.max_guests ?? 2);
   const [price, setPrice] = useState(room?.base_price_fcfa ?? 50000);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -324,9 +387,7 @@ function RoomFormDialog({
             </div>
           </div>
           {!isEdit && (
-            <Button variant="outline" className="w-full" disabled title="Upload de photos non disponible sans Edge Function">
-              <ImagePlus className="h-4 w-4 mr-1.5" /> Ajouter photos
-            </Button>
+            <p className="text-xs text-muted-foreground">Vous pourrez ajouter des photos une fois la chambre créée.</p>
           )}
           {(localError ?? saveError) && (
             <p className="text-xs text-destructive">{localError ?? saveError}</p>

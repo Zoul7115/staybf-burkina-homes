@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, CheckCircle2, UserCircle2 } from "lucide-react";
+import { Award, CheckCircle2, UserCircle2, Camera, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/widgets";
 import { useHostProfile, useHostReviews, useHostBookings } from "@/lib/host";
 import { getInitials } from "@/lib/shared";
+import { callEdgeFunction } from "@/lib/storage";
+import { supabase } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 
 export const Route = createFileRoute("/host/profile")({ component: HostProfilePage });
 
@@ -90,9 +95,12 @@ function ProfileSkeleton() {
 // ── Main page ─────────────────────────────────────────────────
 
 function HostProfilePage() {
+  const queryClient = useQueryClient();
   const { profile, loading, error, saveProfile, saveHostProfile } = useHostProfile();
   const { data: reviewsData, loading: reviewsLoading } = useHostReviews();
   const { bookings, loading: bookingsLoading } = useHostBookings();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Local form state — mirrors editable profile fields
   const [fullName, setFullName] = useState("");
@@ -113,6 +121,32 @@ function HostProfilePage() {
       setBio(profile.bio ?? "");
     }
   }, [profile]);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { signedUrl, storagePath } = await callEdgeFunction<{ signedUrl: string; storagePath: string; token: string }>(
+        "upload-avatar",
+        { file_name: file.name, content_type: file.type, file_size_bytes: file.size }
+      );
+      await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(storagePath);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      }
+      toast.success("Photo de profil mise à jour");
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostProfile() });
+    } catch {
+      toast.error("Erreur lors du téléchargement de la photo");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -202,8 +236,9 @@ function HostProfilePage() {
                 )}
               </div>
             </div>
-            {/* Avatar upload requires a signed Storage URL — disabled until Edge Function available */}
-            <Button variant="outline" disabled title="Modification de la photo — à venir">
+            <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
+            <Button type="button" variant="outline" disabled={avatarUploading} onClick={() => avatarInputRef.current?.click()}>
+              {avatarUploading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Camera className="h-4 w-4 mr-1.5" />}
               Changer la photo
             </Button>
           </div>
