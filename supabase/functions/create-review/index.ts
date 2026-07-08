@@ -17,13 +17,16 @@ Deno.serve(async (req) => {
     // Verify the booking belongs to the traveler and is completed
     const { data: booking } = await db
       .from("bookings")
-      .select("id, traveler_id, host_id, status")
+      .select("id, traveler_id, status, properties!property_id(host_id)")
       .eq("id", booking_id)
       .single();
 
     if (!booking) return err("Booking not found", 404);
     if (booking.traveler_id !== user.id) return err("Forbidden", 403);
     if (booking.status !== "completed") return err("Can only review completed bookings");
+
+    const prop = Array.isArray(booking.properties) ? booking.properties[0] : booking.properties;
+    const hostId = (prop as { host_id: string | null } | null)?.host_id ?? null;
 
     // Prevent duplicate reviews
     const { data: existing } = await db
@@ -38,7 +41,7 @@ Deno.serve(async (req) => {
     const { data: review, error: revErr } = await db.from("reviews").insert({
       booking_id,
       reviewer_id: user.id,
-      reviewee_id: booking.host_id,
+      reviewee_id: hostId,
       direction: "traveler_to_host",
       overall_rating,
       body: body?.trim() ?? null,
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
 
     // Notify host
     await db.from("notifications").insert({
-      user_id: booking.host_id,
+      user_id: hostId,
       type: "new_review",
       title: "Nouvel avis reçu",
       body: `Un voyageur a laissé un avis ${overall_rating}/5.`,

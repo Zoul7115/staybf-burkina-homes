@@ -20,7 +20,7 @@ function monthLabel(ym: string): string {
 
 type RawBookingRow = {
   id: string; reference: string; status: string; check_in: string; check_out: string;
-  nights: number; total_amount: number; currency: string; payment_status: string | null; created_at: string;
+  nights: number; total_amount: number; currency: string; created_at: string;
   profiles: { full_name: string | null } | { full_name: string | null }[] | null;
   rooms: { name: string; properties: { name: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null } | { name: string; profiles: unknown }[] | null } | { name: string; properties: unknown }[] | null;
 };
@@ -57,7 +57,7 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
     db.from("moderation_queue").select("id", { count: "exact", head: true }).eq("status", "pending"),
     db.from("payments").select("amount_fcfa, captured_at").eq("status", "captured").gte("captured_at", `${since}T00:00:00`),
     db.from("daily_metrics").select("date, metric_key, metric_value").eq("dimension_type", "global").gte("date", since).in("metric_key", ["gross_revenue_fcfa", "bookings_created", "new_hosts"]),
-    db.from("bookings").select(`id,reference,status,check_in,check_out,nights,total_amount,currency,payment_status,created_at,profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`).order("created_at", { ascending: false }).limit(5),
+    db.from("bookings").select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`).order("created_at", { ascending: false }).limit(5),
     db.from("host_profiles").select(`id,status,superhost,verified_at,host_since,company_name,created_at,profiles!id(full_name,email,avatar_url,country,account_status)`).eq("status", "pending_review").order("created_at", { ascending: false }).limit(5),
   ]);
 
@@ -92,7 +92,7 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
     const host = prop ? unwrap((prop as unknown as { name: string; profiles: unknown }).profiles as unknown as RawBookingRow["profiles"]) : null;
     return {
       id: b.id, reference: b.reference, status: b.status, checkIn: b.check_in, checkOut: b.check_out,
-      nights: b.nights, totalAmount: b.total_amount, currency: b.currency, paymentStatus: b.payment_status,
+      nights: b.nights, totalAmount: b.total_amount, currency: b.currency, paymentStatus: null,
       capturedPaymentId: null,
       travelerName: traveler?.full_name ?? null, hostName: host?.full_name ?? null,
       propertyName: prop ? (prop as { name: string }).name : null,

@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const { data: payment } = await db
       .from("payments")
-      .select("id, status, amount_fcfa, cinetpay_transaction_id")
+      .select("id, status, amount_fcfa")
       .eq("id", payment_id)
       .single();
 

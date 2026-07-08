@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
 import { coverImageUrl } from "@/lib/shared";
-import { usePricing, useCreateBooking } from "@/lib/booking/hooks";
+import { usePricing, useCreateBooking, useSimulatePayment } from "@/lib/booking/hooks";
 
 // ---------------------------------------------------------------------------
 // Types & validation
@@ -89,6 +89,7 @@ function CheckoutPage() {
 
   const { pricing, loading: pricingLoading } = usePricing(roomId, checkIn, checkOut);
   const createBooking = useCreateBooking();
+  const simulatePayment = useSimulatePayment();
 
   const loading = propertyLoading || (!!roomId && pricingLoading);
 
@@ -139,6 +140,8 @@ function CheckoutPage() {
         notes: form.note.trim() || undefined,
       });
 
+      await simulatePayment.mutateAsync(result.booking.id);
+
       navigate({
         to: "/booking/confirmation",
         search: {
@@ -161,7 +164,7 @@ function CheckoutPage() {
     ? [property.city?.name, property.address].filter(Boolean).join(", ")
     : "";
 
-  const isProcessing = createBooking.isPending;
+  const isProcessing = createBooking.isPending || simulatePayment.isPending;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

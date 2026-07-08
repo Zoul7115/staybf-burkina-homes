@@ -51,7 +51,7 @@ export const Route = createFileRoute("/booking/confirmation")({
 });
 
 const methodLabels: Record<string, string> = {
-  orange: "Orange Money", moov: "Moov Money", visa: "Visa", mastercard: "Mastercard",
+  orange_money: "Orange Money", moov_money: "Moov Money", visa: "Visa", mastercard: "Mastercard",
 };
 
 const STATIC_RULES = [

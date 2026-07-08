@@ -144,3 +144,21 @@ export function useCreateBooking() {
     },
   });
 }
+
+// ── useSimulatePayment ────────────────────────────────────────
+
+export function useSimulatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bookingId: string) =>
+      callEdgeFunction<{ success: boolean; paymentId: string; reference: string; status: string }>(
+        "simulate-payment",
+        { booking_id: bookingId },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerBookings() });
+      queryClient.invalidateQueries({ queryKey: ["traveler", "dashboard", "bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerStats() });
+    },
+  });
+}

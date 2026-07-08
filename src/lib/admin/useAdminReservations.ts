@@ -6,7 +6,7 @@ import type { AdminBookingRow } from "./types";
 
 type RawRow = {
   id: string; reference: string; status: string; check_in: string; check_out: string;
-  nights: number; total_amount: number; currency: string; payment_status: string | null; created_at: string;
+  nights: number; total_amount: number; currency: string; created_at: string;
   payments: { id: string; status: string }[] | null;
   profiles: { full_name: string | null } | { full_name: string | null }[] | null;
   rooms: { name: string; properties: { name: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null } | { name: string; profiles: unknown }[] | null } | { name: string; properties: unknown }[] | null;
@@ -21,7 +21,7 @@ async function fetchAdminReservations(): Promise<AdminBookingRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbErr } = await (supabase as any)
     .from("bookings")
-    .select(`id,reference,status,check_in,check_out,nights,total_amount,currency,payment_status,created_at,payments!booking_id(id,status),profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`)
+    .select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,payments!booking_id(id,status),profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`)
     .order("created_at", { ascending: false })
     .limit(300);
 
@@ -37,7 +37,8 @@ async function fetchAdminReservations(): Promise<AdminBookingRow[]> {
     const capturedPayment = (b.payments ?? []).find((p) => p.status === "captured");
     return {
       id: b.id, reference: b.reference, status: b.status, checkIn: b.check_in, checkOut: b.check_out,
-      nights: b.nights, totalAmount: b.total_amount, currency: b.currency, paymentStatus: b.payment_status,
+      nights: b.nights, totalAmount: b.total_amount, currency: b.currency,
+      paymentStatus: capturedPayment?.status ?? (b.payments ?? [])[0]?.status ?? null,
       capturedPaymentId: capturedPayment?.id ?? null,
       travelerName: traveler?.full_name ?? null, hostName: host?.full_name ?? null,
       propertyName: propObj?.name ?? null, roomName: roomObj?.name ?? null, createdAt: b.created_at,
