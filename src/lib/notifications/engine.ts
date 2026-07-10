@@ -13,6 +13,7 @@
 import { eventBus } from "@/lib/events/bus";
 import type { StayBFEvent } from "@/lib/events/types";
 import { callEdgeFunction } from "@/lib/storage";
+import { logger } from "@/lib/observability/logger";
 
 // ── Channel config ────────────────────────────────────────────
 
@@ -237,7 +238,7 @@ async function dispatch(template: NotificationTemplate, recipientId: string): Pr
   };
 
   await callEdgeFunction("send-notification", notifBody).catch((err) => {
-    console.error("[NotificationEngine] dispatch failed:", err);
+    logger.error("NotificationEngine dispatch failed", { error: (err as Error)?.message });
   });
 }
 
@@ -253,12 +254,12 @@ export function initNotificationEngine(opts: {
 
   const subId = eventBus.onAny(async (event) => {
     const templates = buildTemplates(event);
-    for (const template of templates) {
-      const recipientId = opts.getRecipientId(template.recipientRole, event);
-      if (recipientId) {
-        await dispatch(template, recipientId);
-      }
-    }
+    await Promise.all(
+      templates.map((template) => {
+        const recipientId = opts.getRecipientId(template.recipientRole, event);
+        return recipientId ? dispatch(template, recipientId) : Promise.resolve();
+      })
+    );
   });
 
   return () => {

@@ -27,7 +27,9 @@ Deno.serve(async (req) => {
       .single();
 
     if (bookingErr || !booking) return err("Booking not found", 404);
-    if (booking.traveler_id !== user.id) return err("Forbidden", 403);
+    // In dev mode the caller must be the traveler; in prod mode admins act on any booking
+    const isAdmin = !simulateEnabled; // when not in dev mode, user already passed requireAnyRole
+    if (!isAdmin && booking.traveler_id !== user.id) return err("Forbidden", 403);
     if (booking.status !== "pending_payment") return err(`Cannot simulate payment for booking in status '${booking.status}'`);
 
     // Get host_id via property
@@ -53,10 +55,15 @@ Deno.serve(async (req) => {
       .from("payments")
       .insert({
         booking_id,
+        payer_id: booking.traveler_id,
+        method: "mobile_money",
         amount_fcfa: booking.total_amount,
+        processor_fee_fcfa: 0,
+        idempotency_key: `sim-${booking_id}`,
+        attempt_number: 1,
         currency: "XOF",
         status: "captured",
-        provider: "simulation",
+        provider: "cinetpay",
         provider_transaction_id: reference,
         captured_at: capturedAt,
       })
@@ -94,40 +101,53 @@ Deno.serve(async (req) => {
       metadata: { payment_id: payment.id, provider: "simulation" },
     });
 
+    const ref = booking.reference as string;
     // Write ledger entries (idempotent via conflict on id)
     const ledgerRows = [
       {
         id: `${booking_id}-accommodation`,
+        entry_type: "booking_accommodation_credit",
         booking_id,
         host_id: hostId,
+        payout_id: null as string | null,
+        refund_id: null as string | null,
         credit_account: "HOST_PENDING",
         debit_account: null as string | null,
         amount_fcfa: hostPayout,
         currency: "XOF",
-        description: "Hébergement hôte",
-        payment_id: payment.id,
+        reference: ref,
+        description: `Réservation ${ref} — encours hôte (simulation)`,
+        metadata: { provider: "simulation", payment_id: payment.id },
       },
       {
         id: `${booking_id}-commission`,
+        entry_type: "booking_commission_credit",
         booking_id,
         host_id: null as string | null,
+        payout_id: null as string | null,
+        refund_id: null as string | null,
         credit_account: "PLATFORM_PENDING",
         debit_account: null as string | null,
         amount_fcfa: commission,
         currency: "XOF",
-        description: "Commission plateforme",
-        payment_id: payment.id,
+        reference: ref,
+        description: `Réservation ${ref} — commission plateforme (simulation)`,
+        metadata: { provider: "simulation", payment_id: payment.id },
       },
       {
         id: `${booking_id}-service-fee`,
+        entry_type: "booking_service_fee_credit",
         booking_id,
         host_id: null as string | null,
+        payout_id: null as string | null,
+        refund_id: null as string | null,
         credit_account: "PLATFORM_PENDING",
         debit_account: null as string | null,
         amount_fcfa: serviceFee,
         currency: "XOF",
-        description: "Frais de service",
-        payment_id: payment.id,
+        reference: ref,
+        description: `Réservation ${ref} — frais de service (simulation)`,
+        metadata: { provider: "simulation", payment_id: payment.id },
       },
     ];
 

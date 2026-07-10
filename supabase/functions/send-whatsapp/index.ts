@@ -1,5 +1,5 @@
 import { handleCors } from "../_shared/cors.ts";
-import { requireAuth, makeServiceClient } from "../_shared/auth.ts";
+import { requireServiceRole, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
 
 // Integrates with Twilio WhatsApp Business API.
@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    await requireAuth(req);
+    requireServiceRole(req);
     const { to, body } = await req.json();
     if (!to || !body) return err("Missing required fields: to, body");
 

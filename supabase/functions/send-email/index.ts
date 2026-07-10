@@ -1,5 +1,5 @@
 import { handleCors } from "../_shared/cors.ts";
-import { requireAuth, makeServiceClient } from "../_shared/auth.ts";
+import { requireServiceRole, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
 
 // Integrates with Resend (or any transactional email provider).
@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    await requireAuth(req);
+    requireServiceRole(req);
     const { to, subject, html, from } = await req.json();
     if (!to || !subject || !html) return err("Missing required fields: to, subject, html");
 

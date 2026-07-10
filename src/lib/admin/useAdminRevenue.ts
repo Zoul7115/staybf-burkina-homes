@@ -41,8 +41,8 @@ async function fetchAdminRevenue(): Promise<AdminRevenueData> {
   const db = supabase as any;
 
   const [paymentsRes, bookingsRes, metricsRes] = await Promise.all([
-    db.from("payments").select("amount_fcfa, captured_at").eq("status", "captured"),
-    db.from("bookings").select("created_at").gte("created_at", `${since}T00:00:00`),
+    db.from("payments").select("amount_fcfa, captured_at").eq("status", "captured").gte("captured_at", `${since}T00:00:00`).limit(5000),
+    db.from("bookings").select("created_at").gte("created_at", `${since}T00:00:00`).limit(5000),
     db.from("daily_metrics").select("date, metric_key, metric_value").eq("dimension_type", "global").gte("date", since).in("metric_key", ["gross_revenue_fcfa", "bookings_created"]),
   ]);
 

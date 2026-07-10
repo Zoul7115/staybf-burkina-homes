@@ -42,3 +42,15 @@ export async function requireAnyRole(req: Request, roles: string[]) {
   if (!data) throw new Error("Forbidden");
   return user;
 }
+
+// Guard for internal service-to-service calls only.
+// Callers must present the service role key as Bearer token.
+// Used by send-email, send-sms, send-whatsapp — channels that must
+// never be directly accessible to end-users.
+export function requireServiceRole(req: Request): void {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!authHeader.startsWith("Bearer ") || authHeader.slice(7) !== serviceKey) {
+    throw new Error("Unauthorized");
+  }
+}

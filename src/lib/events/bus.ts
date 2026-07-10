@@ -1,3 +1,5 @@
+import { logger } from "@/lib/observability/logger";
+
 // ============================================================
 // EventBus — in-memory pub/sub singleton
 //
@@ -34,10 +36,10 @@ export class EventBus {
       if (sub.type === "*" || sub.type === enriched.type) {
         try {
           Promise.resolve(sub.handler(enriched)).catch((err) => {
-            console.error(`[EventBus] Async subscriber error for ${enriched.type}:`, err);
+            logger.error(`EventBus async subscriber error for ${enriched.type}`, { error: (err as Error)?.message });
           });
         } catch (err) {
-          console.error(`[EventBus] Subscriber error for ${enriched.type}:`, err);
+          logger.error(`EventBus subscriber error for ${enriched.type}`, { error: (err as Error)?.message });
         }
       }
     }

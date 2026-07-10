@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     if (existing.host_id !== user.id) return err("Forbidden", 403);
 
     // Explicit allowlist — never spread arbitrary user input into DB update
-    const allowed = ["name", "description", "address", "city_id", "type", "price_per_night",
+    const allowed = ["name", "description_md", "address", "city_id", "type", "price_per_night",
       "instant_book", "max_guests", "bedrooms", "beds", "bathrooms", "amenities",
       "house_rules", "check_in_time", "check_out_time", "cancellation_policy",
       "min_nights", "max_nights", "latitude", "longitude"] as const;
