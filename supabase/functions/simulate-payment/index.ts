@@ -1,5 +1,5 @@
 import { handleCors } from "../_shared/cors.ts";
-import { requireAuth, makeServiceClient } from "../_shared/auth.ts";
+import { requireAuth, requireAnyRole, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
 
 Deno.serve(async (req) => {
@@ -7,7 +7,13 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
+    // Only allowed in non-production environments or by admins
+    const simulateEnabled = Deno.env.get("SIMULATE_PAYMENT_ENABLED") === "true";
     const user = await requireAuth(req);
+    if (!simulateEnabled) {
+      // In production, only admins can trigger simulation (e.g. for support)
+      await requireAnyRole(req, ["admin", "super_admin"]);
+    }
     const { booking_id } = await req.json();
     if (!booking_id) return err("Missing booking_id");
 
@@ -51,7 +57,7 @@ Deno.serve(async (req) => {
         currency: "XOF",
         status: "captured",
         provider: "simulation",
-        provider_reference: reference,
+        provider_transaction_id: reference,
         captured_at: capturedAt,
       })
       .select("id")
@@ -96,11 +102,10 @@ Deno.serve(async (req) => {
         host_id: hostId,
         credit_account: "HOST_PENDING",
         debit_account: null as string | null,
-        amount: hostPayout,
+        amount_fcfa: hostPayout,
         currency: "XOF",
         description: "Hébergement hôte",
         payment_id: payment.id,
-        status: "pending",
       },
       {
         id: `${booking_id}-commission`,
@@ -108,11 +113,10 @@ Deno.serve(async (req) => {
         host_id: null as string | null,
         credit_account: "PLATFORM_PENDING",
         debit_account: null as string | null,
-        amount: commission,
+        amount_fcfa: commission,
         currency: "XOF",
         description: "Commission plateforme",
         payment_id: payment.id,
-        status: "pending",
       },
       {
         id: `${booking_id}-service-fee`,
@@ -120,11 +124,10 @@ Deno.serve(async (req) => {
         host_id: null as string | null,
         credit_account: "PLATFORM_PENDING",
         debit_account: null as string | null,
-        amount: serviceFee,
+        amount_fcfa: serviceFee,
         currency: "XOF",
         description: "Frais de service",
         payment_id: payment.id,
-        status: "pending",
       },
     ];
 

@@ -52,10 +52,11 @@ Deno.serve(async (req) => {
   const requestId = generateRequestId();
   const log = createLogger("write-ledger-entry", requestId);
 
-  // Only service_role calls accepted
+  // Only service-to-service calls accepted: verify Bearer token matches the service role key
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    log.warn("Missing authorization header");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!authHeader.startsWith("Bearer ") || authHeader.slice(7) !== serviceKey) {
+    log.warn("Unauthorized write-ledger-entry call");
     return err("Unauthorized", 401);
   }
 

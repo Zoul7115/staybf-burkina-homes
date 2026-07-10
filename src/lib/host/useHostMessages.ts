@@ -108,8 +108,9 @@ export function useHostThreadMessages(threadId: string | null): UseHostThreadMes
     onMutate: async (body) => {
       await queryClient.cancelQueries({ queryKey: KEY });
       const prev = queryClient.getQueryData<HostMessage[]>(KEY);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
       const tempMsg: HostMessage = {
-        id: `temp-${Date.now()}`, threadId: threadId ?? "", senderId: null,
+        id: `temp-${Date.now()}`, threadId: threadId ?? "", senderId: currentUser?.id ?? null,
         body, isRead: false, isSystemMessage: false, createdAt: new Date().toISOString(),
       };
       queryClient.setQueryData<HostMessage[]>(KEY, (old) => [...(old ?? []), tempMsg]);

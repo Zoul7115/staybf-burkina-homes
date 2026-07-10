@@ -47,7 +47,7 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
 
   const [
     hostsRes, propertiesRes, bookingsRes, subsRes, pendingHostsRes, moderationRes,
-    paymentsRes, metricsRes, recentBookingsRes, pendingHostListRes,
+    paymentsRes, metricsRes, recentBookingsRes, pendingHostListRes, travelersRes,
   ] = await Promise.all([
     db.from("host_profiles").select("id", { count: "exact", head: true }),
     db.from("properties").select("id", { count: "exact", head: true }),
@@ -57,8 +57,9 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
     db.from("moderation_queue").select("id", { count: "exact", head: true }).eq("status", "pending"),
     db.from("payments").select("amount_fcfa, captured_at").eq("status", "captured").gte("captured_at", `${since}T00:00:00`),
     db.from("daily_metrics").select("date, metric_key, metric_value").eq("dimension_type", "global").gte("date", since).in("metric_key", ["gross_revenue_fcfa", "bookings_created", "new_hosts"]),
-    db.from("bookings").select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`).order("created_at", { ascending: false }).limit(5),
+    db.from("bookings").select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,host_profiles!host_id(profiles!id(full_name))))`).order("created_at", { ascending: false }).limit(5),
     db.from("host_profiles").select(`id,status,superhost,verified_at,host_since,company_name,created_at,profiles!id(full_name,email,avatar_url,country,account_status)`).eq("status", "pending_review").order("created_at", { ascending: false }).limit(5),
+    db.from("profiles").select("id", { count: "exact", head: true }),
   ]);
 
   const payments = ((paymentsRes.data ?? []) as RawPayment[]);
@@ -88,8 +89,12 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
   const recentBookings: AdminBookingRow[] = ((recentBookingsRes.data ?? []) as RawBookingRow[]).map((b) => {
     const traveler = unwrap(b.profiles);
     const room = unwrap(b.rooms as RawBookingRow["rooms"]);
-    const prop = room ? unwrap((room as { name: string; properties: unknown }).properties as unknown as RawBookingRow["rooms"]) : null;
-    const host = prop ? unwrap((prop as unknown as { name: string; profiles: unknown }).profiles as unknown as RawBookingRow["profiles"]) : null;
+    const propRaw = room ? (room as { name: string; properties: unknown }).properties : null;
+    const prop = propRaw ? (Array.isArray(propRaw) ? propRaw[0] : propRaw) as { name: string; host_profiles?: unknown } : null;
+    const hpRaw = prop?.host_profiles;
+    const hp = hpRaw ? (Array.isArray(hpRaw) ? hpRaw[0] : hpRaw) as { profiles?: unknown } : null;
+    const hostProfileRaw = hp?.profiles;
+    const host = hostProfileRaw ? (Array.isArray(hostProfileRaw) ? hostProfileRaw[0] : hostProfileRaw) as { full_name: string | null } | null : null;
     return {
       id: b.id, reference: b.reference, status: b.status, checkIn: b.check_in, checkOut: b.check_out,
       nights: b.nights, totalAmount: b.total_amount, currency: b.currency, paymentStatus: null,
@@ -114,7 +119,7 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
     stats: {
       totalRevenueFcfa,
       totalHosts: hostsRes.count ?? 0,
-      totalTravelers: Math.max(0, propertiesRes.count ?? 0),
+      totalTravelers: Math.max(0, (travelersRes.count ?? 0) - (hostsRes.count ?? 0)),
       totalProperties: propertiesRes.count ?? 0,
       totalBookings: bookingsRes.count ?? 0,
       activeSubscriptions: subsRes.count ?? 0,

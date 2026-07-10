@@ -5,9 +5,9 @@ import { callEdgeFunction } from "@/lib/storage";
 import type { AdminPropertyRow } from "./types";
 
 type RawRow = {
-  id: string; name: string; status: string; property_type: string | null; created_at: string;
+  id: string; name: string; status: string; type: string | null; created_at: string;
   cities: { name: string } | { name: string }[] | null;
-  profiles: { full_name: string | null } | { full_name: string | null }[] | null;
+  host_profiles: { profiles: { full_name: string | null } | { full_name: string | null }[] | null } | { profiles: unknown }[] | null;
   rooms: { id: string }[] | null;
 };
 
@@ -20,17 +20,22 @@ async function fetchAdminProperties(): Promise<AdminPropertyRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbErr } = await (supabase as any)
     .from("properties")
-    .select(`id,name,status,property_type,created_at,cities!city_id(name),profiles!host_id(full_name),rooms!property_id(id)`)
+    .select(`id,name,status,type,created_at,cities!city_id(name),host_profiles!host_id(profiles!id(full_name)),rooms!property_id(id)`)
     .order("created_at", { ascending: false })
     .limit(300);
 
   if (dbErr) throw new Error(dbErr.message);
 
-  return ((data ?? []) as RawRow[]).map((p) => ({
-    id: p.id, name: p.name, status: p.status, propertyType: p.property_type ?? null,
-    cityName: unwrap(p.cities)?.name ?? null, hostName: unwrap(p.profiles)?.full_name ?? null,
-    roomsCount: Array.isArray(p.rooms) ? p.rooms.length : 0, createdAt: p.created_at,
-  }));
+  return ((data ?? []) as RawRow[]).map((p) => {
+    const hp = Array.isArray(p.host_profiles) ? p.host_profiles[0] : p.host_profiles;
+    const profileNode = (hp as { profiles: { full_name: string | null } | { full_name: string | null }[] | null } | null)?.profiles;
+    const hostName = (Array.isArray(profileNode) ? profileNode[0] : profileNode)?.full_name ?? null;
+    return {
+      id: p.id, name: p.name, status: p.status, propertyType: p.type ?? null,
+      cityName: unwrap(p.cities)?.name ?? null, hostName,
+      roomsCount: Array.isArray(p.rooms) ? p.rooms.length : 0, createdAt: p.created_at,
+    };
+  });
 }
 
 export type UseAdminPropertiesReturn = {

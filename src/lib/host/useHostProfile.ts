@@ -82,7 +82,13 @@ export function useHostProfile(): UseHostProfileReturn {
       await queryClient.cancelQueries({ queryKey: KEY });
       const prev = queryClient.getQueryData<HostProfileWithUser | null>(KEY);
       queryClient.setQueryData<HostProfileWithUser | null>(KEY, (old) =>
-        old ? { ...old, company_name: updates.company_name ?? old.company_name, bio: updates.bio ?? old.bio } : old
+        old ? {
+          ...old,
+          company_name: updates.company_name ?? old.company_name,
+          bio: updates.bio ?? old.bio,
+          payout_method: updates.payout_method ?? old.payout_method,
+          payout_account: updates.payout_account ?? old.payout_account,
+        } : old
       );
       return { prev };
     },

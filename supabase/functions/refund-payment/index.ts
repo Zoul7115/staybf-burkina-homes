@@ -1,5 +1,5 @@
 import { handleCors } from "../_shared/cors.ts";
-import { requireRole, makeServiceClient } from "../_shared/auth.ts";
+import { requireAnyRole, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
 
 Deno.serve(async (req) => {
@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    const admin = await requireRole(req, "admin");
+    const admin = await requireAnyRole(req, ["admin", "super_admin"]);
     const { payment_id, reason } = await req.json();
     if (!payment_id) return err("Missing payment_id");
     if (!reason || reason.length < 10) return err("reason must be at least 10 characters");
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     // Transition: captured → refund_pending → (async) refunded
     const { error: updateErr } = await db.from("payments").update({
       status: "refund_pending",
-    }).eq("id", payment_id);
+    }).eq("id", payment_id).eq("status", "captured");
 
     if (updateErr) return err(updateErr.message);
 

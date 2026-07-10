@@ -33,7 +33,7 @@ async function fetchTravelerProfile(): Promise<TravelerProfile | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: row } = await (supabase as any)
     .from("profiles")
-    .select("id, full_name, avatar_url, phone_number, country, language, created_at")
+    .select("id, full_name, avatar_url, phone, country, language, created_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -49,7 +49,7 @@ async function fetchTravelerProfile(): Promise<TravelerProfile | null> {
     lastName,
     fullName,
     email: user.email ?? null,
-    phone: row?.phone_number ?? null,
+    phone: row?.phone ?? null,
     country: row?.country ?? null,
     language: row?.language ?? "Français",
     avatarUrl: row?.avatar_url ?? null,
@@ -79,7 +79,7 @@ export function useTravelerProfile(): UseProfileResult {
         .from("profiles")
         .update({
           ...(fullName !== undefined && { full_name: fullName }),
-          ...(updates.phone !== undefined && { phone_number: updates.phone }),
+          ...(updates.phone !== undefined && { phone: updates.phone }),
           ...(updates.country !== undefined && { country: updates.country }),
           ...(updates.language !== undefined && { language: updates.language }),
         })

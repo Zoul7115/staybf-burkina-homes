@@ -19,18 +19,30 @@ type RawPayoutRow = {
 // ── Fetcher ───────────────────────────────────────────────────
 
 async function fetchHostRevenue(): Promise<HostRevenueData> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Non authentifié");
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) throw new Error(authErr?.message ?? "Non authentifié");
+
+  // Resolve host booking IDs via properties (bookings has no host_id column)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: propsData } = await db.from("properties").select("id").eq("host_id", user.id);
+  const propertyIds: string[] = (propsData ?? []).map((p: { id: string }) => p.id);
+  let bookingIds: string[] = [];
+  if (propertyIds.length > 0) {
+    const { data: bookData } = await db.from("bookings").select("id").in("property_id", propertyIds).limit(2000);
+    bookingIds = (bookData ?? []).map((b: { id: string }) => b.id);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [paymentsRes, payoutsRes] = await Promise.all([
-    (supabase as any)
+    bookingIds.length === 0 ? Promise.resolve({ data: [], error: null }) :
+    db
       .from("payments")
       .select(`id,booking_id,method,status,amount_fcfa,captured_at,created_at,bookings!booking_id(reference,profiles!traveler_id(full_name))`)
+      .in("booking_id", bookingIds)
       .order("created_at", { ascending: false })
       .limit(200),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    db
       .from("payouts")
       .select(`id,host_id,status,amount_fcfa,method,period_start,period_end,scheduled_for,paid_at,created_at`)
       .eq("host_id", user.id)

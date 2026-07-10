@@ -14,15 +14,15 @@ Deno.serve(async (req) => {
     const db = makeServiceClient();
 
     const { data: booking } = await db.from("bookings")
-      .select(`id, check_in, check_out, guests_count, total_amount_fcfa, status, created_at,
-        rooms(name, property_id, properties(title, address, cities(name))),
+      .select(`id, traveler_id, check_in, check_out, guests_adults, guests_children, guests_infants, total_amount, status, created_at,
+        rooms!room_id(name, property_id, properties!property_id(name, address, cities!city_id(name))),
         profiles!traveler_id(full_name, email)`)
       .eq("id", booking_id)
       .single();
 
     if (!booking) return err("Booking not found", 404);
 
-    const isTraveler = (booking as { traveler_id?: string }).traveler_id === user.id;
+    const isTraveler = (booking as unknown as { traveler_id: string }).traveler_id === user.id;
     if (!isTraveler) {
       // Check if user is the host via property
       const propertyId = (booking.rooms as { property_id?: string } | null)?.property_id;

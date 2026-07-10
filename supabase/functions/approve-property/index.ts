@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     await db.from("admin_actions").insert({
       admin_id: admin.id,
-      action_type: "property_unpublish",
+      action_type: "property_approve",
       target_type: "property",
       target_id: property_id,
       reason,

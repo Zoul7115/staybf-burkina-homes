@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
 
   const { data: booking } = await db
     .from("bookings")
-    .select("id, reference, host_payout_amount, commission_amount, service_fee_amount, status, property_id")
+    .select("id, reference, host_payout_amount, commission_amount, service_fee_amount, status, property_id, room_id")
     .eq("id", payment.booking_id)
     .single();
 
@@ -204,25 +204,29 @@ Deno.serve(async (req) => {
     return err("Booking not found", 500);
   }
 
-  const { data: prop } = await db.from("properties").select("host_id").eq("id", booking.property_id).single();
+  const { data: prop } = await db.from("properties").select("host_id, instant_book").eq("id", booking.property_id).single();
   const hostId: string | null = prop?.host_id ?? null;
+  const instantBook: boolean = prop?.instant_book ?? false;
 
   const bookingLog = paymentLog.child({ booking_id: booking.id });
 
-  // Confirm booking if still in payment_processing
+  // Confirm booking if still in payment_processing; respect instant_book flag
   if (booking.status === "payment_processing") {
+    const nextStatus = instantBook ? "confirmed" : "awaiting_host";
+    const updatePayload: Record<string, unknown> = { status: nextStatus };
+    if (instantBook) updatePayload.confirmed_at = capturedAt;
     await Promise.all([
-      db.from("bookings").update({ status: "confirmed", confirmed_at: capturedAt }).eq("id", booking.id),
+      db.from("bookings").update(updatePayload).eq("id", booking.id).eq("status", "payment_processing"),
       db.from("booking_events").insert({
         booking_id: booking.id,
-        event_type: "booking_confirmed",
+        event_type: instantBook ? "booking_confirmed" : "booking_awaiting_host",
         from_status: "payment_processing",
-        to_status: "confirmed",
+        to_status: nextStatus,
         actor_role: "system",
         metadata: { triggered_by: "webhook", provider: providerName, provider_event_id: providerEventId },
       }),
     ]);
-    bookingLog.info("Booking confirmed");
+    bookingLog.info("Booking transitioned after payment", { nextStatus });
   }
 
   // ── Step 9: build + validate ledger entries ───────────────

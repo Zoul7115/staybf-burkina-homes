@@ -47,6 +47,8 @@ async function fetchAdminRevenue(): Promise<AdminRevenueData> {
   ]);
 
   if (paymentsRes.error) throw new Error(paymentsRes.error.message);
+  if (bookingsRes.error) throw new Error(bookingsRes.error.message);
+  if (metricsRes.error) throw new Error(metricsRes.error.message);
 
   const payments = (paymentsRes.data ?? []) as RawPayment[];
   const totalRevenueFcfa = payments.reduce((s, p) => s + (p.amount_fcfa ?? 0), 0);

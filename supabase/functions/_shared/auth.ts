@@ -34,3 +34,11 @@ export async function requireRole(req: Request, role: string) {
   if (!data) throw new Error("Forbidden");
   return user;
 }
+
+export async function requireAnyRole(req: Request, roles: string[]) {
+  const user = await requireAuth(req);
+  const db = makeServiceClient();
+  const { data } = await db.from("user_roles").select("role").eq("user_id", user.id).in("role", roles).maybeSingle();
+  if (!data) throw new Error("Forbidden");
+  return user;
+}

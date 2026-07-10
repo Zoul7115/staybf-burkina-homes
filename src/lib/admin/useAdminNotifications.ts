@@ -51,7 +51,8 @@ export function useAdminNotifications(): UseAdminNotificationsReturn {
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await (supabase as any).from("notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw new Error(error.message);
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: KEY });
@@ -70,7 +71,8 @@ export function useAdminNotifications(): UseAdminNotificationsReturn {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("user_id", user.id).eq("is_read", false);
+      const { error } = await (supabase as any).from("notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("user_id", user.id).eq("is_read", false);
+      if (error) throw new Error(error.message);
     },
     onMutate: async () => {
       const prev = queryClient.getQueryData<AdminNotification[]>(KEY);

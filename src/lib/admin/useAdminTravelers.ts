@@ -20,6 +20,10 @@ async function fetchAdminTravelers(): Promise<AdminTravelerRow[]> {
   ]);
 
   if (profilesRes.error) throw new Error(profilesRes.error.message);
+  if (hostIdsRes.error) throw new Error(hostIdsRes.error.message);
+  if (bookingsRes.error) throw new Error(bookingsRes.error.message);
+  if (paymentsRes.error) throw new Error(paymentsRes.error.message);
+  if (reviewsRes.error) throw new Error(reviewsRes.error.message);
 
   const hostIds = new Set<string>(((hostIdsRes.data ?? []) as { id: string }[]).map((h) => h.id));
 

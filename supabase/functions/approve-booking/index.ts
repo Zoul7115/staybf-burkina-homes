@@ -29,9 +29,13 @@ Deno.serve(async (req) => {
       return err(`Booking is not awaiting host confirmation (current status: ${booking.status})`);
     }
 
-    const { error: updateErr } = await db.from("bookings").update({
+    const confirmedAt = new Date().toISOString();
+    const { error: updateErr, count } = await db.from("bookings").update({
       status: "confirmed",
-    }).eq("id", booking_id);
+      confirmed_at: confirmedAt,
+    }).eq("id", booking_id).eq("status", "awaiting_host").select();
+
+    if ((count ?? 0) === 0 && !updateErr) return err("Booking no longer awaiting host — concurrent modification detected");
 
     if (updateErr) return err(updateErr.message);
 

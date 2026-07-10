@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const { data: activeBookings } = await db.from("bookings")
       .select("id")
       .eq("room_id", room_id)
-      .in("status", ["pending", "confirmed"])
+      .in("status", ["pending_payment", "payment_processing", "awaiting_host", "confirmed", "checked_in"])
       .gte("check_out", new Date().toISOString().split("T")[0])
       .limit(1);
 

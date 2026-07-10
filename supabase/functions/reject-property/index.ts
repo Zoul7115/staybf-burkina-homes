@@ -21,16 +21,19 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchErr || !property) return err("Property not found", 404);
+    if (!["submitted", "under_review"].includes(property.status)) {
+      return err(`Property cannot be rejected from status: ${property.status}`);
+    }
 
     const { error: updateErr } = await db.from("properties").update({
       status: "rejected",
-    }).eq("id", property_id);
+    }).eq("id", property_id).in("status", ["submitted", "under_review"]);
 
     if (updateErr) return err(updateErr.message);
 
     await db.from("admin_actions").insert({
       admin_id: admin.id,
-      action_type: "property_unpublish",
+      action_type: "property_reject",
       target_type: "property",
       target_id: property_id,
       reason,

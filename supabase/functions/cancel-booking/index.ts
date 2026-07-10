@@ -37,25 +37,45 @@ Deno.serve(async (req) => {
 
     const newStatus = isTraveler ? "cancelled_by_traveler" : "cancelled_by_host";
 
+    const cancelledAt = new Date().toISOString();
     const { error: updateErr } = await db.from("bookings").update({
       status: newStatus,
+      cancelled_by: user.id,
+      cancelled_at: cancelledAt,
+      cancellation_reason: reason ?? null,
     }).eq("id", booking_id);
 
     if (updateErr) return err(updateErr.message);
 
+    // Log booking event for audit trail
+    await db.from("booking_events").insert({
+      booking_id,
+      event_type: "booking_cancelled",
+      from_status: booking.status,
+      to_status: newStatus,
+      actor_id: user.id,
+      actor_type: isTraveler ? "traveler" : "host",
+      metadata: { reason: reason ?? null },
+    });
+
     // Release availability (1 arg: booking_id)
     await db.rpc("release_availability", { p_booking_id: booking_id });
 
-    // Notify the other party
+    // Notify the other party — use correct enum values
     const notifyId = isTraveler ? hostId : booking.traveler_id;
+    const notifType = isTraveler ? "booking_cancelled_by_traveler" : "booking_cancelled_by_host";
     if (notifyId) {
-      await db.from("notifications").insert({
-        user_id: notifyId,
-        type: "booking_cancelled",
-        title: "Réservation annulée",
-        body: reason ?? "Une réservation a été annulée.",
-        data: { booking_id },
-      });
+      try {
+        await db.from("notifications").insert({
+          user_id: notifyId,
+          type: notifType,
+          title: "Réservation annulée",
+          body: reason ?? "Une réservation a été annulée.",
+          data: { booking_id },
+        });
+      } catch (_notifErr) {
+        // Notification failure does not fail the cancellation
+      }
     }
 
     return ok({ success: true });

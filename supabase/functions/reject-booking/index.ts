@@ -28,9 +28,13 @@ Deno.serve(async (req) => {
       return err(`Booking is not awaiting host confirmation (current status: ${booking.status})`);
     }
 
+    const rejectedAt = new Date().toISOString();
     const { error: updateErr } = await db.from("bookings").update({
       status: "cancelled_by_host",
-    }).eq("id", booking_id);
+      cancelled_by: user.id,
+      cancelled_at: rejectedAt,
+      cancellation_reason: reason ?? null,
+    }).eq("id", booking_id).eq("status", "awaiting_host");
 
     if (updateErr) return err(updateErr.message);
 

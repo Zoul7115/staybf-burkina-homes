@@ -63,8 +63,7 @@ async function upsertSetting(key: string, value: unknown): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from("platform_settings")
-    .upsert({ key, value, updated_by: user?.id ?? null, updated_at: new Date().toISOString() })
-    .eq("key", key);
+    .upsert({ key, value, updated_by: user?.id ?? null, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) throw new Error(error.message);
 }
 

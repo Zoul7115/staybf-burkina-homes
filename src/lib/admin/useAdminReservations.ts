@@ -9,7 +9,7 @@ type RawRow = {
   nights: number; total_amount: number; currency: string; created_at: string;
   payments: { id: string; status: string }[] | null;
   profiles: { full_name: string | null } | { full_name: string | null }[] | null;
-  rooms: { name: string; properties: { name: string; profiles: { full_name: string | null } | { full_name: string | null }[] | null } | { name: string; profiles: unknown }[] | null } | { name: string; properties: unknown }[] | null;
+  rooms: { name: string; properties: { name: string; host_profiles: { profiles: { full_name: string | null } | { full_name: string | null }[] | null } | unknown[] | null } | { name: string; host_profiles: unknown }[] | null } | { name: string; properties: unknown }[] | null;
 };
 
 function unwrap<T>(v: T | T[] | null): T | null {
@@ -21,7 +21,7 @@ async function fetchAdminReservations(): Promise<AdminBookingRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbErr } = await (supabase as any)
     .from("bookings")
-    .select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,payments!booking_id(id,status),profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,profiles!host_id(full_name)))`)
+    .select(`id,reference,status,check_in,check_out,nights,total_amount,currency,created_at,payments!booking_id(id,status),profiles!traveler_id(full_name),rooms!room_id(name,properties!property_id(name,host_profiles!host_id(profiles!id(full_name))))`)
     .order("created_at", { ascending: false })
     .limit(300);
 
@@ -31,9 +31,12 @@ async function fetchAdminReservations(): Promise<AdminBookingRow[]> {
     const traveler = unwrap(b.profiles);
     const room = unwrap(b.rooms as RawRow["rooms"]);
     const roomObj = room as { name: string; properties: unknown } | null;
-    const prop = roomObj ? unwrap(roomObj.properties as RawRow["rooms"]) : null;
-    const propObj = prop as { name: string; profiles: unknown } | null;
-    const host = propObj ? unwrap(propObj.profiles as RawRow["profiles"]) : null;
+    const propRaw = roomObj ? (Array.isArray(roomObj.properties) ? roomObj.properties[0] : roomObj.properties) : null;
+    const propObj = propRaw as { name: string; host_profiles: unknown } | null;
+    const hpRaw = propObj?.host_profiles;
+    const hp = hpRaw ? (Array.isArray(hpRaw) ? hpRaw[0] : hpRaw) as { profiles: unknown } | null : null;
+    const hostProfileRaw = hp?.profiles;
+    const host = hostProfileRaw ? (Array.isArray(hostProfileRaw) ? hostProfileRaw[0] : hostProfileRaw) as { full_name: string | null } | null : null;
     const capturedPayment = (b.payments ?? []).find((p) => p.status === "captured");
     return {
       id: b.id, reference: b.reference, status: b.status, checkIn: b.check_in, checkOut: b.check_out,
@@ -64,6 +67,10 @@ export function useAdminReservations(): UseAdminReservationsReturn {
   const refundMutation = useMutation({
     mutationFn: ({ paymentId, reason }: { paymentId: string; reason: string }) =>
       callEdgeFunction("refund-payment", { payment_id: paymentId, reason }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: KEY });
+      await queryClient.cancelQueries({ queryKey: queryKeys.adminPayments() });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: KEY });
       queryClient.invalidateQueries({ queryKey: queryKeys.adminPayments() });

@@ -32,22 +32,25 @@ async function fetchTravelerThreads(): Promise<ConversationThread[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
+  // Fetch threads without inline messages to avoid unbounded payload;
+  // unread count and last message preview come from dedicated columns/aggregates.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("threads")
-    .select(`id,updated_at,host_profiles!host_id(id,profiles!id(full_name,avatar_url)),properties!property_id(name),messages!thread_id(id,sender_id,body,created_at,is_read)`)
+    .select(`id,updated_at,traveler_unread_count,last_message_body,last_message_at,host_profiles!host_id(id,profiles!id(full_name,avatar_url)),properties!property_id(name)`)
     .eq("traveler_id", user.id)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(50);
 
   if (error || !data) return [];
 
-  return ((data as RawThread[])).map((t) => {
+  return ((data as (Omit<RawThread, "messages"> & { traveler_unread_count: number; last_message_body: string | null; last_message_at: string | null })[]))
+    .map((t) => {
     const hp = Array.isArray(t.host_profiles) ? (t.host_profiles[0] ?? null) : t.host_profiles;
     const prof = hp?.profiles ? (Array.isArray(hp.profiles) ? (hp.profiles[0] ?? null) : hp.profiles) : null;
     const prop = Array.isArray(t.properties) ? (t.properties[0] ?? null) : t.properties;
-    const msgs = (t.messages ?? []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    const last = msgs[0] ?? null;
-    const unreadCount = msgs.filter((m) => m.sender_id !== user.id && !m.is_read).length;
+    const unreadCount = t.traveler_unread_count ?? 0;
+    const last = t.last_message_at ? { body: t.last_message_body, created_at: t.last_message_at } : null;
     const hostName = prof?.full_name ?? "Hôte";
     return {
       id: t.id,
@@ -61,6 +64,7 @@ async function fetchTravelerThreads(): Promise<ConversationThread[]> {
       unreadCount,
     };
   });
+
 }
 
 export function useTravelerMessages(): { threads: ConversationThread[]; totalUnread: number; loading: boolean } {

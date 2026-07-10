@@ -24,6 +24,7 @@ async function fetchAdminHosts(): Promise<AdminHostRow[]> {
   ]);
 
   if (hostsRes.error) throw new Error(hostsRes.error.message);
+  if (propsRes.error) throw new Error(propsRes.error.message);
 
   const propCounts: Record<string, number> = {};
   ((propsRes.data ?? []) as RawPropertyCount[]).forEach((p) => {
