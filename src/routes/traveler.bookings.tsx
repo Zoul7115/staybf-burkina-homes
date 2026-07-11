@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Download, Star, MessageSquare, CalendarCheck } from "lucide-react";
+import { MapPin, Download, Star, MessageSquare, CalendarCheck, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,12 +31,24 @@ export const Route = createFileRoute("/traveler/bookings")({
 // Page
 // ---------------------------------------------------------------------------
 
+const CANCELLABLE_STATUSES: BookingStatus[] = ["pending_payment", "awaiting_host"];
+
 function BookingsPage() {
   const { upcoming, past, loading } = useBookings();
   const queryClient = useQueryClient();
   const [review, setReview] = useState<SupabaseBooking | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [cancelTarget, setCancelTarget] = useState<SupabaseBooking | null>(null);
+
+  const cancelMutation = useMutation({
+    mutationFn: async (bookingId: string) =>
+      callEdgeFunction("cancel-booking", { booking_id: bookingId, reason: "Annulation par le voyageur" }),
+    onSuccess: () => {
+      setCancelTarget(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.travelerBookings() });
+    },
+  });
 
   const reviewMutation = useMutation({
     mutationFn: async ({ bookingId, overallRating, body }: { bookingId: string; overallRating: number; body: string }) =>
@@ -67,7 +79,14 @@ function BookingsPage() {
           {loading
             ? <BookingSkeletons />
             : upcoming.length > 0
-              ? upcoming.map((b, i) => <BookingRow key={b.id} b={b} idx={i} />)
+              ? upcoming.map((b, i) => (
+                  <BookingRow
+                    key={b.id}
+                    b={b}
+                    idx={i}
+                    onCancel={CANCELLABLE_STATUSES.includes(b.status) ? () => setCancelTarget(b) : undefined}
+                  />
+                ))
               : <Empty />}
         </TabsContent>
 
@@ -86,6 +105,34 @@ function BookingsPage() {
               : <Empty />}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Annuler la réservation</DialogTitle>
+          </DialogHeader>
+          {cancelTarget && (
+            <p className="text-sm text-muted-foreground">
+              Êtes-vous sûr de vouloir annuler la réservation <span className="font-mono font-semibold">{cancelTarget.reference}</span> pour <span className="font-semibold">{cancelTarget.properties.name}</span> ?
+            </p>
+          )}
+          <DialogFooter className="flex-col items-stretch gap-2">
+            {cancelMutation.isError && (
+              <p className="text-xs text-destructive text-center">{(cancelMutation.error as Error)?.message}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setCancelTarget(null); cancelMutation.reset(); }}>Retour</Button>
+              <Button
+                variant="destructive"
+                disabled={cancelMutation.isPending}
+                onClick={() => { if (cancelTarget) cancelMutation.mutate(cancelTarget.id); }}
+              >
+                {cancelMutation.isPending ? "Annulation…" : "Confirmer l'annulation"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!review} onOpenChange={(o) => !o && setReview(null)}>
         <DialogContent>
@@ -140,6 +187,8 @@ function BookingsPage() {
 
 const STATUS_LABELS: Partial<Record<BookingStatus, string>> = {
   pending_payment:      "En attente de paiement",
+  payment_processing:   "Paiement en cours",
+  awaiting_host:        "En attente de l'hôte",
   confirmed:            "Confirmée",
   checked_in:           "En cours",
   completed:            "Terminée",
@@ -154,10 +203,12 @@ function BookingRow({
   b,
   idx,
   onReview,
+  onCancel,
 }: {
   b: SupabaseBooking;
   idx: number;
   onReview?: () => void;
+  onCancel?: () => void;
 }) {
   const isPast = !UPCOMING_STATUSES.includes(b.status);
   const label = STATUS_LABELS[b.status] ?? b.status;
@@ -242,6 +293,11 @@ function BookingRow({
               <Link to="/traveler/messages">
                 <MessageSquare className="h-4 w-4" /> Contacter
               </Link>
+            </Button>
+          )}
+          {onCancel && (
+            <Button size="sm" variant="outline" className="rounded-lg text-destructive border-destructive/40 hover:bg-destructive/10" onClick={onCancel}>
+              <XCircle className="h-4 w-4" /> Annuler
             </Button>
           )}
           {isPast && onReview && (

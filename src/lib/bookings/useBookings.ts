@@ -8,6 +8,8 @@ import { queryKeys } from "@/lib/query/keys";
 
 export type BookingStatus =
   | "pending_payment"
+  | "payment_processing"
+  | "awaiting_host"
   | "confirmed"
   | "checked_in"
   | "completed"
@@ -45,7 +47,7 @@ export interface SupabaseBooking {
   properties: BookingProperty;
 }
 
-export const UPCOMING_STATUSES: BookingStatus[] = ["pending_payment", "confirmed", "checked_in"];
+export const UPCOMING_STATUSES: BookingStatus[] = ["pending_payment", "payment_processing", "awaiting_host", "confirmed", "checked_in"];
 
 // ---------------------------------------------------------------------------
 // Fetcher

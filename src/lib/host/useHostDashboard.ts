@@ -20,7 +20,7 @@ type RawBookingRow = {
   guests_adults: number;
   status: string;
   total_amount: number;
-  host_payout_amount: number;
+  host_payout_amount: number | null;
   confirmed_at: string | null;
   created_at: string;
   rooms: { name: string } | null;
@@ -82,7 +82,7 @@ async function fetchHostDashboard(): Promise<HostDashboardData> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     propertyIds.length === 0 ? Promise.resolve({ data: [], error: null }) : (supabase as any)
       .from("bookings")
-      .select(`id,reference,check_in,check_out,guests_adults,status,total_amount,host_payout_amount,confirmed_at,created_at,rooms!room_id(name),profiles!traveler_id(full_name,avatar_url)`)
+      .select(`id,reference,check_in,check_out,guests_adults,status,total_amount,confirmed_at,created_at,rooms!room_id(name),profiles!traveler_id(full_name,avatar_url)`)
       .in("property_id", propertyIds)
       .in("status", ["awaiting_host", "confirmed", "checked_in", "pending_payment", "completed"])
       .gte("check_in", today())

@@ -62,6 +62,11 @@ async function fetchAdminDashboard(): Promise<AdminDashboardData> {
     db.from("profiles").select("id", { count: "exact", head: true }),
   ]);
 
+  const errors = [hostsRes, propertiesRes, bookingsRes, pendingHostsRes, moderationRes, paymentsRes, metricsRes, recentBookingsRes, pendingHostListRes, travelersRes]
+    .map((r) => (r as { error?: { message: string } | null }).error)
+    .filter(Boolean);
+  if (errors.length > 0) throw new Error((errors[0] as { message: string }).message);
+
   const payments = ((paymentsRes.data ?? []) as RawPayment[]);
   const totalRevenueFcfa = payments.reduce((s, p) => s + (p.amount_fcfa ?? 0), 0);
 

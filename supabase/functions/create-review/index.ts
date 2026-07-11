@@ -52,14 +52,16 @@ Deno.serve(async (req) => {
 
     if (revErr) return err(revErr.message);
 
-    // Notify host
-    await db.from("notifications").insert({
-      user_id: hostId,
-      type: "new_review",
-      title: "Nouvel avis reçu",
-      body: `Un voyageur a laissé un avis ${overall_rating}/5.`,
-      data: { review_id: review.id, booking_id },
-    });
+    // Notify host (skip if host_id is unknown — review is already saved)
+    if (hostId) {
+      await db.from("notifications").insert({
+        user_id: hostId,
+        type: "new_review",
+        title: "Nouvel avis reçu",
+        body: `Un voyageur a laissé un avis ${overall_rating}/5.`,
+        data: { review_id: review.id, booking_id },
+      }).catch(() => { /* notification failure does not fail the review */ });
+    }
 
     return ok({ review }, 201);
   } catch (e) {

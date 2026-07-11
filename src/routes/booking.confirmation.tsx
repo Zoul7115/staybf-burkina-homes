@@ -68,7 +68,15 @@ function ConfirmationPage() {
   const s = useSearch({ from: "/booking/confirmation" }) as ConfirmationSearch;
   const { data: property, loading } = usePropertyDetail(s.propertyId);
 
-  const ref = s.ref ?? "STBF-2026-45872";
+  const ref = s.ref ?? null;
+  if (!ref) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Référence de réservation introuvable.</p>
+        <Button asChild><Link to="/traveler/bookings">Mes réservations</Link></Button>
+      </div>
+    );
+  }
   const fromDate = s.from ? new Date(s.from) : new Date();
   const toDate = s.to ? new Date(s.to) : new Date(Date.now() + 3 * 86400000);
   const nights = Math.max(1, differenceInDays(toDate, fromDate));
