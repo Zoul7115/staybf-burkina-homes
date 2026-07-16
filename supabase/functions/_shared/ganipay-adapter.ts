@@ -18,7 +18,7 @@ import { registerAdapter } from "./webhook-adapter.ts";
 const EVENT_STATUS_MAP: Record<string, NormalizedWebhookEvent["mappedStatus"]> = {
   "payment.successful": "captured",
   "payment.failed":     "failed",
-  "payment.cancelled":  "failed",
+  "payment.cancelled":  "cancelled",
   "refund.completed":   "refunded",
 };
 
@@ -30,13 +30,12 @@ class GaniPayAdapter implements ProviderWebhookAdapter {
     headers: Record<string, string>,
     secret: string
   ): WebhookVerdict {
-    // Minimal structural validation when secret is not configured
+    // NOTE: This adapter is used by process-payment-webhook which receives
+    // pre-parsed JSON. Full HMAC-SHA256 verification requires the raw body
+    // and is therefore performed by the dedicated payment-webhook EF BEFORE
+    // this adapter is invoked. When secret is absent, always reject.
     if (!secret) {
-      const hasEventId = typeof payload.event_id === "string" && payload.event_id.length > 0;
-      if (!hasEventId) {
-        return { valid: false, reason: "Missing event_id" };
-      }
-      return { valid: true };
+      return { valid: false, reason: "GANIPAY_WEBHOOK_SECRET not configured" };
     }
 
     const sig = headers["x-ganipay-signature"] ?? "";
@@ -44,11 +43,9 @@ class GaniPayAdapter implements ProviderWebhookAdapter {
       return { valid: false, reason: "Missing X-GaniPay-Signature header" };
     }
 
-    // Signature check is deferred to Edge Function context where raw body is available
-    // The actual HMAC check happens via _verify_ganipay_signature() called before this adapter
     const hasRequiredFields =
-      typeof payload.event_id === "string" &&
-      typeof payload.event_type === "string";
+      typeof payload.event_id === "string" && payload.event_id.length > 0 &&
+      typeof payload.event_type === "string" && payload.event_type.length > 0;
 
     if (!hasRequiredFields) {
       return { valid: false, reason: "Missing event_id or event_type" };

@@ -17,9 +17,14 @@
 import { handleCors } from "../_shared/cors.ts";
 import { requireAnyRole, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
 
 const GANIPAY_API_KEY = Deno.env.get("GANIPAY_API_KEY") ?? "";
 const GANIPAY_ENV     = Deno.env.get("GANIPAY_ENV") ?? "sandbox";
+
+if (GANIPAY_ENV === "production" && !GANIPAY_API_KEY) {
+  throw new Error("GANIPAY_API_KEY must be set in production");
+}
 
 const GANIPAY_BASE_URL = GANIPAY_ENV === "production"
   ? "https://api.ganipay.com/v1"
@@ -28,6 +33,7 @@ const GANIPAY_BASE_URL = GANIPAY_ENV === "production"
 async function ganipayPost(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const res = await fetch(`${GANIPAY_BASE_URL}${path}`, {
     method:  "POST",
+    signal:  AbortSignal.timeout(15_000),
     headers: {
       "Authorization": `Bearer ${GANIPAY_API_KEY}`,
       "Content-Type":  "application/json",
@@ -58,6 +64,9 @@ function parseAccountDetails(raw: string): { phone?: string; account?: string; c
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
+
+  const requestId = generateRequestId();
+  const log = createLogger("payout-dispatch", requestId);
 
   try {
     const admin = await requireAnyRole(req, ["admin", "super_admin", "finance"]);
@@ -126,6 +135,17 @@ Deno.serve(async (req) => {
         updated_at:     new Date().toISOString(),
       }).eq("id", payout_id).eq("status", "approved");
 
+      log.error("GaniPay /payouts call failed", e, { payout_id });
+
+      // Audit the GaniPay failure
+      await db.from("admin_actions").insert({
+        admin_id:    admin.id,
+        action_type: "withdrawal_dispatch_failed",
+        target_type: "payout",
+        target_id:   payout_id,
+        reason:      `GaniPay a rejeté le virement : ${(e as Error).message}`,
+      }).catch(() => undefined);
+
       return err(`GaniPay error: ${(e as Error).message}`, 502);
     }
 
@@ -153,6 +173,8 @@ Deno.serve(async (req) => {
       reason:      note ?? `Retrait ${payout.amount_fcfa.toLocaleString("fr-FR")} FCFA dispatché via GaniPay (${providerPayoutId})`,
     }).throwOnError().catch(() => undefined);
 
+    log.end("ok", { payout_id, provider_payout_id: providerPayoutId });
+
     return ok({
       success:            true,
       payout_id,
@@ -161,6 +183,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (e) {
+    log.error("payout-dispatch unhandled error", e);
     return err((e as Error).message, 500);
   }
 });

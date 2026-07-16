@@ -142,7 +142,7 @@ describe("GaniPayProvider.getStatus", () => {
     ["failed",      "failed"],
     ["cancelled",   "cancelled"],
     ["expired",     "expired"],
-    ["refunded",    "captured"],
+    ["refunded",    "refunded"],
   ];
 
   for (const [ganipayStatus, expectedStatus] of CASES) {
@@ -333,7 +333,7 @@ describe("GaniPayProvider.verifyWebhook", () => {
     }
   });
 
-  it("maps payment.cancelled → failed status", async () => {
+  it("maps payment.cancelled → cancelled status (distinct from failed)", async () => {
     const payload = JSON.stringify({
       event_id: "evt-003", event_type: "payment.cancelled",
       payment_id: "gp-pay-003", reference: "STBF-2026-003",
@@ -342,7 +342,7 @@ describe("GaniPayProvider.verifyWebhook", () => {
     const sig = await sign(TEST_CONFIG.webhookSecret, payload);
     const result = await provider.verifyWebhook(payload, sig, TEST_CONFIG.webhookSecret);
     if (result.valid) {
-      expect(result.event.mappedStatus).toBe("failed");
+      expect(result.event.mappedStatus).toBe("cancelled");
     }
   });
 

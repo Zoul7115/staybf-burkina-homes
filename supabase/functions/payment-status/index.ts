@@ -26,18 +26,19 @@ const GANIPAY_BASE_URL = GANIPAY_ENV === "production"
 
 const GANIPAY_STATUS_MAP: Record<string, string> = {
   pending:     "pending",
-  processing:  "pending",
+  processing:  "processing",
   successful:  "captured",
   failed:      "failed",
-  cancelled:   "failed",
-  expired:     "failed",
-  refunded:    "captured",
+  cancelled:   "cancelled",
+  expired:     "expired",
+  refunded:    "refunded",
 };
 
-const TERMINAL_STATUSES = new Set(["captured", "failed", "refunded", "chargeback"]);
+const TERMINAL_STATUSES = new Set(["captured", "failed", "refunded", "cancelled", "expired", "chargeback"]);
 
 async function ganipayGet(path: string): Promise<Record<string, unknown>> {
   const res = await fetch(`${GANIPAY_BASE_URL}${path}`, {
+    signal: AbortSignal.timeout(15_000),
     headers: {
       "Authorization": `Bearer ${GANIPAY_API_KEY}`,
       "Accept":        "application/json",

@@ -169,7 +169,7 @@ describe("Payment lifecycle webhook events", () => {
   const TEST_EVENTS = [
     { event_type: "payment.successful", expectedStatus: "captured",  expectedType: "payment.captured" },
     { event_type: "payment.failed",     expectedStatus: "failed",    expectedType: "payment.failed" },
-    { event_type: "payment.cancelled",  expectedStatus: "failed",    expectedType: "payment.cancelled" },
+    { event_type: "payment.cancelled",  expectedStatus: "cancelled", expectedType: "payment.cancelled" },
     { event_type: "refund.completed",   expectedStatus: "refunded",  expectedType: "refund.completed" },
   ];
 

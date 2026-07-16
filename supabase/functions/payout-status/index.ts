@@ -21,13 +21,14 @@ const GANIPAY_STATUS_MAP: Record<string, string> = {
   processing: "processing",
   paid:       "paid",
   failed:     "failed",
-  cancelled:  "failed",
+  cancelled:  "cancelled",
 };
 
 const TERMINAL_PAYOUT_STATUSES = new Set(["paid", "failed", "cancelled", "reversed"]);
 
 async function ganipayGet(path: string): Promise<Record<string, unknown>> {
   const res = await fetch(`${GANIPAY_BASE_URL}${path}`, {
+    signal: AbortSignal.timeout(15_000),
     headers: {
       "Authorization": `Bearer ${GANIPAY_API_KEY}`,
       "Accept":        "application/json",

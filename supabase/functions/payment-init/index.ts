@@ -17,11 +17,19 @@
 import { handleCors } from "../_shared/cors.ts";
 import { requireAuth, makeServiceClient } from "../_shared/auth.ts";
 import { ok, err } from "../_shared/response.ts";
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
 
 const GANIPAY_API_KEY      = Deno.env.get("GANIPAY_API_KEY") ?? "";
 const GANIPAY_ENV          = Deno.env.get("GANIPAY_ENV") ?? "sandbox";
 const GANIPAY_CALLBACK_URL = Deno.env.get("GANIPAY_CALLBACK_URL") ?? "";
 const GANIPAY_CANCEL_URL   = Deno.env.get("GANIPAY_CANCEL_URL") ?? "";
+
+// Fail-fast: refuse to start if critical env vars are absent in production
+if (GANIPAY_ENV === "production" && !GANIPAY_API_KEY) {
+  throw new Error("GANIPAY_API_KEY must be set in production");
+}
+
+const ALLOWED_METHODS = new Set(["orange_money", "moov_money"]);
 
 const GANIPAY_BASE_URL = GANIPAY_ENV === "production"
   ? "https://api.ganipay.com/v1"
@@ -30,6 +38,7 @@ const GANIPAY_BASE_URL = GANIPAY_ENV === "production"
 async function ganipayPost(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const res = await fetch(`${GANIPAY_BASE_URL}${path}`, {
     method: "POST",
+    signal: AbortSignal.timeout(15_000),
     headers: {
       "Authorization": `Bearer ${GANIPAY_API_KEY}`,
       "Content-Type":  "application/json",
@@ -58,6 +67,9 @@ Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
+  const requestId = generateRequestId();
+  const log = createLogger("payment-init", requestId);
+
   try {
     const user = await requireAuth(req);
     const body = await req.json();
@@ -79,6 +91,11 @@ Deno.serve(async (req) => {
       return err("booking_id, method, and idempotency_key are required");
     }
 
+    if (!ALLOWED_METHODS.has(method)) {
+      log.warn("Invalid payment method", { method, user_id: user.id });
+      return err(`Invalid method '${method}'. Allowed: orange_money, moov_money`, 400);
+    }
+
     const db = makeServiceClient();
 
     // ── Verify booking ────────────────────────────────────────
@@ -90,7 +107,10 @@ Deno.serve(async (req) => {
       .single();
 
     if (bookingErr || !booking) return err("Booking not found", 404);
-    if (booking.traveler_id !== user.id) return err("Forbidden", 403);
+    if (booking.traveler_id !== user.id) {
+      log.warn("Forbidden: traveler mismatch", { booking_id, user_id: user.id });
+      return err("Forbidden", 403);
+    }
     if (booking.status !== "pending_payment") {
       return err(`Cannot initiate payment for booking in status '${booking.status}'`);
     }
@@ -169,7 +189,8 @@ Deno.serve(async (req) => {
       });
     } catch (e) {
       // Mark payment as failed if GaniPay call fails
-      await db.from("payments").update({ status: "failed" }).eq("id", paymentId);
+      await db.from("payments").update({ status: "failed", failed_at: new Date().toISOString() }).eq("id", paymentId);
+      log.error("GaniPay /payments call failed", e, { payment_id: paymentId, booking_id });
       return err(`GaniPay error: ${(e as Error).message}`, 502);
     }
 
@@ -193,6 +214,17 @@ Deno.serve(async (req) => {
       .eq("id", booking_id)
       .eq("status", "pending_payment");
 
+    await db.from("booking_events").insert({
+      booking_id,
+      event_type:  "payment_initiated",
+      from_status: "pending_payment",
+      to_status:   "payment_processing",
+      actor_role:  "traveler",
+      metadata:    { payment_id: paymentId, provider: "ganipay", request_id: requestId },
+    }).catch(() => undefined);
+
+    log.end("ok", { payment_id: paymentId, booking_id, checkout_url: !!checkoutUrl });
+
     return ok({
       payment_id:              paymentId,
       provider_transaction_id: providerTransactionId,
@@ -201,6 +233,7 @@ Deno.serve(async (req) => {
     }, 201);
 
   } catch (e) {
+    log.error("payment-init unhandled error", e);
     return err((e as Error).message, 500);
   }
 });

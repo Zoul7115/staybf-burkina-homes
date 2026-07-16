@@ -36,7 +36,8 @@ const MAX_RETRY_ATTEMPTS     = 5;
 // ── HMAC-SHA256 verification ──────────────────────────────────
 
 async function verifyHmac(secret: string, rawBody: string, signature: string): Promise<boolean> {
-  if (!secret) return true; // Bypass in dev/test when secret not configured
+  // Never allow an empty secret — an absent env var must hard-fail, not open the gate
+  if (!secret) return false;
 
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -87,6 +88,17 @@ Deno.serve(async (req) => {
   }
 
   const db = makeServiceClient();
+
+  // ── Freshness check (replay-attack guard) ─────────────────
+  // Reject webhooks with occurred_at older than 5 minutes
+  const occurredAt = payload.occurred_at as string | undefined;
+  if (occurredAt) {
+    const age = Date.now() - new Date(occurredAt).getTime();
+    if (age > 5 * 60 * 1_000) {
+      log.warn("Stale webhook rejected", { occurred_at: occurredAt, age_ms: age });
+      return err("Webhook timestamp too old", 400);
+    }
+  }
 
   // ── Extract event id ──────────────────────────────────────
 
@@ -196,33 +208,66 @@ Deno.serve(async (req) => {
     return ok({ deduplicated: true });
   }
   if (eventConflict) {
-    childLog.error("Failed to insert payment event", eventConflict);
+    // Increment retry count; dead-letter after MAX_RETRY_ATTEMPTS
+    const { data: logRow } = await db
+      .from("payment_webhook_logs")
+      .select("attempts")
+      .eq("id", webhookLogId)
+      .single();
+    const attempts = (logRow?.attempts ?? 1) + 1;
+    const deadLettered = attempts > MAX_RETRY_ATTEMPTS;
+    await db.from("payment_webhook_logs").update({
+      status:             deadLettered ? "failed" : "received",
+      attempts,
+      retry_count:        attempts - 1,
+      dead_lettered:      deadLettered,
+      dead_letter_at:     deadLettered ? new Date().toISOString() : null,
+      dead_letter_reason: deadLettered ? eventConflict.message : null,
+      next_retry_at:      deadLettered ? null : new Date(Date.now() + attempts * 60_000).toISOString(),
+      last_error:         eventConflict.message,
+    }).eq("id", webhookLogId);
+    childLog.error("Failed to insert payment event", eventConflict, { attempts, deadLettered });
     return err(eventConflict.message, 500);
   }
 
   // ── Handle non-captured status ────────────────────────────
 
   if (mappedStatus !== "captured") {
-    if (mappedStatus === "failed") {
-      await db.from("payments").update({ status: "failed", failed_at: new Date().toISOString() }).eq("id", payment.id);
-      // Revert booking to pending_payment so traveler can retry
+    if (mappedStatus === "failed" || mappedStatus === "cancelled") {
+      const paymentStatus = mappedStatus === "cancelled" ? "cancelled" : "failed";
+      await db.from("payments").update({ status: paymentStatus, failed_at: new Date().toISOString() }).eq("id", payment.id);
+
+      // Revert booking to pending_payment so traveler can retry (only if cancelled — failed always retryable too)
       await db.from("bookings")
         .update({ status: "pending_payment" })
         .eq("id", payment.booking_id)
         .eq("status", "payment_processing");
+
+      await db.from("booking_events").insert({
+        booking_id:  payment.booking_id,
+        event_type:  mappedStatus === "cancelled" ? "payment_cancelled" : "payment_failed",
+        from_status: "payment_processing",
+        to_status:   "pending_payment",
+        actor_role:  "system",
+        metadata:    { triggered_by: "ganipay_webhook", provider_event_id: providerEventId, mapped_status: mappedStatus },
+      }).catch(() => undefined);
+
       // Notify traveler
       const { data: bk } = await db.from("bookings").select("traveler_id, reference").eq("id", payment.booking_id).single();
       if (bk) {
         await db.from("notifications").insert({
           user_id: bk.traveler_id,
-          type:    "payment_failed",
-          title:   "Paiement échoué",
-          body:    `Votre paiement pour la réservation ${bk.reference} a échoué. Veuillez réessayer.`,
+          type:    mappedStatus === "cancelled" ? "payment_cancelled" : "payment_failed",
+          title:   mappedStatus === "cancelled" ? "Paiement annulé" : "Paiement échoué",
+          body:    `Votre paiement pour la réservation ${bk.reference} a ${mappedStatus === "cancelled" ? "été annulé" : "échoué"}. Veuillez réessayer.`,
           data:    { booking_id: payment.booking_id, payment_id: payment.id },
         }).catch(() => undefined);
       }
     }
-    await db.from("payment_webhook_logs").update({ status: mappedStatus === "failed" ? "processed" : "ignored", payment_id: payment.id }).eq("id", webhookLogId);
+    await db.from("payment_webhook_logs").update({
+      status:     ["failed", "cancelled"].includes(mappedStatus) ? "processed" : "ignored",
+      payment_id: payment.id,
+    }).eq("id", webhookLogId);
     return ok({ status: mappedStatus });
   }
 

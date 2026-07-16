@@ -121,7 +121,7 @@ const PAYMENT_STATUS_MAP: Record<GaniPayPaymentStatus, PaymentIntentStatus> = {
   failed:      "failed",
   cancelled:   "cancelled",
   expired:     "expired",
-  refunded:    "captured",
+  refunded:    "refunded",
 };
 
 export type GaniPayConfig = {
@@ -148,6 +148,7 @@ class GaniPayClient {
   async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",
+      signal: AbortSignal.timeout(15_000),
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
@@ -174,6 +175,7 @@ class GaniPayClient {
   async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: "GET",
+      signal: AbortSignal.timeout(15_000),
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
         "Accept": "application/json",
@@ -416,6 +418,7 @@ const EVENT_TYPE_MAP: Record<GaniPayWebhookPayload["event_type"], WebhookEvent["
   "payment.failed":     "payment.failed",
   "payment.cancelled":  "payment.cancelled",
   "refund.completed":   "refund.completed",
+  // Payout events are routed separately in the webhook EF and never reach verifyWebhook
   "payout.paid":        "payment.captured",
   "payout.failed":      "payment.failed",
 };
@@ -425,8 +428,9 @@ import type { PaymentStatus } from "../types";
 const STATUS_FROM_EVENT: Record<GaniPayWebhookPayload["event_type"], PaymentStatus> = {
   "payment.successful": "captured",
   "payment.failed":     "failed",
-  "payment.cancelled":  "failed",
+  "payment.cancelled":  "cancelled",
   "refund.completed":   "refunded",
+  // Payout events never flow through verifyWebhook — handled by handlePayoutEvent in EF
   "payout.paid":        "captured",
   "payout.failed":      "failed",
 };
