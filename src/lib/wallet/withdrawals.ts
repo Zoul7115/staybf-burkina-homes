@@ -59,24 +59,35 @@ export function validateWithdrawalRequest(opts: {
 
 // ── State machine ─────────────────────────────────────────────
 //
-// pending → approved → processing → paid
-//                                 → failed (→ retry up to MAX_RETRY_COUNT)
-//         → cancelled
-// on_hold (admin intervention required)
+// pending   → approved | cancelled | scheduled | on_hold
+// approved  → processing | cancelled
+// scheduled → processing | on_hold | approved  (legacy batch path)
+// on_hold   → approved | scheduled | cancelled
+// processing → paid | failed
+// failed    → approved | scheduled | on_hold
+// paid      → reversed
+// cancelled → (terminal)
+// reversed  → (terminal)
 
 export type WithdrawalTransition =
-  | { from: "pending"; to: "scheduled" | "on_hold" | "cancelled" }
-  | { from: "scheduled"; to: "processing" | "on_hold" }
+  | { from: "pending";    to: "approved" | "cancelled" | "scheduled" | "on_hold" }
+  | { from: "approved";   to: "processing" | "cancelled" }
+  | { from: "scheduled";  to: "processing" | "on_hold" | "approved" }
+  | { from: "on_hold";    to: "approved" | "scheduled" | "cancelled" }
   | { from: "processing"; to: "paid" | "failed" }
-  | { from: "failed"; to: "scheduled" }
-  | { from: "on_hold"; to: "scheduled" | "cancelled" };
+  | { from: "failed";     to: "approved" | "scheduled" | "on_hold" }
+  | { from: "paid";       to: "reversed" };
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  pending: ["scheduled", "on_hold", "cancelled"],
-  scheduled: ["processing", "on_hold"],
+  pending:    ["approved", "cancelled", "scheduled", "on_hold"],
+  approved:   ["processing", "cancelled"],
+  scheduled:  ["processing", "on_hold", "approved"],
+  on_hold:    ["approved", "scheduled", "cancelled"],
   processing: ["paid", "failed"],
-  failed: ["scheduled"],
-  on_hold: ["scheduled", "cancelled"],
+  failed:     ["approved", "scheduled", "on_hold"],
+  paid:       ["reversed"],
+  cancelled:  [],
+  reversed:   [],
 };
 
 export function isValidWithdrawalTransition(from: string, to: string): boolean {

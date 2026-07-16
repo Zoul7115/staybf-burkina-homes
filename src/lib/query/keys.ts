@@ -58,6 +58,7 @@ export const queryKeys = {
   adminProperties: ()                                => ["admin", "properties"]                 as const,
   adminReservations: ()                              => ["admin", "reservations"]               as const,
   adminPayments: ()                                  => ["admin", "payments"]                   as const,
+  adminPayouts: ()                                   => ["admin", "payouts"]                    as const,
   adminReviews: ()                                   => ["admin", "reviews"]                    as const,
   adminSupport: ()                                   => ["admin", "support"]                    as const,
   adminRevenue: ()                                   => ["admin", "revenue"]                    as const,

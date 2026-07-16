@@ -66,7 +66,8 @@ export type LedgerEntryType =
   | "booking_service_fee_credit"     // +service_fee_amount → platform pending
   | "booking_completed_release"      // host pending → host available
   | "booking_cancelled_reversal"     // reverses a booking credit
-  | "payout_debit"                   // host available → withdrawn
+  | "payout_debit"                   // host available → withdrawn (at request time)
+  | "payout_reversal"                // host withdrawn → host available (on cancellation)
   | "refund_accommodation_debit"     // reverses accommodation (refund to traveler)
   | "refund_commission_debit"        // reverses commission (refund to traveler)
   | "refund_service_fee_debit"       // reverses service fee

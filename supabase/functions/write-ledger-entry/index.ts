@@ -39,6 +39,7 @@ const ENTRY_TYPE_MAP: Record<string, string> = {
   booking_completed_release:     "booking_completed_release",
   booking_cancelled_reversal:    "booking_cancelled_reversal",
   payout_debit:                  "payout_debit",
+  payout_reversal:               "payout_reversal",
   refund_accommodation_debit:    "refund_accommodation_debit",
   refund_commission_debit:       "refund_commission_debit",
   refund_service_fee_debit:      "refund_service_fee_debit",

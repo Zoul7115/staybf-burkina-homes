@@ -38,11 +38,13 @@ export type BookingStatus =
 
 export type PayoutStatus =
   | "pending"
+  | "approved"
   | "scheduled"
+  | "on_hold"
   | "processing"
   | "paid"
   | "failed"
-  | "on_hold"
+  | "cancelled"
   | "reversed";
 
 export type PayoutMethod = "orange_money" | "moov_money" | "bank";

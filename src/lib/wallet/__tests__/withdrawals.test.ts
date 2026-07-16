@@ -71,15 +71,52 @@ describe("validateWithdrawalRequest", () => {
   });
 });
 
-describe("isValidWithdrawalTransition", () => {
-  it("allows pending → scheduled", () => expect(isValidWithdrawalTransition("pending", "scheduled")).toBe(true));
+describe("isValidWithdrawalTransition — 7-state machine", () => {
+  // pending →
+  it("allows pending → approved", () => expect(isValidWithdrawalTransition("pending", "approved")).toBe(true));
+  it("allows pending → cancelled", () => expect(isValidWithdrawalTransition("pending", "cancelled")).toBe(true));
+  it("allows pending → scheduled (legacy)", () => expect(isValidWithdrawalTransition("pending", "scheduled")).toBe(true));
+  it("allows pending → on_hold", () => expect(isValidWithdrawalTransition("pending", "on_hold")).toBe(true));
+  it("rejects pending → processing (must go through approved first)", () => expect(isValidWithdrawalTransition("pending", "processing")).toBe(false));
+  it("rejects pending → paid", () => expect(isValidWithdrawalTransition("pending", "paid")).toBe(false));
+
+  // approved →
+  it("allows approved → processing", () => expect(isValidWithdrawalTransition("approved", "processing")).toBe(true));
+  it("allows approved → cancelled", () => expect(isValidWithdrawalTransition("approved", "cancelled")).toBe(true));
+  it("rejects approved → pending", () => expect(isValidWithdrawalTransition("approved", "pending")).toBe(false));
+
+  // scheduled → (legacy path)
   it("allows scheduled → processing", () => expect(isValidWithdrawalTransition("scheduled", "processing")).toBe(true));
+  it("allows scheduled → on_hold", () => expect(isValidWithdrawalTransition("scheduled", "on_hold")).toBe(true));
+  it("allows scheduled → approved (promote)", () => expect(isValidWithdrawalTransition("scheduled", "approved")).toBe(true));
+
+  // on_hold →
+  it("allows on_hold → approved", () => expect(isValidWithdrawalTransition("on_hold", "approved")).toBe(true));
+  it("allows on_hold → scheduled", () => expect(isValidWithdrawalTransition("on_hold", "scheduled")).toBe(true));
+  it("allows on_hold → cancelled", () => expect(isValidWithdrawalTransition("on_hold", "cancelled")).toBe(true));
+
+  // processing →
   it("allows processing → paid", () => expect(isValidWithdrawalTransition("processing", "paid")).toBe(true));
   it("allows processing → failed", () => expect(isValidWithdrawalTransition("processing", "failed")).toBe(true));
-  it("allows failed → scheduled (retry)", () => expect(isValidWithdrawalTransition("failed", "scheduled")).toBe(true));
-  it("rejects paid → any (terminal)", () => {
-    expect(isValidWithdrawalTransition("paid", "pending")).toBe(false);
-    expect(isValidWithdrawalTransition("paid", "processing")).toBe(false);
+
+  // failed →
+  it("allows failed → approved (new retry path)", () => expect(isValidWithdrawalTransition("failed", "approved")).toBe(true));
+  it("allows failed → scheduled (legacy retry)", () => expect(isValidWithdrawalTransition("failed", "scheduled")).toBe(true));
+  it("allows failed → on_hold", () => expect(isValidWithdrawalTransition("failed", "on_hold")).toBe(true));
+
+  // paid →
+  it("allows paid → reversed", () => expect(isValidWithdrawalTransition("paid", "reversed")).toBe(true));
+  it("rejects paid → pending (terminal→non-terminal)", () => expect(isValidWithdrawalTransition("paid", "pending")).toBe(false));
+  it("rejects paid → processing", () => expect(isValidWithdrawalTransition("paid", "processing")).toBe(false));
+
+  // terminal →
+  it("rejects cancelled → anything", () => {
+    expect(isValidWithdrawalTransition("cancelled", "pending")).toBe(false);
+    expect(isValidWithdrawalTransition("cancelled", "approved")).toBe(false);
+  });
+  it("rejects reversed → anything", () => {
+    expect(isValidWithdrawalTransition("reversed", "pending")).toBe(false);
+    expect(isValidWithdrawalTransition("reversed", "paid")).toBe(false);
   });
 });
 
