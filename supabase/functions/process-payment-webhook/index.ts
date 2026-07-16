@@ -27,6 +27,7 @@ import { createLogger, generateRequestId } from "../_shared/logger.ts";
 
 // Import adapters so they self-register
 import "../_shared/cinetpay-adapter.ts";
+import "../_shared/ganipay-adapter.ts";
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
