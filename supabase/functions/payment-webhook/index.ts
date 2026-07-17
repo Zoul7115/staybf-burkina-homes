@@ -78,13 +78,23 @@ Deno.serve(async (req) => {
   }
 
   // ── Verify HMAC signature ─────────────────────────────────
+  // Internal retries (from retry-webhooks EF) carry X-StayBF-Internal-Retry
+  // with the original webhook_log_id. The signature was already verified on
+  // first receipt — skip re-verification for internal calls.
 
-  const signature = req.headers.get("x-ganipay-signature") ?? "";
-  const sigValid  = await verifyHmac(GANIPAY_WEBHOOK_SECRET, rawBody, signature);
+  const internalRetryId = req.headers.get("x-staybf-internal-retry");
+  const isInternalRetry = !!internalRetryId && req.headers.get("authorization")?.slice(7) === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!sigValid) {
-    log.warn("GaniPay webhook signature verification failed");
-    return err("Invalid webhook signature", 401);
+  if (!isInternalRetry) {
+    const signature = req.headers.get("x-ganipay-signature") ?? "";
+    const sigValid  = await verifyHmac(GANIPAY_WEBHOOK_SECRET, rawBody, signature);
+
+    if (!sigValid) {
+      log.warn("GaniPay webhook signature verification failed");
+      return err("Invalid webhook signature", 401);
+    }
+  } else {
+    log.info("internal retry — HMAC verification skipped", { original_log_id: internalRetryId });
   }
 
   const db = makeServiceClient();
@@ -263,9 +273,15 @@ Deno.serve(async (req) => {
           data:    { booking_id: payment.booking_id, payment_id: payment.id },
         }).catch(() => undefined);
       }
+
+    } else if (mappedStatus === "refunded") {
+      // ── B18: Write ledger entries on refund.completed ──────────────────────
+      // Reverse the original booking credits proportional to the refund amount.
+      await handleRefundLedger(db, payment, providerEventId, amountFcfa, childLog);
     }
+
     await db.from("payment_webhook_logs").update({
-      status:     ["failed", "cancelled"].includes(mappedStatus) ? "processed" : "ignored",
+      status:     ["failed", "cancelled", "refunded"].includes(mappedStatus) ? "processed" : "ignored",
       payment_id: payment.id,
     }).eq("id", webhookLogId);
     return ok({ status: mappedStatus });
@@ -491,5 +507,137 @@ async function handlePayoutEvent(
       body:    `Votre retrait de ${(payout.amount_fcfa ?? 0).toLocaleString("fr-FR")} FCFA a échoué. Motif : ${failureReason}`,
       data:    { payout_id: payout.id, failure_reason: failureReason },
     }).catch(() => undefined);
+  }
+}
+
+// ── Refund ledger handler ─────────────────────────────────────
+// Called when GaniPay sends a refund.completed webhook.
+// Writes proportional ledger debit entries to reverse the original
+// booking credits (HOST_PENDING or HOST_AVAILABLE, PLATFORM_PENDING or
+// PLATFORM_AVAILABLE depending on whether the booking was already completed).
+
+async function handleRefundLedger(
+  db: ReturnType<typeof makeServiceClient>,
+  payment: { id: string; booking_id: string; amount_fcfa: number },
+  providerEventId: string | null,
+  refundAmountFcfa: number | null,
+  log: ReturnType<typeof createLogger>,
+): Promise<void> {
+  const refundAmount = refundAmountFcfa ?? payment.amount_fcfa;
+
+  // Fetch booking financial breakdown
+  const { data: booking } = await db
+    .from("bookings")
+    .select("id, reference, host_payout_amount, commission_amount, service_fee_amount, property_id")
+    .eq("id", payment.booking_id)
+    .single();
+
+  if (!booking) {
+    log.warn("booking not found for refund ledger", { booking_id: payment.booking_id });
+    return;
+  }
+
+  const { data: prop } = await db
+    .from("properties")
+    .select("host_id")
+    .eq("id", booking.property_id)
+    .maybeSingle();
+
+  // Determine which accounts to debit: check if booking_completed_release exists
+  const { data: releaseEntry } = await db
+    .from("wallet_ledger")
+    .select("id")
+    .eq("booking_id", booking.id)
+    .eq("entry_type", "booking_completed_release")
+    .maybeSingle();
+
+  const hostAccount     = releaseEntry ? "HOST_AVAILABLE"     : "HOST_PENDING";
+  const platformAccount = releaseEntry ? "PLATFORM_AVAILABLE" : "PLATFORM_PENDING";
+
+  // Compute proportional refund split
+  const total = payment.amount_fcfa;
+  const hostPortion     = total > 0 ? Math.round(refundAmount * (booking.host_payout_amount / total)) : 0;
+  const platformPortion = refundAmount - hostPortion;
+
+  // Guard: skip if refund entries already written (idempotency)
+  const { data: existingRefundEntry } = await db
+    .from("wallet_ledger")
+    .select("id")
+    .eq("booking_id", booking.id)
+    .in("entry_type", ["refund_accommodation_debit", "refund_commission_debit", "refund_service_fee_debit"])
+    .maybeSingle();
+
+  if (existingRefundEntry) {
+    log.info("refund ledger entries already written — skipped", { booking_id: booking.id });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const ref = booking.reference as string;
+  const entries = [];
+
+  if (hostPortion > 0) {
+    entries.push({
+      entry_type:    "refund_accommodation_debit",
+      debit_account: hostAccount,
+      credit_account: null as string | null,
+      amount_fcfa:   hostPortion,
+      currency:      "XOF",
+      booking_id:    booking.id,
+      host_id:       prop?.host_id ?? null,
+      reference:     ref,
+      description:   `Remboursement ${ref} — débit hôte ${hostAccount}`,
+      metadata:      { refund_amount: refundAmount, provider_event_id: providerEventId, payment_id: payment.id },
+      created_at:    now,
+    });
+  }
+
+  if (platformPortion > 0) {
+    const commissionShare   = booking.commission_amount ?? 0;
+    const serviceFeeShare   = booking.service_fee_amount ?? 0;
+    const platformTotal     = commissionShare + serviceFeeShare;
+    const commissionPortion = platformTotal > 0 ? Math.round(platformPortion * (commissionShare / platformTotal)) : 0;
+    const serviceFeePortion = platformPortion - commissionPortion;
+
+    if (commissionPortion > 0) {
+      entries.push({
+        entry_type:    "refund_commission_debit",
+        debit_account: platformAccount,
+        credit_account: null as string | null,
+        amount_fcfa:   commissionPortion,
+        currency:      "XOF",
+        booking_id:    booking.id,
+        host_id:       null as string | null,
+        reference:     ref,
+        description:   `Remboursement ${ref} — commission plateforme`,
+        metadata:      { refund_amount: refundAmount, provider_event_id: providerEventId },
+        created_at:    now,
+      });
+    }
+
+    if (serviceFeePortion > 0) {
+      entries.push({
+        entry_type:    "refund_service_fee_debit",
+        debit_account: platformAccount,
+        credit_account: null as string | null,
+        amount_fcfa:   serviceFeePortion,
+        currency:      "XOF",
+        booking_id:    booking.id,
+        host_id:       null as string | null,
+        reference:     ref,
+        description:   `Remboursement ${ref} — frais de service`,
+        metadata:      { refund_amount: refundAmount, provider_event_id: providerEventId },
+        created_at:    now,
+      });
+    }
+  }
+
+  if (entries.length > 0) {
+    const { error: ledgerErr } = await db.from("wallet_ledger").insert(entries);
+    if (ledgerErr) {
+      log.error("refund ledger write failed", ledgerErr, { booking_id: booking.id });
+    } else {
+      log.info("refund ledger entries written", { booking_id: booking.id, count: entries.length, refund_amount: refundAmount });
+    }
   }
 }

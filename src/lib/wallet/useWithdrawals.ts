@@ -145,12 +145,17 @@ type RawAdminPayoutRow = RawPayoutRow & {
   profiles: { full_name: string | null; email: string | null } | null;
 };
 
-async function fetchAdminWithdrawals(statusFilter?: PayoutStatus[]): Promise<AdminPayout[]> {
+const ADMIN_PAGE_SIZE = 50;
+
+async function fetchAdminWithdrawals(statusFilter?: PayoutStatus[], page = 0): Promise<AdminPayout[]> {
+  const from = page * ADMIN_PAGE_SIZE;
+  const to   = from + ADMIN_PAGE_SIZE - 1;
+
   let q = (supabase as any)
     .from("payouts")
     .select(`${PAYOUT_SELECT}, profiles:host_id ( full_name, email )`)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
 
   if (statusFilter && statusFilter.length > 0) {
     q = q.in("status", statusFilter);
@@ -166,10 +171,10 @@ async function fetchAdminWithdrawals(statusFilter?: PayoutStatus[]): Promise<Adm
   }));
 }
 
-export function useAdminWithdrawals(statusFilter?: PayoutStatus[]) {
+export function useAdminWithdrawals(statusFilter?: PayoutStatus[], page = 0) {
   return useQuery({
-    queryKey: [...queryKeys.adminPayouts(), statusFilter ?? "all"],
-    queryFn: () => fetchAdminWithdrawals(statusFilter),
+    queryKey: [...queryKeys.adminPayouts(), statusFilter ?? "all", page],
+    queryFn: () => fetchAdminWithdrawals(statusFilter, page),
     staleTime: 15_000,
   });
 }
