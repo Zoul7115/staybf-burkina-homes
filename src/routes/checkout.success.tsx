@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, Calendar, Users, MapPin, Mail, Home, Search } from "lucide-react";
+import { CheckCircle2, Download, Calendar, Users, MapPin, Mail, Home, Search, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Navbar } from "@/components/site/Navbar";
@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
 import { coverImageUrl, PLACEHOLDER_IMG } from "@/lib/shared";
+import { usePaymentStatus } from "@/lib/booking/usePayment";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,18 +25,20 @@ type SuccessSearch = {
   to?: string;
   guests?: number;
   email?: string;
+  payment_id?: string;  // set when coming from GaniPay redirect
 };
 
 export const Route = createFileRoute("/checkout/success")({
   validateSearch: (s: Record<string, unknown>): SuccessSearch => ({
-    ref: s.ref as string,
+    ref:        s.ref as string,
     propertyId: s.propertyId as string,
-    total: s.total ? Number(s.total) : undefined,
-    method: s.method as string,
-    from: s.from as string,
-    to: s.to as string,
-    guests: s.guests ? Number(s.guests) : undefined,
-    email: s.email as string,
+    total:      s.total ? Number(s.total) : undefined,
+    method:     s.method as string,
+    from:       s.from as string,
+    to:         s.to as string,
+    guests:     s.guests ? Number(s.guests) : undefined,
+    email:      s.email as string,
+    payment_id: s.payment_id as string | undefined,
   }),
   head: () => ({
     meta: [
@@ -57,6 +60,44 @@ const methodLabels: Record<string, string> = {
 function SuccessPage() {
   const s = useSearch({ from: "/checkout/success" }) as SuccessSearch;
   const { data: property, loading } = usePropertyDetail(s.propertyId);
+
+  // If payment_id is present, we came from a GaniPay redirect — poll until confirmed
+  const { data: paymentStatus } = usePaymentStatus(s.payment_id ?? null, {
+    enabled: !!s.payment_id,
+    refetchInterval: 3000,
+  });
+
+  const isPolling = !!s.payment_id && paymentStatus?.status !== "captured";
+  const paymentFailed = !!s.payment_id && (paymentStatus?.status === "failed" || paymentStatus?.status === "cancelled");
+
+  if (isPolling && !paymentFailed) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-lg font-medium">Vérification du paiement…</p>
+          <p className="text-sm text-muted-foreground">Merci de patienter quelques secondes.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentFailed) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center">
+        <div className="text-center space-y-4 max-w-md px-4">
+          <XCircle className="h-12 w-12 text-destructive mx-auto" />
+          <p className="text-lg font-semibold">Paiement échoué ou annulé</p>
+          <p className="text-sm text-muted-foreground">
+            Votre paiement n'a pas pu être finalisé. Aucun montant n'a été débité.
+          </p>
+          <Button asChild variant="default" size="lg" className="rounded-xl">
+            <Link to="/">Retour à l'accueil</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const ref = s.ref ?? "STBF-XXXXXX";
   const fromDate = s.from ? new Date(s.from) : new Date();

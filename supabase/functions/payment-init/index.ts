@@ -168,14 +168,28 @@ Deno.serve(async (req) => {
 
     let ganipayResponse: Record<string, unknown>;
     try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const appUrl      = Deno.env.get("APP_URL") ?? "";
+
+      // callback_url: where the USER is redirected after payment (frontend page, not webhook)
+      // cancel_url:   where the USER is redirected if they cancel on GaniPay
+      const callbackUrl = GANIPAY_CALLBACK_URL
+        || (appUrl ? `${appUrl}/checkout/success` : "");
+      const cancelUrl   = GANIPAY_CANCEL_URL
+        || (appUrl ? `${appUrl}/checkout` : "");
+
+      if (!callbackUrl) {
+        log.warn("GANIPAY_CALLBACK_URL not configured — redirect will be missing");
+      }
+
       ganipayResponse = await ganipayPost("/payments", {
         reference:    idempotency_key,
         amount:       booking.total_amount,
         currency:     "XOF",
         method,
         description:  `Réservation ${booking.reference}`,
-        callback_url: GANIPAY_CALLBACK_URL || `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook`,
-        cancel_url:   GANIPAY_CANCEL_URL,
+        callback_url: callbackUrl,
+        cancel_url:   cancelUrl,
         customer: {
           id:    user.id,
           email: payer_email,

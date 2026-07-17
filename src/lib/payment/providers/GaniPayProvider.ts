@@ -22,6 +22,7 @@ import type {
 } from "../provider";
 import type {
   PaymentIntentStatus,
+  PaymentMethodId,
   RefundRequest,
   RefundResult,
   WebhookVerificationResult,
@@ -202,7 +203,7 @@ class GaniPayClient {
 
 export class GaniPayProvider implements PaymentProvider, PayoutProvider {
   readonly name = "ganipay";
-  readonly supportedMethods = ["orange_money", "moov_money"] as const;
+  readonly supportedMethods: PaymentMethodId[] = ["orange_money", "moov_money"];
 
   private readonly client: GaniPayClient;
   private readonly config: GaniPayConfig;

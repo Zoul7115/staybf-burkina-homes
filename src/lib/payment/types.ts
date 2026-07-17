@@ -40,7 +40,8 @@ export type PaymentIntentStatus =
   | "captured"
   | "cancelled"
   | "failed"
-  | "expired";
+  | "expired"
+  | "refunded";
 
 export type PaymentIntent = {
   id: string;
@@ -95,8 +96,11 @@ export type PaymentSession = {
 export type PaymentStatus =
   | "initiated"
   | "pending"
+  | "processing"
   | "authorized"
   | "captured"
+  | "cancelled"
+  | "expired"
   | "failed"
   | "refund_pending"
   | "refunded"

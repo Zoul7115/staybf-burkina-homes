@@ -74,11 +74,12 @@ export function usePaymentStatus(
       return res;
     },
     enabled: !!paymentId && (opts?.enabled ?? true),
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // Stop polling when terminal status reached
+      const data = query.state.data as PaymentStatusResult | undefined;
       if (!data) return opts?.refetchInterval ?? 3000;
-      const terminal = ["captured", "failed", "refunded", "chargeback", "cancelled"];
-      if (terminal.includes((data as PaymentStatusResult).status)) return false;
+      const terminal = ["captured", "failed", "refunded", "chargeback", "cancelled", "expired"];
+      if (terminal.includes(data.status)) return false;
       return opts?.refetchInterval ?? 3000;
     },
     staleTime: 0,
@@ -101,10 +102,11 @@ export function usePaymentStatusByBooking(
       return res;
     },
     enabled: !!bookingId && (opts?.enabled ?? true),
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      const data = query.state.data as PaymentStatusResult | undefined;
       if (!data) return opts?.refetchInterval ?? 3000;
       const terminal = ["captured", "failed", "refunded", "chargeback", "cancelled", "confirmed", "awaiting_host"];
-      if (terminal.includes((data as PaymentStatusResult).booking_status)) return false;
+      if (terminal.includes(data.booking_status)) return false;
       return opts?.refetchInterval ?? 3000;
     },
     staleTime: 0,

@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
 import { coverImageUrl } from "@/lib/shared";
-import { usePricing, useCreateBooking, useSimulatePayment } from "@/lib/booking/hooks";
+import { usePricing, useCreateBooking } from "@/lib/booking/hooks";
+import { useInitPayment } from "@/lib/booking/usePayment";
 
 // ---------------------------------------------------------------------------
 // Types & validation
@@ -89,7 +90,7 @@ function CheckoutPage() {
 
   const { pricing, loading: pricingLoading } = usePricing(roomId, checkIn, checkOut);
   const createBooking = useCreateBooking();
-  const simulatePayment = useSimulatePayment();
+  const initPayment   = useInitPayment();
 
   const loading = propertyLoading || (!!roomId && pricingLoading);
 
@@ -129,6 +130,7 @@ function CheckoutPage() {
     setBookingError(null);
 
     try {
+      // Step 1: create the booking
       const result = await createBooking.mutateAsync({
         room_id: roomId,
         check_in: checkIn,
@@ -140,10 +142,27 @@ function CheckoutPage() {
         notes: form.note.trim() || undefined,
       });
 
-      await simulatePayment.mutateAsync(result.booking.id);
+      const bookingId = result.booking.id;
+      const idempotencyKey = `${bookingId}-${Date.now()}`;
 
+      // Step 2: initiate GaniPay payment
+      const paymentResult = await initPayment.mutateAsync({
+        bookingId,
+        method: method as "orange_money" | "moov_money",
+        idempotencyKey,
+        payerPhone: isMobileMoney ? mobileNumber.replace(/\s/g, "") : undefined,
+        payerEmail: form.email,
+      });
+
+      // Step 3: redirect to GaniPay checkout page
+      if (paymentResult.checkout_url) {
+        window.location.href = paymentResult.checkout_url;
+        return;
+      }
+
+      // Fallback: no redirect URL (e.g. direct USSD confirmation) → poll until resolved
       navigate({
-        to: "/booking/confirmation",
+        to: "/checkout/success",
         search: {
           ref: result.booking.reference,
           propertyId: search.propertyId ?? property?.id ?? "",
@@ -153,6 +172,7 @@ function CheckoutPage() {
           to: checkOut,
           guests,
           email: form.email,
+          payment_id: paymentResult.payment_id,
         },
       });
     } catch (e) {
@@ -164,7 +184,7 @@ function CheckoutPage() {
     ? [property.city?.name, property.address].filter(Boolean).join(", ")
     : "";
 
-  const isProcessing = createBooking.isPending || simulatePayment.isPending;
+  const isProcessing = createBooking.isPending || initPayment.isPending;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
