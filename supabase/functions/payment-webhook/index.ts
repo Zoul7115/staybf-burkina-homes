@@ -83,11 +83,19 @@ Deno.serve(async (req) => {
   // first receipt — skip re-verification for internal calls.
 
   const internalRetryId = req.headers.get("x-staybf-internal-retry");
-  const isInternalRetry = !!internalRetryId && req.headers.get("authorization")?.slice(7) === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  // BUG-FIX RC3-D: guard against empty SUPABASE_SERVICE_ROLE_KEY — an unset env var
+  // would let any caller with "Bearer " (empty token) pass the internal retry check.
+  const _serviceKey     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const isInternalRetry = !!internalRetryId
+    && !!_serviceKey
+    && req.headers.get("authorization")?.slice(7) === _serviceKey;
+
+  // BUG-FIX RC3-A: declare signature before the conditional so it is in scope
+  // at the webhook_logs INSERT below regardless of isInternalRetry.
+  const signature = req.headers.get("x-ganipay-signature") ?? "";
 
   if (!isInternalRetry) {
-    const signature = req.headers.get("x-ganipay-signature") ?? "";
-    const sigValid  = await verifyHmac(GANIPAY_WEBHOOK_SECRET, rawBody, signature);
+    const sigValid = await verifyHmac(GANIPAY_WEBHOOK_SECRET, rawBody, signature);
 
     if (!sigValid) {
       log.warn("GaniPay webhook signature verification failed");
@@ -100,9 +108,13 @@ Deno.serve(async (req) => {
   const db = makeServiceClient();
 
   // ── Freshness check (replay-attack guard) ─────────────────
-  // Reject webhooks with occurred_at older than 5 minutes
+  // Reject webhooks with occurred_at older than 5 minutes.
+  // BUG-FIX RC3-B: skip this check for internal retries — their occurred_at
+  // timestamps are always older than 5 min (they are replays of old events).
+  // The HMAC was already verified on first receipt; the internal bypass above
+  // is sufficient to authenticate the caller.
   const occurredAt = payload.occurred_at as string | undefined;
-  if (occurredAt) {
+  if (!isInternalRetry && occurredAt) {
     const age = Date.now() - new Date(occurredAt).getTime();
     if (age > 5 * 60 * 1_000) {
       log.warn("Stale webhook rejected", { occurred_at: occurredAt, age_ms: age });
@@ -125,32 +137,54 @@ Deno.serve(async (req) => {
   }
 
   // ── Log raw webhook (idempotency guard) ───────────────────
+  // BUG-FIX RC3-C: for internal retries the original webhook_log already exists
+  // with this provider_event_id. Re-inserting would hit the UNIQUE constraint
+  // (23505) and the handler would return ok({deduplicated:true}), silently
+  // abandoning the retry. Instead, look up the existing row by the log ID
+  // that the retry-webhooks EF passes in X-StayBF-Internal-Retry.
 
-  const { data: webhookLog, error: logErr } = await db
-    .from("payment_webhook_logs")
-    .insert({
-      provider:          "ganipay",
-      provider_event_id: providerEventId,
-      payload,
-      signature:         signature || null,
-      headers:           Object.fromEntries(req.headers.entries()),
-      status:            "received",
-      attempts:          1,
-    })
-    .select("id")
-    .single();
+  let webhookLogId: string;
 
-  if (logErr?.code === "23505") {
-    log.info("Duplicate GaniPay webhook — ignored", { providerEventId });
-    return ok({ deduplicated: true });
+  if (isInternalRetry && internalRetryId) {
+    // Reuse the existing log row; bump its attempts counter
+    const { data: existingLog, error: lookupErr } = await db
+      .from("payment_webhook_logs")
+      .select("id")
+      .eq("id", internalRetryId)
+      .maybeSingle();
+
+    if (lookupErr || !existingLog) {
+      log.warn("internal retry log not found", { internalRetryId });
+      return err("Webhook log not found", 404);
+    }
+    webhookLogId = existingLog.id;
+  } else {
+    const { data: webhookLog, error: logErr } = await db
+      .from("payment_webhook_logs")
+      .insert({
+        provider:          "ganipay",
+        provider_event_id: providerEventId,
+        payload,
+        signature:         signature || null,
+        headers:           Object.fromEntries(req.headers.entries()),
+        status:            "received",
+        attempts:          1,
+      })
+      .select("id")
+      .single();
+
+    if (logErr?.code === "23505") {
+      log.info("Duplicate GaniPay webhook — ignored", { providerEventId });
+      return ok({ deduplicated: true });
+    }
+    if (logErr) {
+      log.error("Failed to log webhook", logErr);
+      return err(logErr.message, 500);
+    }
+    webhookLogId = webhookLog.id;
   }
-  if (logErr) {
-    log.error("Failed to log webhook", logErr);
-    return err(logErr.message, 500);
-  }
 
-  const webhookLogId = webhookLog.id;
-  const childLog     = log.child({ webhook_log_id: webhookLogId, event_type: eventType });
+  const childLog = log.child({ webhook_log_id: webhookLogId, event_type: eventType });
 
   // ── Handle payout events separately ──────────────────────
 
