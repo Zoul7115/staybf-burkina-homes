@@ -13,6 +13,7 @@ import { Route as TravelerRouteImport } from './routes/traveler'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as HostRouteImport } from './routes/host'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TravelerSettingsRouteImport } from './routes/traveler.settings'
@@ -37,6 +38,7 @@ import { Route as HostCalendarRouteImport } from './routes/host.calendar'
 import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
+import { Route as AuthSuspendedRouteImport } from './routes/auth/suspended'
 import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -71,6 +73,11 @@ const HostRoute = HostRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -193,6 +200,11 @@ const BookingConfirmationRoute = BookingConfirmationRouteImport.update({
   path: '/booking/confirmation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSuspendedRoute = AuthSuspendedRouteImport.update({
+  id: '/suspended',
+  path: '/suspended',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AdminTravelersRoute = AdminTravelersRouteImport.update({
   id: '/travelers',
   path: '/travelers',
@@ -272,6 +284,7 @@ const AdminCitiesRoute = AdminCitiesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
@@ -291,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -317,6 +331,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
@@ -336,6 +351,7 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -363,6 +379,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/checkout': typeof CheckoutRouteWithChildren
   '/host': typeof HostRouteWithChildren
   '/search': typeof SearchRoute
@@ -382,6 +399,7 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -410,6 +428,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/auth'
     | '/checkout'
     | '/host'
     | '/search'
@@ -429,6 +448,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -455,6 +475,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/auth'
     | '/checkout'
     | '/host'
     | '/search'
@@ -474,6 +495,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -500,6 +522,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/auth'
     | '/checkout'
     | '/host'
     | '/search'
@@ -519,6 +542,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -546,6 +570,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
   CheckoutRoute: typeof CheckoutRouteWithChildren
   HostRoute: typeof HostRouteWithChildren
   SearchRoute: typeof SearchRoute
@@ -583,6 +608,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -753,6 +785,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingConfirmationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/suspended': {
+      id: '/auth/suspended'
+      path: '/suspended'
+      fullPath: '/auth/suspended'
+      preLoaderRoute: typeof AuthSuspendedRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/admin/travelers': {
       id: '/admin/travelers'
       path: '/travelers'
@@ -899,6 +938,16 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AuthRouteChildren {
+  AuthSuspendedRoute: typeof AuthSuspendedRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthSuspendedRoute: AuthSuspendedRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface CheckoutRouteChildren {
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
 }
@@ -968,6 +1017,7 @@ const TravelerRouteWithChildren = TravelerRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
   CheckoutRoute: CheckoutRouteWithChildren,
   HostRoute: HostRouteWithChildren,
   SearchRoute: SearchRoute,
@@ -979,3 +1029,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
