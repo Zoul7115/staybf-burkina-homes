@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
         attempt_number: 1,
         currency: "XOF",
         status: "captured",
-        provider: "cinetpay",
+        provider: "simulation",
         provider_transaction_id: reference,
         captured_at: capturedAt,
       })
