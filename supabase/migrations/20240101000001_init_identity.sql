@@ -103,10 +103,13 @@ CREATE TYPE public.app_account_status AS ENUM (
 -- Host KYC verification state (Architecture §5.1, State Machine §3.7).
 -- ---------------------------------------------------------------------------
 CREATE TYPE public.app_kyc_status AS ENUM (
-  'none',       -- No KYC initiated yet.
-  'pending',    -- Documents submitted, awaiting review.
-  'verified',   -- Admin approved.
-  'rejected'    -- Admin rejected; host may resubmit after cooldown.
+  'none',         -- No KYC initiated yet.
+  'pending',      -- Documents submitted, awaiting review.
+  'under_review', -- Admin claimed the submission and is reviewing.
+  'verified',     -- Admin approved (legacy alias for 'approved').
+  'approved',     -- Admin approved; expires_at set to now() + 2 years.
+  'rejected',     -- Admin rejected; host may resubmit after cooldown.
+  'expired'       -- Previously approved KYC has passed its expiry date.
 );
 
 
@@ -450,9 +453,8 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS
-  'Creates public.profiles row and assigns traveler role in public.user_roles '
-  'immediately after every new auth.users insertion (signup).';
+-- NOTE: COMMENT ON TRIGGER ... ON auth.users is not allowed in Supabase Cloud
+-- (the auth schema is managed by GoTrue). Trigger comment omitted intentionally.
 
 
 -- =============================================================================

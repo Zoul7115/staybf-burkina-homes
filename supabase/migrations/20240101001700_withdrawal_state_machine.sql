@@ -72,7 +72,7 @@ CREATE OR REPLACE FUNCTION public.validate_payout_status_transition()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   allowed text[];
@@ -130,7 +130,7 @@ CREATE OR REPLACE FUNCTION public.process_payout_batch()
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   processed  integer := 0;

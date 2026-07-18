@@ -380,12 +380,12 @@ CREATE INDEX IF NOT EXISTS idx_properties_rating
 
 -- Geo radius search via earthdistance (extension enabled in 0001)
 CREATE INDEX IF NOT EXISTS idx_properties_geo
-  ON public.properties USING gist (ll_to_earth(latitude, longitude))
+  ON public.properties USING gist (extensions.ll_to_earth(latitude, longitude))
   WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND deleted_at IS NULL;
 
 -- Trigram full-text name search (pg_trgm enabled in 0001)
 CREATE INDEX IF NOT EXISTS idx_properties_name_trgm
-  ON public.properties USING gin (name gin_trgm_ops);
+  ON public.properties USING gin (name extensions.gin_trgm_ops);
 
 CREATE TRIGGER trg_properties_updated_at
   BEFORE UPDATE ON public.properties

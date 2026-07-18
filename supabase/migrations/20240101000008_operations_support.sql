@@ -16,11 +16,10 @@
 -- 1. ENUMS
 -- ============================================================
 
--- Extend existing KYC status with operational lifecycle states.
--- ADD VALUE IF NOT EXISTS is safe to re-run; enum values are never removed.
-ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'under_review';
-ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'approved';
-ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'expired';
+-- app_kyc_status values 'under_review', 'approved', 'expired' were added
+-- directly to the enum definition in migration 0001 to avoid the PostgreSQL
+-- restriction that prevents using a newly-added enum value in the same
+-- transaction as ALTER TYPE ... ADD VALUE.
 
 -- Support ticket state machine (7 states; Revenue doc §3.9)
 CREATE TYPE public.app_ticket_status AS ENUM (
@@ -128,7 +127,17 @@ CREATE TYPE public.app_audit_action AS ENUM (
   -- admin
   'admin_action_executed',
   -- erasure
-  'account_erased'
+  'account_erased',
+  -- analytics / automation partition lifecycle (used in migration 0009)
+  'audit_log_partition_dropped',
+  'analytics_partition_dropped',
+  'analytics_partition_skipped',
+  -- storage lifecycle (used in migration 0010)
+  'file_uploaded',
+  'file_deleted',
+  'file_scan_infected',
+  'file_purged',
+  'kyc_document_accessed'
 );
 
 -- Reasons a user may report a review

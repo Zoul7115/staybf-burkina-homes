@@ -50,7 +50,7 @@ CREATE OR REPLACE FUNCTION public.create_withdrawal_atomic(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_available   integer := 0;

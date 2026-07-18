@@ -56,13 +56,9 @@ CREATE TYPE public.app_storage_opt_status AS ENUM (
   'error'           -- optimisation service failed; original retained
 );
 
--- New audit actions for storage events.
--- ADD VALUE IF NOT EXISTS is safe to re-run.
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'file_uploaded';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'file_deleted';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'file_scan_infected';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'file_purged';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'kyc_document_accessed';
+-- 'file_uploaded', 'file_deleted', 'file_scan_infected', 'file_purged',
+-- 'kyc_document_accessed' were added to the app_audit_action enum definition
+-- in migration 0008 to avoid cross-migration ADD VALUE dependencies.
 
 
 -- =============================================================================

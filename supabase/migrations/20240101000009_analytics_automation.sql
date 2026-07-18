@@ -16,6 +16,17 @@
 
 
 -- ============================================================
+-- 0. EXTENSIONS
+-- ============================================================
+-- pg_cron is required for cron.schedule() / cron.unschedule() calls below.
+-- pg_cron always creates the 'cron' schema itself; WITH SCHEMA is not supported.
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Grant cron usage to postgres (required for job scheduling)
+GRANT USAGE ON SCHEMA cron TO postgres;
+
+
+-- ============================================================
 -- 1. ENUMS
 -- ============================================================
 

@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION public.prevent_profile_privilege_escalation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   -- Allow service_role to bypass (admin operations, Edge Functions)
@@ -73,7 +73,7 @@ CREATE OR REPLACE FUNCTION public.prevent_host_profile_privilege_escalation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   IF current_setting('role', true) = 'service_role' THEN
@@ -122,7 +122,7 @@ CREATE OR REPLACE FUNCTION public.enforce_booking_note_author()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   IF NEW.author_id IS NULL OR NEW.author_id != auth.uid() THEN
@@ -174,7 +174,7 @@ CREATE OR REPLACE FUNCTION public.restrict_review_self_edit()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   IF current_setting('role', true) = 'service_role' THEN
@@ -215,7 +215,7 @@ CREATE OR REPLACE FUNCTION public.validate_ticket_booking_id()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   IF NEW.booking_id IS NOT NULL THEN

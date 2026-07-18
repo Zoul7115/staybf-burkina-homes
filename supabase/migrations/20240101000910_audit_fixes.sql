@@ -224,9 +224,9 @@ GRANT EXECUTE ON FUNCTION public.drop_expired_audit_partitions(timestamptz)
 -- retention job can log correctly instead of mis-using 'moderation_queued'.
 -- =============================================================================
 
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'audit_log_partition_dropped';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'analytics_partition_dropped';
-ALTER TYPE public.app_audit_action ADD VALUE IF NOT EXISTS 'analytics_partition_skipped';
+-- 'audit_log_partition_dropped', 'analytics_partition_dropped',
+-- 'analytics_partition_skipped' were added to the app_audit_action enum
+-- definition in migration 0008 to avoid cross-migration ADD VALUE dependencies.
 
 
 -- =============================================================================
