@@ -21,6 +21,7 @@ dist-ssr
 .dev.vars
 
 # Environment files — contain secrets, never commit
+.env
 .env.staging
 .env.production
 .env.local
