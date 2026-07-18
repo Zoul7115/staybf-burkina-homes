@@ -142,9 +142,11 @@ function ThreadItem({
 function MessagePanel({
   thread,
   hostUserId,
+  onBack,
 }: {
   thread: HostThread;
   hostUserId: string;
+  onBack: () => void;
 }) {
   const { messages, loading, error, sendMessage, sending, sendError, markRead } =
     useHostThreadMessages(thread.id);
@@ -175,9 +177,16 @@ function MessagePanel({
   }
 
   return (
-    <div className="hidden sm:flex flex-1 flex-col min-h-0">
+    <div className="flex flex-1 flex-col min-h-0">
       {/* Header */}
-      <div className="px-5 h-14 border-b border-border flex items-center gap-3 shrink-0">
+      <div className="px-3 sm:px-5 h-14 border-b border-border flex items-center gap-3 shrink-0">
+        <button
+          onClick={onBack}
+          className="sm:hidden text-sm text-primary shrink-0 pr-1"
+          aria-label="Retour à la liste"
+        >
+          ← Retour
+        </button>
         <div className="h-9 w-9 rounded-full gradient-primary text-primary-foreground grid place-items-center text-xs font-bold shrink-0">
           {getInitials(thread.travelerName)}
         </div>
@@ -297,6 +306,7 @@ function MessagePanel({
 function HostMessagesPage() {
   const { threads, loading, error } = useHostThreads();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mobilePanel, setMobilePanel] = useState(false);
   const [q, setQ] = useState("");
   const [hostUserId, setHostUserId] = useState<string>("");
 
@@ -311,9 +321,9 @@ function HostMessagesPage() {
     if (resolvedUserId) setHostUserId(resolvedUserId);
   }, [resolvedUserId]);
 
-  // Auto-select first thread once loaded
+  // Auto-select first thread once loaded (desktop only — don't auto-open on mobile)
   useEffect(() => {
-    if (!activeId && threads.length > 0) {
+    if (!activeId && threads.length > 0 && window.innerWidth >= 640) {
       setActiveId(threads[0].id);
     }
   }, [threads, activeId]);
@@ -353,8 +363,8 @@ function HostMessagesPage() {
 
   return (
     <Card className="overflow-hidden h-[calc(100vh-220px)] flex">
-      {/* Thread list */}
-      <div className="w-full sm:w-80 border-r border-border flex flex-col shrink-0">
+      {/* Thread list — hidden on mobile when message panel is open */}
+      <div className={cn("w-full sm:w-80 border-r border-border flex flex-col shrink-0", mobilePanel && "hidden sm:flex")}>
         <div className="p-3 border-b border-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -378,18 +388,19 @@ function HostMessagesPage() {
               thread={t}
               isActive={t.id === activeId}
               hostUserId={hostUserId}
-              onClick={() => setActiveId(t.id)}
+              onClick={() => { setActiveId(t.id); setMobilePanel(true); }}
             />
           ))}
         </ul>
       </div>
 
-      {/* Message panel */}
+      {/* Message panel — visible on mobile when mobilePanel is true */}
       {activeThread ? (
         <MessagePanel
           key={activeThread.id}
           thread={activeThread}
           hostUserId={hostUserId}
+          onBack={() => setMobilePanel(false)}
         />
       ) : (
         <div className="hidden sm:flex flex-1 items-center justify-center text-muted-foreground text-sm">

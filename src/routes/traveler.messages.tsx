@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, Send, MessageSquare } from "lucide-react";
+import { Search, Send, MessageSquare, AlertCircle } from "lucide-react";
 import { TravelerShell } from "@/components/traveler/TravelerShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/traveler/messages")({
 });
 
 function MessagesPage() {
-  const { threads, loading: threadsLoading } = useTravelerMessages();
+  const { threads, loading: threadsLoading, error: threadsError } = useTravelerMessages();
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
@@ -83,6 +83,11 @@ function MessagesPage() {
                   </div>
                 </li>
               ))
+            ) : threadsError ? (
+              <li className="px-4 py-8 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-destructive/60" />
+                <span>Impossible de charger les messages</span>
+              </li>
             ) : filtered.length === 0 ? (
               <li className="px-4 py-8 text-center text-sm text-muted-foreground">Aucune conversation</li>
             ) : (

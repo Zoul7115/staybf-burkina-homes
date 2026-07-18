@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, Crown, Sparkles, Download, Calculator } from "lucide-react";
+import { Check, Crown, Sparkles, Download, Calculator, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { StatusBadge } from "@/components/dashboard/widgets";
@@ -93,7 +93,11 @@ function HostSubscriptionPage() {
             <h2 className="font-display font-bold text-xl">{currentPlan?.name} · {fmtFCFA(currentPlan?.price ?? 0)} / mois</h2>
             <p className="text-sm text-muted-foreground">Renouvellement automatique le 01 Août 2026</p>
           </div>
-          <Button variant="outline">Annuler l'abonnement</Button>
+          <Button variant="outline" asChild>
+            <a href="mailto:support@staybf.com?subject=Annulation%20abonnement">
+              <Mail className="h-4 w-4 mr-2" />Annuler l'abonnement
+            </a>
+          </Button>
         </div>
       </Card>
 

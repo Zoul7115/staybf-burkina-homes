@@ -65,7 +65,7 @@ function SearchPage() {
       />
 
       <div className="container mx-auto px-4 py-6 flex-1 w-full">
-        <div className="grid lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_400px] gap-6">
+        <div className="grid lg:grid-cols-[260px_1fr_380px] gap-6">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
             <div className="sticky top-[200px] max-h-[calc(100vh-220px)] overflow-y-auto pr-2">
@@ -100,8 +100,8 @@ function SearchPage() {
             </AnimatePresence>
           </section>
 
-          {/* Desktop map */}
-          <aside className="hidden xl:block">
+          {/* Desktop map — visible at lg+ (tablet and above) */}
+          <aside className="hidden lg:block">
             <div className="sticky top-[200px] h-[calc(100vh-220px)]">
               <SearchMap listings={results} activeId={activeId} city={city} />
             </div>
@@ -112,7 +112,7 @@ function SearchPage() {
       {/* Mobile map FAB */}
       <Button
         onClick={() => setMapOpen(true)}
-        className="xl:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 gradient-primary text-primary-foreground rounded-full px-6 h-12 shadow-elevated gap-2 font-semibold"
+        className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 gradient-primary text-primary-foreground rounded-full px-6 h-12 shadow-elevated gap-2 font-semibold"
       >
         <MapIcon className="h-4 w-4" />
         Carte

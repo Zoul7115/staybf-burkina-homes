@@ -39,6 +39,8 @@ import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 import { Route as AuthSuspendedRouteImport } from './routes/auth/suspended'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -205,6 +207,16 @@ const AuthSuspendedRoute = AuthSuspendedRouteImport.update({
   path: '/suspended',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AdminTravelersRoute = AdminTravelersRouteImport.update({
   id: '/travelers',
   path: '/travelers',
@@ -305,6 +317,8 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/auth/suspended': typeof AuthSuspendedRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -352,6 +366,8 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/auth/suspended': typeof AuthSuspendedRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -400,6 +416,8 @@ export interface FileRoutesById {
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
   '/auth/suspended': typeof AuthSuspendedRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/host/analytics': typeof HostAnalyticsRoute
@@ -449,6 +467,8 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/travelers'
     | '/auth/suspended'
+    | '/auth/login'
+    | '/auth/register'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -496,6 +516,8 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/travelers'
     | '/auth/suspended'
+    | '/auth/login'
+    | '/auth/register'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -543,6 +565,8 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/travelers'
     | '/auth/suspended'
+    | '/auth/login'
+    | '/auth/register'
     | '/booking/confirmation'
     | '/checkout/success'
     | '/host/analytics'
@@ -792,6 +816,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSuspendedRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/admin/travelers': {
       id: '/admin/travelers'
       path: '/travelers'
@@ -940,10 +978,14 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthRouteChildren {
   AuthSuspendedRoute: typeof AuthSuspendedRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthSuspendedRoute: AuthSuspendedRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

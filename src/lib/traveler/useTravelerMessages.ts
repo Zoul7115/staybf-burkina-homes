@@ -42,7 +42,8 @@ async function fetchTravelerThreads(): Promise<ConversationThread[]> {
     .order("updated_at", { ascending: false })
     .limit(50);
 
-  if (error || !data) return [];
+  if (error) throw new Error(error.message);
+  if (!data) return [];
 
   return ((data as (Omit<RawThread, "messages"> & { traveler_unread_count: number; last_message_body: string | null; last_message_at: string | null })[]))
     .map((t) => {
@@ -67,15 +68,15 @@ async function fetchTravelerThreads(): Promise<ConversationThread[]> {
 
 }
 
-export function useTravelerMessages(): { threads: ConversationThread[]; totalUnread: number; loading: boolean } {
-  const { data, isLoading } = useQuery({
+export function useTravelerMessages(): { threads: ConversationThread[]; totalUnread: number; loading: boolean; error: string | null } {
+  const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.travelerThreads(),
     queryFn: fetchTravelerThreads,
   });
 
   const threads = data ?? [];
   const totalUnread = threads.reduce((sum, t) => sum + t.unreadCount, 0);
-  return { threads, totalUnread, loading: isLoading };
+  return { threads, totalUnread, loading: isLoading, error: error ? (error as Error).message : null };
 }
 
 // ── Single thread messages ────────────────────────────────────
