@@ -27,6 +27,26 @@ GRANT USAGE ON SCHEMA cron TO postgres;
 
 
 -- ============================================================
+-- 0b. DEFERRED INDEX FROM MIGRATION 0008
+-- ============================================================
+-- uq_host_verifications_active could not be created in migration 0008 because:
+--   • Its WHERE predicate uses 'under_review' and 'approved', which were added
+--     via ALTER TYPE ADD VALUE in that same transaction.
+--   • PostgreSQL forbids typed enum literals in index predicates when the value
+--     was added in the same transaction ("unsafe use of new enum value").
+--   • The ::text workaround is also forbidden (enum→text cast not IMMUTABLE).
+-- Now that migration 0008 has committed, the enum values are fully visible
+-- and can be used as typed literals in index predicates.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_host_verifications_active
+  ON public.host_verifications (host_id)
+  WHERE status IN (
+    'pending'::public.app_kyc_status,
+    'under_review'::public.app_kyc_status,
+    'approved'::public.app_kyc_status
+  );
+
+
+-- ============================================================
 -- 1. ENUMS
 -- ============================================================
 

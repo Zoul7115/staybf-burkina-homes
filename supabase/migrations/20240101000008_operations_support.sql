@@ -686,13 +686,14 @@ CREATE TABLE IF NOT EXISTS public.host_verifications (
   FOREIGN KEY (reviewer_id) REFERENCES public.profiles (id) ON DELETE SET NULL
 );
 
--- Prevents duplicate active submissions.
--- Allows resubmission after rejected or expired (those statuses are excluded).
--- Note: ::text cast avoids "new enum value used in same transaction" error
--- when 'under_review' and 'approved' are added via ALTER TYPE ADD VALUE above.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_host_verifications_active
-  ON public.host_verifications (host_id)
-  WHERE status::text IN ('pending', 'under_review', 'approved');
+-- uq_host_verifications_active is intentionally created in migration 0009.
+-- Reason: index predicates require IMMUTABLE functions; the enum values
+-- 'under_review' and 'approved' are added via ALTER TYPE ADD VALUE above in
+-- this same transaction, so they cannot be used as typed enum literals in an
+-- index predicate here (PostgreSQL raises "unsafe use of new enum value").
+-- The ::text workaround is also forbidden (enum→text cast is not IMMUTABLE).
+-- Migration 0009 runs in a new transaction after this one commits, at which
+-- point the enum values are fully committed and usable in index predicates.
 
 ALTER TABLE public.host_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.host_verifications FORCE ROW LEVEL SECURITY;
