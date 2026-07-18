@@ -45,6 +45,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_host_verifications_active
     'approved'::public.app_kyc_status
   );
 
+-- Admin review queue: pending and under_review submissions
+-- (deferred from 0008 — same reason as uq_host_verifications_active)
+CREATE INDEX IF NOT EXISTS idx_host_verifications_review_queue
+  ON public.host_verifications (status, created_at)
+  WHERE status IN (
+    'pending'::public.app_kyc_status,
+    'under_review'::public.app_kyc_status
+  );
+
+-- Nightly expiry job: approved documents approaching expiry window
+-- (deferred from 0008 — same reason as uq_host_verifications_active)
+CREATE INDEX IF NOT EXISTS idx_host_verifications_expiry
+  ON public.host_verifications (expires_at)
+  WHERE status = 'approved'::public.app_kyc_status
+    AND expires_at IS NOT NULL;
+
 
 -- ============================================================
 -- 1. ENUMS

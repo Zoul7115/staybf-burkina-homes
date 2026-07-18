@@ -729,15 +729,12 @@ CREATE INDEX IF NOT EXISTS idx_host_verifications_host
   ON public.host_verifications (host_id, created_at DESC)
   WHERE host_id IS NOT NULL;
 
--- Admin review queue: pending and under_review submissions
-CREATE INDEX IF NOT EXISTS idx_host_verifications_review_queue
-  ON public.host_verifications (status, created_at)
-  WHERE status IN ('pending', 'under_review');
-
--- Nightly expiry job: approved documents approaching expiry window
-CREATE INDEX IF NOT EXISTS idx_host_verifications_expiry
-  ON public.host_verifications (expires_at)
-  WHERE status = 'approved' AND expires_at IS NOT NULL;
+-- idx_host_verifications_review_queue and idx_host_verifications_expiry are
+-- created in migration 0009 for the same reason as uq_host_verifications_active:
+-- their WHERE predicates use 'under_review' and 'approved' from app_kyc_status,
+-- which are added via ALTER TYPE ADD VALUE above in this same transaction.
+-- Index predicates require IMMUTABLE functions; typed enum literals added in the
+-- same transaction are not yet committed and cause "unsafe use of new enum value".
 
 -- Retention purge job: approved/rejected docs past 24-month storage window
 CREATE INDEX IF NOT EXISTS idx_host_verifications_retention
