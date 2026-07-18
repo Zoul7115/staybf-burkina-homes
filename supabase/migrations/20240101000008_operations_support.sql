@@ -16,10 +16,15 @@
 -- 1. ENUMS
 -- ============================================================
 
--- app_kyc_status values 'under_review', 'approved', 'expired' were added
--- directly to the enum definition in migration 0001 to avoid the PostgreSQL
--- restriction that prevents using a newly-added enum value in the same
--- transaction as ALTER TYPE ... ADD VALUE.
+-- Extend existing KYC status with operational lifecycle states.
+-- ADD VALUE IF NOT EXISTS is idempotent: on fresh databases the values are
+-- already present (defined in 0001); on existing databases where 0001 ran
+-- before this fix they are added here.  The restriction that prevents using
+-- a newly-added enum value in DDL within the same transaction is avoided by
+-- casting to ::text in the CHECK constraint and the partial index below.
+ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'under_review';
+ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'approved';
+ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'expired';
 
 -- Support ticket state machine (7 states; Revenue doc §3.9)
 CREATE TYPE public.app_ticket_status AS ENUM (
@@ -666,7 +671,9 @@ CREATE TABLE IF NOT EXISTS public.host_verifications (
     OR (rejection_reason IS NOT NULL AND char_length(rejection_reason) >= 5)
   ),
   CONSTRAINT host_verifications_approved_has_expiry CHECK (
-    status != 'approved'::public.app_kyc_status
+    -- Cast to text to avoid "new enum value used in same transaction" error
+    -- when this migration adds 'approved' via ALTER TYPE ADD VALUE above.
+    status::text != 'approved'
     OR expires_at IS NOT NULL
   ),
   -- While pending, no reviewer should be assigned yet.
@@ -681,13 +688,11 @@ CREATE TABLE IF NOT EXISTS public.host_verifications (
 
 -- Prevents duplicate active submissions.
 -- Allows resubmission after rejected or expired (those statuses are excluded).
+-- Note: ::text cast avoids "new enum value used in same transaction" error
+-- when 'under_review' and 'approved' are added via ALTER TYPE ADD VALUE above.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_host_verifications_active
   ON public.host_verifications (host_id)
-  WHERE status IN (
-    'pending'::public.app_kyc_status,
-    'under_review'::public.app_kyc_status,
-    'approved'::public.app_kyc_status
-  );
+  WHERE status::text IN ('pending', 'under_review', 'approved');
 
 ALTER TABLE public.host_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.host_verifications FORCE ROW LEVEL SECURITY;

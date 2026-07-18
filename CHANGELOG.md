@@ -53,12 +53,18 @@ PostgreSQL 17 instance without any manual intervention.
 
 ### Change 5 — Remove `ALTER TYPE app_kyc_status ADD VALUE` statements
 
+**Stratégie double-compatibilité (bases vierges ET bases existantes 0001–0007 déjà appliquées) :**
+
 | | |
 |---|---|
-| **Lines** | 21–23 (removed) |
-| **Old code** | `ALTER TYPE public.app_kyc_status ADD VALUE IF NOT EXISTS 'under_review';` (×3 for `under_review`, `approved`, `expired`) |
-| **New code** | Replaced with a comment explaining the values are now defined in 0001 |
-| **Why** | These three values were added here and then used in a `CHECK` constraint (line 659) and a partial index `WHERE` clause (lines 676–680) in the same migration. PostgreSQL 17 treats all statements in a single migration as one transaction and does not expose newly-added enum values to subsequent DDL within the same transaction. Moving the values to the original `CREATE TYPE` in 0001 resolves this. |
+| **Lignes** | 19–23 (ADD VALUE rétablis) ; 668–670 (CHECK) ; 684–690 (index partiel) |
+| **Problème** | Les 3 `ALTER TYPE ADD VALUE` étaient suivis dans la même transaction d'un `CHECK` et d'un index partiel utilisant les nouvelles valeurs → `ERROR: unsafe use of new enum value`. La correction précédente (valeurs déplacées dans 0001) ne fonctionnait que sur base vierge : sur une base où 0001–0007 sont déjà appliquées, `app_kyc_status` ne reçoit jamais les nouvelles valeurs → `ERROR: invalid input value for enum app_kyc_status: "approved"`. |
+| **Solution** | (a) Les valeurs restent dans 0001 pour les bases vierges. (b) `ALTER TYPE ADD VALUE IF NOT EXISTS` rétablis dans 0008 pour les bases existantes (idempotent si déjà présentes). (c) La restriction de même-transaction est contournée en remplaçant les casts `::public.app_kyc_status` par `::text` dans le CHECK et l'index partiel — PostgreSQL n'applique la restriction qu'aux littéraux typés enum, pas aux comparaisons texte. |
+| **Ancien CHECK** | `status != 'approved'::public.app_kyc_status OR expires_at IS NOT NULL` |
+| **Nouveau CHECK** | `status::text != 'approved' OR expires_at IS NOT NULL` |
+| **Ancien index** | `WHERE status IN ('pending'::app_kyc_status, 'under_review'::app_kyc_status, 'approved'::app_kyc_status)` |
+| **Nouvel index** | `WHERE status::text IN ('pending', 'under_review', 'approved')` |
+| **Impact fonctionnel** | Aucun : la colonne reste typée `app_kyc_status`, seul le littéral dans la définition DDL change. |
 
 ### Change 6 — Pre-add future `app_audit_action` values to the enum definition
 
