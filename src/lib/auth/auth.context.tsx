@@ -27,11 +27,14 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log("[AuthProvider onAuthStateChange] event =", event, "| currentPath =", window.location.pathname);
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         // Re-run the root loader (getRouterAuth server fn) to pick up the new session.
+        console.log("[AuthProvider] → router.invalidate()");
         router.invalidate();
       } else if (event === "SIGNED_OUT") {
         // Purge all cached server data — user-specific data must not leak between sessions.
+        console.log("[AuthProvider] → SIGNED_OUT → navigate /auth/login");
         queryClient.clear();
         router.navigate({ to: "/auth/login" });
       }

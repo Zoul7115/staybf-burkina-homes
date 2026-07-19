@@ -110,20 +110,25 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     // client-side navigation, so the loader always receives the current session.
     try {
       const auth = await getRouterAuth({ data: {} });
+      console.log("[ROOT loader] auth =", auth ? { userId: auth.user?.id, roles: auth.roles } : null);
       return { auth };
-    } catch {
+    } catch (e) {
+      console.error("[ROOT loader] erreur getRouterAuth:", e);
       return { auth: null };
     }
   },
   beforeLoad: async ({ context, location }) => {
+    console.log("[ROOT beforeLoad] location =", location.pathname, "| context.auth =", context.auth ? { userId: context.auth.user?.id, roles: context.auth.roles } : null);
     const auth = context.auth;
     if (auth?.accountStatus === "suspended") {
       if (!location.pathname.startsWith("/auth/suspended")) {
+        console.log("[ROOT beforeLoad] → redirect /auth/suspended (suspended)");
         throw redirect({ to: "/auth/suspended" });
       }
     }
     if (auth?.accountStatus === "deleted" || auth?.accountStatus === "deactivated") {
       if (!location.pathname.startsWith("/auth")) {
+        console.log("[ROOT beforeLoad] → redirect /auth/login (deleted/deactivated)");
         throw redirect({ to: "/auth/login" });
       }
     }

@@ -9,6 +9,9 @@ import { Testimonials } from "@/components/site/Testimonials";
 import { Footer } from "@/components/site/Footer";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: ({ context }) => {
+    console.log("[HOME beforeLoad] activé — context.auth =", context.auth ? { userId: context.auth.user?.id, roles: context.auth.roles } : null);
+  },
   head: () => ({
     meta: [
       { title: "StayBF — Hébergements au Burkina Faso" },
