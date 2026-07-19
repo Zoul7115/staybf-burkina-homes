@@ -1,29 +1,44 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, Calendar, Users, MapPin, Mail, Home, Search } from "lucide-react";
+import { CheckCircle2, Download, Calendar, Users, MapPin, Mail, Home, Search, Loader2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { getPropertyById, properties } from "@/lib/staybf-property-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl, PLACEHOLDER_IMG } from "@/lib/shared";
+import { usePaymentStatus } from "@/lib/booking/usePayment";
 
-type S = {
-  ref?: string; propertyId?: string; total?: number; method?: string;
-  from?: string; to?: string; guests?: number; email?: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type SuccessSearch = {
+  ref?: string;
+  propertyId?: string;
+  total?: number;
+  method?: string;
+  from?: string;
+  to?: string;
+  guests?: number;
+  email?: string;
+  payment_id?: string;  // set when coming from GaniPay redirect
 };
 
 export const Route = createFileRoute("/checkout/success")({
-  validateSearch: (s: Record<string, unknown>): S => ({
-    ref: s.ref as string,
+  validateSearch: (s: Record<string, unknown>): SuccessSearch => ({
+    ref:        s.ref as string,
     propertyId: s.propertyId as string,
-    total: s.total ? Number(s.total) : undefined,
-    method: s.method as string,
-    from: s.from as string,
-    to: s.to as string,
-    guests: s.guests ? Number(s.guests) : undefined,
-    email: s.email as string,
+    total:      s.total ? Number(s.total) : undefined,
+    method:     s.method as string,
+    from:       s.from as string,
+    to:         s.to as string,
+    guests:     s.guests ? Number(s.guests) : undefined,
+    email:      s.email as string,
+    payment_id: s.payment_id as string | undefined,
   }),
   head: () => ({
     meta: [
@@ -35,22 +50,69 @@ export const Route = createFileRoute("/checkout/success")({
 });
 
 const methodLabels: Record<string, string> = {
-  orange: "Orange Money", moov: "Moov Money", visa: "Visa", mastercard: "Mastercard",
+  orange_money: "Orange Money", moov_money: "Moov Money", visa: "Visa", mastercard: "Mastercard",
 };
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 function SuccessPage() {
-  const s = useSearch({ from: "/checkout/success" }) as S;
-  const property = (s.propertyId ? getPropertyById(s.propertyId) : undefined) ?? properties[0];
+  const s = useSearch({ from: "/checkout/success" }) as SuccessSearch;
+  const { data: property, loading } = usePropertyDetail(s.propertyId);
+
+  // If payment_id is present, we came from a GaniPay redirect — poll until confirmed
+  const { data: paymentStatus } = usePaymentStatus(s.payment_id ?? null, {
+    enabled: !!s.payment_id,
+    refetchInterval: 3000,
+  });
+
+  const isPolling = !!s.payment_id && paymentStatus?.status !== "captured";
+  const paymentFailed = !!s.payment_id && (paymentStatus?.status === "failed" || paymentStatus?.status === "cancelled");
+
+  if (isPolling && !paymentFailed) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-lg font-medium">Vérification du paiement…</p>
+          <p className="text-sm text-muted-foreground">Merci de patienter quelques secondes.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentFailed) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center">
+        <div className="text-center space-y-4 max-w-md px-4">
+          <XCircle className="h-12 w-12 text-destructive mx-auto" />
+          <p className="text-lg font-semibold">Paiement échoué ou annulé</p>
+          <p className="text-sm text-muted-foreground">
+            Votre paiement n'a pas pu être finalisé. Aucun montant n'a été débité.
+          </p>
+          <Button asChild variant="default" size="lg" className="rounded-xl">
+            <Link to="/">Retour à l'accueil</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const ref = s.ref ?? "STBF-XXXXXX";
   const fromDate = s.from ? new Date(s.from) : new Date();
   const toDate = s.to ? new Date(s.to) : new Date();
+
+  const location = property
+    ? [property.city?.name, property.address].filter(Boolean).join(", ")
+    : "";
 
   const downloadReceipt = () => {
     const text = `STAYBF — REÇU DE RÉSERVATION
 ────────────────────────────
 Référence : ${ref}
-Hébergement : ${property.name}
-Lieu : ${property.city}, ${property.neighborhood}
+Hébergement : ${property?.name ?? ""}
+${location ? `Lieu : ${location}` : ""}
 Dates : ${format(fromDate, "d MMM yyyy", { locale: fr })} → ${format(toDate, "d MMM yyyy", { locale: fr })}
 Voyageurs : ${s.guests ?? 2}
 Mode de paiement : ${methodLabels[s.method ?? ""] ?? "—"}
@@ -72,10 +134,7 @@ StayBF — Ouagadougou, Burkina Faso
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar solid />
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-3xl flex-1">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <motion.div
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
@@ -101,23 +160,33 @@ StayBF — Ouagadougou, Burkina Faso
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="mt-10 rounded-3xl border border-border/60 bg-card shadow-elevated overflow-hidden"
         >
-          <div className="flex flex-col sm:flex-row">
-            <img src={property.images[0]} alt={property.name} className="h-48 sm:h-auto sm:w-56 object-cover" />
-            <div className="p-6 flex-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Réservation confirmée</p>
-              <h2 className="font-display font-semibold text-xl mt-1">{property.name}</h2>
-              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="h-3.5 w-3.5" /> {property.city}, {property.neighborhood}
-              </p>
-              <Separator className="my-4" />
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <Info icon={Calendar} label="Arrivée" value={format(fromDate, "d MMM yyyy", { locale: fr })} />
-                <Info icon={Calendar} label="Départ" value={format(toDate, "d MMM yyyy", { locale: fr })} />
-                <Info icon={Users} label="Voyageurs" value={String(s.guests ?? 2)} />
-                <Info icon={Mail} label="Paiement" value={methodLabels[s.method ?? ""] ?? "—"} />
+          {loading ? (
+            <PropertyCardSkeleton />
+          ) : (
+            <div className="flex flex-col sm:flex-row">
+              <img
+                src={property ? coverImageUrl(property.images) : PLACEHOLDER_IMG}
+                alt={property?.name ?? ""}
+                className="h-48 sm:h-auto sm:w-56 object-cover"
+              />
+              <div className="p-6 flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-primary">Réservation confirmée</p>
+                <h2 className="font-display font-semibold text-xl mt-1">{property?.name ?? "—"}</h2>
+                {location && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <MapPin className="h-3.5 w-3.5" /> {location}
+                  </p>
+                )}
+                <Separator className="my-4" />
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoItem icon={Calendar} label="Arrivée" value={format(fromDate, "d MMM yyyy", { locale: fr })} />
+                  <InfoItem icon={Calendar} label="Départ" value={format(toDate, "d MMM yyyy", { locale: fr })} />
+                  <InfoItem icon={Users} label="Voyageurs" value={String(s.guests ?? 2)} />
+                  <InfoItem icon={Mail} label="Paiement" value={methodLabels[s.method ?? ""] ?? "—"} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <div className="border-t border-border bg-muted/30 p-6 flex items-baseline justify-between">
             <span className="font-display font-semibold">Total payé</span>
             <span className="font-display font-bold text-2xl text-primary">{(s.total ?? 0).toLocaleString("fr-FR")} FCFA</span>
@@ -148,7 +217,32 @@ StayBF — Ouagadougou, Burkina Faso
   );
 }
 
-function Info({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function PropertyCardSkeleton() {
+  return (
+    <div className="flex flex-col sm:flex-row">
+      <Skeleton className="h-48 sm:h-auto sm:w-56 shrink-0" />
+      <div className="p-6 flex-1 space-y-3">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-4 w-1/3" />
+        <div className="grid grid-cols-2 gap-4 pt-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
     <div>
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">

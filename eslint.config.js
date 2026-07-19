@@ -29,6 +29,18 @@ export default tseslint.config(
               message:
                 "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
             },
+            {
+              // The admin client uses the service_role key and bypasses RLS.
+              // It must only be imported in createServerFn handlers, never in
+              // route components, hooks, or any module that runs in the browser.
+              // If you need it in a server function, import directly:
+              //   import { supabaseAdmin } from '@/lib/supabase/admin'
+              // and add a comment explaining why admin access is required.
+              name: "@/lib/supabase",
+              importNames: ["supabaseAdmin"],
+              message:
+                "supabaseAdmin is not exported from the barrel. Import directly from '@/lib/supabase/admin' in a server-only context (createServerFn) and add a justification comment.",
+            },
           ],
         },
       ],

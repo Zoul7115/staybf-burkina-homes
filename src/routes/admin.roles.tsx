@@ -1,103 +1,113 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ShieldCheck, Activity, Server, KeyRound } from "lucide-react";
-import { adminRoles, adminPermissions, adminAuditLogs } from "@/lib/staybf-admin-data";
+import { useAdminRoles } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/roles")({ component: AdminRolesPage });
 
+const ROLE_COLORS: Record<string, string> = {
+  super_admin: "bg-primary text-primary-foreground",
+  admin: "bg-secondary text-secondary-foreground",
+  host: "bg-muted text-muted-foreground",
+  traveler: "bg-muted text-muted-foreground",
+};
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 function AdminRolesPage() {
+  const { roleCounts, auditLogs, loading, error } = useAdminRoles();
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => <Card key={i} className="p-4"><Skeleton className="h-24 w-full" /></Card>)}
+        </div>
+        <Card className="p-4 space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <Card className="p-10 text-center text-muted-foreground text-sm">Erreur : {error}</Card>;
+  }
+
   return (
     <Tabs defaultValue="roles" className="space-y-4">
       <TabsList>
         <TabsTrigger value="roles"><ShieldCheck className="h-4 w-4 mr-1.5" /> Rôles</TabsTrigger>
-        <TabsTrigger value="permissions"><KeyRound className="h-4 w-4 mr-1.5" /> Permissions</TabsTrigger>
         <TabsTrigger value="audit"><Activity className="h-4 w-4 mr-1.5" /> Audit</TabsTrigger>
         <TabsTrigger value="system"><Server className="h-4 w-4 mr-1.5" /> Système</TabsTrigger>
       </TabsList>
 
       <TabsContent value="roles">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adminRoles.map((r) => (
-            <Card key={r.id} className="p-5">
-              <div className={cn("h-10 w-10 rounded-xl grid place-items-center mb-3",
-                r.color === "primary" ? "bg-primary text-primary-foreground" :
-                r.color === "secondary" ? "bg-secondary text-secondary-foreground" : "bg-muted")}>
+          {roleCounts.map((r) => (
+            <Card key={r.role} className="p-5">
+              <div className={cn("h-10 w-10 rounded-xl grid place-items-center mb-3", ROLE_COLORS[r.role] ?? "bg-muted text-muted-foreground")}>
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <h3 className="font-display font-semibold">{r.name}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{r.users} utilisateurs · {r.permissions} permissions</p>
+              <h3 className="font-display font-semibold capitalize">{r.role.replace("_", " ")}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{r.usersCount} utilisateur(s)</p>
               <Button variant="outline" size="sm" className="w-full mt-4">Configurer</Button>
             </Card>
           ))}
+          {roleCounts.length === 0 && (
+            <Card className="p-10 text-center text-sm text-muted-foreground col-span-3">Aucun rôle trouvé.</Card>
+          )}
           <Card className="p-5 border-dashed grid place-items-center text-center min-h-48">
-            <Button variant="ghost">+ Nouveau rôle</Button>
+            <Button variant="ghost" disabled>+ Nouveau rôle</Button>
           </Card>
         </div>
-      </TabsContent>
-
-      <TabsContent value="permissions">
-        <Card className="p-5">
-          <h3 className="font-display font-semibold mb-4">Matrice de permissions</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Permission</TableHead>
-                {adminRoles.map((r) => <TableHead key={r.id} className="text-center">{r.name}</TableHead>)}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {adminPermissions.flatMap((g) => g.items.map((item) => (
-                <TableRow key={`${g.group}-${item}`}>
-                  <TableCell className="text-sm">
-                    <span className="text-xs text-muted-foreground">{g.group} ·</span> {item}
-                  </TableCell>
-                  {adminRoles.map((r) => (
-                    <TableCell key={r.id} className="text-center">
-                      <Switch defaultChecked={r.name === "Super Admin" || (Math.random() > 0.5)} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )))}
-            </TableBody>
-          </Table>
-        </Card>
       </TabsContent>
 
       <TabsContent value="audit">
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-border flex items-center gap-2">
-            <Input placeholder="Filtrer les logs..." className="max-w-sm" />
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Filtrer les logs..." className="max-w-sm" readOnly />
             <Button variant="outline" size="sm">Exporter</Button>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Acteur</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Cible</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Quand</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {adminAuditLogs.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="text-sm font-medium">{l.actor}</TableCell>
-                  <TableCell className="text-sm">{l.action}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{l.target}</TableCell>
-                  <TableCell className="font-mono text-xs">{l.ip}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{l.date}</TableCell>
+          {auditLogs.length === 0 ? (
+            <p className="p-10 text-center text-xs text-muted-foreground">Aucun log d'audit.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Acteur</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Cible</TableHead>
+                  <TableHead>IP</TableHead>
+                  <TableHead>Quand</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {auditLogs.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="text-sm font-medium">
+                      {l.actorName ?? l.actorEmail ?? "Système"}
+                    </TableCell>
+                    <TableCell className="text-sm">{l.actionType}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {l.targetTable ? `${l.targetTable}${l.targetId ? `#${l.targetId.slice(0, 8)}` : ""}` : l.notes ?? "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{l.ipAddress ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{fmtDate(l.createdAt)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       </TabsContent>
 

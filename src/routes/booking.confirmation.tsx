@@ -11,15 +11,27 @@ import { Footer } from "@/components/site/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getPropertyById, properties, similarProperties } from "@/lib/staybf-property-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl, getInitials, formatResponseTime, PLACEHOLDER_IMG } from "@/lib/shared";
 
-type S = {
-  ref?: string; propertyId?: string; total?: number; method?: string;
-  from?: string; to?: string; guests?: number; email?: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type ConfirmationSearch = {
+  ref?: string;
+  propertyId?: string;
+  total?: number;
+  method?: string;
+  from?: string;
+  to?: string;
+  guests?: number;
+  email?: string;
 };
 
 export const Route = createFileRoute("/booking/confirmation")({
-  validateSearch: (s: Record<string, unknown>): S => ({
+  validateSearch: (s: Record<string, unknown>): ConfirmationSearch => ({
     ref: s.ref as string,
     propertyId: s.propertyId as string,
     total: s.total ? Number(s.total) : undefined,
@@ -39,26 +51,53 @@ export const Route = createFileRoute("/booking/confirmation")({
 });
 
 const methodLabels: Record<string, string> = {
-  orange: "Orange Money", moov: "Moov Money", visa: "Visa", mastercard: "Mastercard",
+  orange_money: "Orange Money", moov_money: "Moov Money", visa: "Visa", mastercard: "Mastercard",
 };
 
+const STATIC_RULES = [
+  "Arrivée à partir de 14h00 — Départ avant 11h00",
+  "Non-fumeur · Pas d'événement",
+  "Pièce d'identité obligatoire à l'arrivée",
+];
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 function ConfirmationPage() {
-  const s = useSearch({ from: "/booking/confirmation" }) as S;
-  const property = (s.propertyId ? getPropertyById(s.propertyId) : undefined) ?? properties[0];
-  const ref = s.ref ?? "STBF-2026-45872";
+  const s = useSearch({ from: "/booking/confirmation" }) as ConfirmationSearch;
+  const { data: property, loading } = usePropertyDetail(s.propertyId);
+
+  const ref = s.ref ?? null;
+  if (!ref) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Référence de réservation introuvable.</p>
+        <Button asChild><Link to="/traveler/bookings">Mes réservations</Link></Button>
+      </div>
+    );
+  }
   const fromDate = s.from ? new Date(s.from) : new Date();
   const toDate = s.to ? new Date(s.to) : new Date(Date.now() + 3 * 86400000);
   const nights = Math.max(1, differenceInDays(toDate, fromDate));
   const guests = s.guests ?? 2;
-  const total = s.total ?? property.price * nights;
+  const total = s.total ?? (property?.min_price_fcfa ?? 0) * nights;
+
+  const location = property
+    ? [property.city?.name, property.address].filter(Boolean).join(", ")
+    : "";
+
+  const host = property?.host ?? null;
+  const rules = property?.house_rules?.length ? property.house_rules.slice(0, 3) : STATIC_RULES;
+  const similar = property?.similar ?? [];
 
   const downloadReceipt = () => {
     const text = `STAYBF — REÇU DE RÉSERVATION
 ────────────────────────────
 Référence : ${ref}
-Hébergement : ${property.name}
-Lieu : ${property.city}, ${property.neighborhood}
-Hôte : ${property.host.name}
+Hébergement : ${property?.name ?? ""}
+${location ? `Lieu : ${location}` : ""}
+${host?.full_name ? `Hôte : ${host.full_name}` : ""}
 Dates : ${format(fromDate, "d MMM yyyy", { locale: fr })} → ${format(toDate, "d MMM yyyy", { locale: fr })}
 Nuits : ${nights}
 Voyageurs : ${guests}
@@ -81,11 +120,9 @@ StayBF — Ouagadougou, Burkina Faso`;
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar solid />
       <main className="container mx-auto px-4 pt-24 pb-32 md:pb-16 max-w-5xl flex-1">
+
         {/* HERO */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <motion.div
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
@@ -112,28 +149,38 @@ StayBF — Ouagadougou, Burkina Faso`;
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           className="mt-10 rounded-3xl border border-border/60 bg-card shadow-elevated overflow-hidden"
         >
-          <div className="flex flex-col sm:flex-row">
-            <div className="relative sm:w-64 shrink-0">
-              <img src={property.images[0]} alt={property.name} className="h-48 sm:h-full w-full object-cover" />
-              <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground border-0 shadow-card">
-                <CheckCircle2 className="h-3 w-3 mr-1" /> Confirmée
-              </Badge>
-            </div>
-            <div className="p-6 flex-1">
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Votre séjour</p>
-              <h2 className="font-display font-semibold text-xl mt-1">{property.name}</h2>
-              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="h-3.5 w-3.5" /> {property.city}, {property.neighborhood}
-              </p>
-              <Separator className="my-4" />
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <Info2 icon={Calendar} label="Arrivée" value={format(fromDate, "EEE d MMM yyyy", { locale: fr })} />
-                <Info2 icon={Calendar} label="Départ" value={format(toDate, "EEE d MMM yyyy", { locale: fr })} />
-                <Info2 icon={Clock} label="Nuits" value={`${nights} nuit${nights > 1 ? "s" : ""}`} />
-                <Info2 icon={Users} label="Voyageurs" value={String(guests)} />
+          {loading ? (
+            <BookingSummarySkeleton />
+          ) : (
+            <div className="flex flex-col sm:flex-row">
+              <div className="relative sm:w-64 shrink-0">
+                <img
+                  src={property ? coverImageUrl(property.images) : PLACEHOLDER_IMG}
+                  alt={property?.name ?? ""}
+                  className="h-48 sm:h-full w-full object-cover"
+                />
+                <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground border-0 shadow-card">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Confirmée
+                </Badge>
+              </div>
+              <div className="p-6 flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-primary">Votre séjour</p>
+                <h2 className="font-display font-semibold text-xl mt-1">{property?.name ?? "—"}</h2>
+                {location && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <MapPin className="h-3.5 w-3.5" /> {location}
+                  </p>
+                )}
+                <Separator className="my-4" />
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoItem icon={Calendar} label="Arrivée" value={format(fromDate, "EEE d MMM yyyy", { locale: fr })} />
+                  <InfoItem icon={Calendar} label="Départ" value={format(toDate, "EEE d MMM yyyy", { locale: fr })} />
+                  <InfoItem icon={Clock} label="Nuits" value={`${nights} nuit${nights > 1 ? "s" : ""}`} />
+                  <InfoItem icon={Users} label="Voyageurs" value={String(guests)} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <div className="border-t border-border bg-muted/30 p-6 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
             <div>
               <p className="text-xs text-muted-foreground">Paiement · {methodLabels[s.method ?? ""] ?? "—"}</p>
@@ -149,32 +196,50 @@ StayBF — Ouagadougou, Burkina Faso`;
           className="mt-8 rounded-3xl border border-border/60 bg-card p-6 shadow-card"
         >
           <h3 className="font-display font-semibold text-lg">Votre hôte</h3>
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="h-16 w-16 rounded-full gradient-primary text-primary-foreground grid place-items-center font-bold text-xl shrink-0">
-              {property.host.avatar}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-semibold">{property.host.name}</p>
-                {property.host.superhost && (
-                  <Badge variant="secondary" className="rounded-full text-[10px]">Superhôte</Badge>
+          {loading ? (
+            <HostSkeleton />
+          ) : host ? (
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="h-16 w-16 rounded-full gradient-primary text-primary-foreground grid place-items-center font-bold text-xl shrink-0 overflow-hidden">
+                {host.avatar_url ? (
+                  <img src={host.avatar_url} alt={host.full_name ?? ""} className="h-full w-full object-cover" />
+                ) : (
+                  getInitials(host.full_name)
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">Hôte depuis {property.host.since}</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                <span>Taux de réponse : <span className="font-semibold text-foreground">{property.host.responseRate}%</span></span>
-                <span>Réponse : <span className="font-semibold text-foreground">{property.host.responseTime}</span></span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold">{host.full_name ?? "Hôte"}</p>
+                  {host.superhost && (
+                    <Badge variant="secondary" className="rounded-full text-[10px]">Superhôte</Badge>
+                  )}
+                </div>
+                {host.host_since && (
+                  <p className="text-sm text-muted-foreground">
+                    Hôte depuis {new Date(host.host_since).getFullYear()}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                  {host.response_rate !== null && (
+                    <span>Taux de réponse : <span className="font-semibold text-foreground">{host.response_rate}%</span></span>
+                  )}
+                  {host.response_time_minutes !== null && (
+                    <span>Réponse : <span className="font-semibold text-foreground">{formatResponseTime(host.response_time_minutes)}</span></span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 sm:flex-col lg:flex-row">
+                <Button variant="outline" className="flex-1 rounded-xl">
+                  <MessageSquare className="h-4 w-4" /> Message
+                </Button>
+                <Button className="flex-1 rounded-xl gradient-primary text-primary-foreground">
+                  <Phone className="h-4 w-4" /> Appeler
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2 sm:flex-col lg:flex-row">
-              <Button variant="outline" className="flex-1 rounded-xl">
-                <MessageSquare className="h-4 w-4" /> Message
-              </Button>
-              <Button className="flex-1 rounded-xl gradient-primary text-primary-foreground">
-                <Phone className="h-4 w-4" /> Appeler
-              </Button>
-            </div>
-          </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">Informations hôte non disponibles.</p>
+          )}
         </motion.section>
 
         {/* ACTIONS */}
@@ -203,45 +268,64 @@ StayBF — Ouagadougou, Burkina Faso`;
         >
           <h3 className="font-display font-semibold text-xl">Informations importantes</h3>
           <div className="mt-4 grid md:grid-cols-2 gap-4">
-            <InfoCard icon={Clock} title="Horaires d'arrivée" lines={["Check-in : 14h00 — 22h00", "Check-out : avant 11h00"]} />
+            <InfoCard
+              icon={Clock}
+              title="Horaires d'arrivée"
+              lines={[
+                `Check-in : ${property?.check_in_from ?? "14h00"} — 22h00`,
+                `Check-out : avant ${property?.check_out_until ?? "11h00"}`,
+              ]}
+            />
             <InfoCard icon={Info} title="Instructions d'arrivée" lines={["Présentez-vous à la réception avec une pièce d'identité.", "Le code WiFi vous sera remis à l'arrivée."]} />
-            <InfoCard icon={ShieldCheck} title="Règles de la maison" lines={property.description.rules.slice(0, 3)} />
+            <InfoCard icon={ShieldCheck} title="Règles de la maison" lines={rules} />
             <InfoCard icon={Info} title="Politique d'annulation" lines={["Annulation gratuite jusqu'à 48h avant l'arrivée.", "Au-delà, première nuit non remboursable."]} />
           </div>
         </motion.section>
 
         {/* SIMILAR */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="mt-12"
-        >
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-display font-semibold text-xl">Recommandés pour vous</h3>
-            <Link to="/search" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-              Voir plus <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-4 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory">
-            {similarProperties.map((p) => (
-              <Link
-                key={p.id} to="/properties/$id" params={{ id: p.id }}
-                className="snap-start shrink-0 w-64 rounded-2xl border border-border bg-card overflow-hidden hover-lift"
-              >
-                <img src={p.image} alt={p.name} className="h-36 w-full object-cover" />
-                <div className="p-3">
-                  <p className="font-semibold text-sm truncate">{p.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{p.location}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-secondary text-secondary" /> {p.rating}
-                    </span>
-                    <span className="text-sm font-bold">{p.price.toLocaleString("fr-FR")} <span className="text-[10px] font-normal text-muted-foreground">FCFA</span></span>
-                  </div>
-                </div>
+        {similar.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+            className="mt-12"
+          >
+            <div className="flex items-baseline justify-between">
+              <h3 className="font-display font-semibold text-xl">Recommandés pour vous</h3>
+              <Link to="/search" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+                Voir plus <ChevronRight className="h-4 w-4" />
               </Link>
-            ))}
-          </div>
-        </motion.section>
+            </div>
+            <div className="mt-4 flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory">
+              {similar.map((p) => (
+                <Link
+                  key={p.id} to="/properties/$id" params={{ id: p.id }}
+                  className="snap-start shrink-0 w-64 rounded-2xl border border-border bg-card overflow-hidden hover-lift"
+                >
+                  <img
+                    src={p.image_url ?? PLACEHOLDER_IMG}
+                    alt={p.name}
+                    className="h-36 w-full object-cover"
+                  />
+                  <div className="p-3">
+                    <p className="font-semibold text-sm truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.city_name}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      {p.rating_avg !== null && (
+                        <span className="text-xs flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-secondary text-secondary" /> {p.rating_avg.toFixed(1)}
+                        </span>
+                      )}
+                      {p.min_price_fcfa !== null && (
+                        <span className="text-sm font-bold">
+                          {p.min_price_fcfa.toLocaleString("fr-FR")} <span className="text-[10px] font-normal text-muted-foreground">FCFA</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.section>
+        )}
       </main>
 
       {/* Mobile sticky footer */}
@@ -256,7 +340,45 @@ StayBF — Ouagadougou, Burkina Faso`;
   );
 }
 
-function Info2({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function BookingSummarySkeleton() {
+  return (
+    <div className="flex flex-col sm:flex-row">
+      <Skeleton className="h-48 sm:h-auto sm:w-64 shrink-0" />
+      <div className="p-6 flex-1 space-y-3">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-4 w-1/3" />
+        <div className="grid grid-cols-2 gap-4 pt-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="space-y-1">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HostSkeleton() {
+  return (
+    <div className="mt-4 flex items-center gap-4">
+      <Skeleton className="h-16 w-16 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-3 w-48" />
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
     <div>
       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">

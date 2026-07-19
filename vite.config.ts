@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Force nitro with Netlify preset when NETLIFY=true or NITRO_PRESET=netlify.
+  // In sandbox/Lovable, preset defaults to cloudflare-module (set by the wrapper).
+  nitro: process.env.NETLIFY === "true" || process.env.NITRO_PRESET === "netlify"
+    ? { preset: "netlify" }
+    : undefined,
 });

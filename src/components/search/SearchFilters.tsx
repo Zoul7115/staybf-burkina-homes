@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { AccommodationType, Amenity } from "@/lib/staybf-search-data";
+import type { AccommodationType, Amenity } from "@/lib/search/types";
 import { Star, RotateCcw } from "lucide-react";
 
 export type Filters = {

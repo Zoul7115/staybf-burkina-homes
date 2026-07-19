@@ -5,7 +5,7 @@ import { differenceInDays, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Star, MapPin, Users, CalendarDays, Check, ShieldCheck, Lock,
-  Headphones, Zap, ChevronLeft, Loader2, CreditCard, Smartphone,
+  Headphones, Zap, ChevronLeft, Loader2, CreditCard, Smartphone, AlertCircle,
 } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
@@ -16,11 +16,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getPropertyById, properties } from "@/lib/staybf-property-data";
+import { usePropertyDetail } from "@/lib/property/usePropertyDetail";
+import { coverImageUrl } from "@/lib/shared";
+import { usePricing, useCreateBooking } from "@/lib/booking/hooks";
+import { useInitPayment } from "@/lib/booking/usePayment";
+
+// ---------------------------------------------------------------------------
+// Types & validation
+// ---------------------------------------------------------------------------
 
 type CheckoutSearch = {
   propertyId?: string;
+  roomId?: string;
   from?: string;
   to?: string;
   guests?: number;
@@ -29,6 +38,7 @@ type CheckoutSearch = {
 export const Route = createFileRoute("/checkout")({
   validateSearch: (s: Record<string, unknown>): CheckoutSearch => ({
     propertyId: typeof s.propertyId === "string" ? s.propertyId : undefined,
+    roomId: typeof s.roomId === "string" ? s.roomId : undefined,
     from: typeof s.from === "string" ? s.from : undefined,
     to: typeof s.to === "string" ? s.to : undefined,
     guests: typeof s.guests === "number" ? s.guests : s.guests ? Number(s.guests) : undefined,
@@ -42,63 +52,139 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
-const methods: { id: string; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
-  { id: "orange", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
-  { id: "moov", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+type PaymentMethodId = "orange_money" | "moov_money" | "visa" | "mastercard";
+
+const methods: { id: PaymentMethodId; label: string; sub: string; icon: typeof Smartphone; badge?: string; color: string }[] = [
+  { id: "orange_money", label: "Orange Money", sub: "Paiement mobile instantané", icon: Smartphone, badge: "Populaire", color: "from-orange-500 to-orange-600" },
+  { id: "moov_money", label: "Moov Money", sub: "Paiement mobile sécurisé", icon: Smartphone, color: "from-blue-500 to-blue-700" },
   { id: "visa", label: "Visa", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-indigo-600 to-indigo-800" },
   { id: "mastercard", label: "Mastercard", sub: "Carte de crédit / débit", icon: CreditCard, color: "from-rose-600 to-orange-500" },
 ];
 
 const countries = ["Burkina Faso", "Côte d'Ivoire", "Mali", "Sénégal", "Ghana", "Togo", "Bénin", "Niger", "France", "Canada", "États-Unis", "Autre"];
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 function CheckoutPage() {
   const search = useSearch({ from: "/checkout" }) as CheckoutSearch;
   const navigate = useNavigate();
+  const { data: property, loading: propertyLoading } = usePropertyDetail(search.propertyId);
 
-  const property = useMemo(
-    () => (search.propertyId ? getPropertyById(search.propertyId) : undefined) ?? properties[0],
-    [search.propertyId],
-  );
-
-  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+  const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const fromDate = search.from ? new Date(search.from) : new Date(today.getTime() + 7 * 86400000);
   const toDate = search.to ? new Date(search.to) : new Date(fromDate.getTime() + 3 * 86400000);
   const guests = search.guests ?? 2;
   const nights = Math.max(1, differenceInDays(toDate, fromDate));
 
-  const subtotal = nights * property.price;
-  const fee = Math.round(subtotal * 0.1);
-  const taxes = 0;
-  const total = subtotal + fee + taxes;
+  const checkIn = fromDate.toISOString().slice(0, 10);
+  const checkOut = toDate.toISOString().slice(0, 10);
 
-  const [method, setMethod] = useState<string>("orange");
+  // Resolve roomId: explicit param or first room from property
+  const roomId = search.roomId ?? (property?.rooms?.[0]?.id ?? null);
+
+  const { pricing, loading: pricingLoading } = usePricing(roomId, checkIn, checkOut);
+  const createBooking = useCreateBooking();
+  const initPayment   = useInitPayment();
+
+  const loading = propertyLoading || (!!roomId && pricingLoading);
+
+  const [method, setMethod] = useState<PaymentMethodId>("orange_money");
   const [accept, setAccept] = useState(false);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "+226 ",
     country: "Burkina Faso", note: "",
   });
-  const [processing, setProcessing] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvc, setCardCvc] = useState("");
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const isMobileMoney = method === "orange_money" || method === "moov_money";
+  const isCard = method === "visa" || method === "mastercard";
+
+  const paymentFieldsValid = isMobileMoney
+    ? mobileNumber.trim().replace(/\s/g, "").length >= 8
+    : isCard
+      ? cardNumber.replace(/\s/g, "").length >= 16 && cardExp.trim().length >= 4 && cardCvc.trim().length >= 3
+      : true;
 
   const valid =
-    accept && form.firstName.trim() && form.lastName.trim() &&
-    /\S+@\S+\.\S+/.test(form.email) && form.phone.trim().length > 6;
+    !loading &&
+    !!roomId &&
+    accept &&
+    form.firstName.trim() !== "" &&
+    form.lastName.trim() !== "" &&
+    /\S+@\S+\.\S+/.test(form.email) &&
+    form.phone.trim().length > 6 &&
+    paymentFieldsValid;
 
-  const handlePay = () => {
-    if (!valid || processing) return;
-    setProcessing(true);
-    setTimeout(() => {
-      const ref = "STBF-" + Math.random().toString(36).slice(2, 8).toUpperCase() + "-" + Date.now().toString().slice(-4);
+  const handlePay = async () => {
+    if (!valid || createBooking.isPending || !roomId) return;
+    setBookingError(null);
+
+    try {
+      // Step 1: create the booking
+      const result = await createBooking.mutateAsync({
+        room_id: roomId,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests_adults: guests,
+        guests_children: 0,
+        guests_infants: 0,
+        payment_method: method,
+        notes: form.note.trim() || undefined,
+      });
+
+      const bookingId = result.booking.id;
+      const idempotencyKey = `${bookingId}-${Date.now()}`;
+
+      // Step 2: initiate GaniPay payment
+      const paymentResult = await initPayment.mutateAsync({
+        bookingId,
+        method: method as "orange_money" | "moov_money",
+        idempotencyKey,
+        payerPhone: isMobileMoney ? mobileNumber.replace(/\s/g, "") : undefined,
+        payerEmail: form.email,
+      });
+
+      // Step 3: redirect to GaniPay checkout page
+      if (paymentResult.checkout_url) {
+        window.location.href = paymentResult.checkout_url;
+        return;
+      }
+
+      // Fallback: no redirect URL (e.g. direct USSD confirmation) → poll until resolved
       navigate({
-        to: "/booking/confirmation",
+        to: "/checkout/success",
         search: {
-          ref, propertyId: property.id, total, method,
-          from: fromDate.toISOString().slice(0, 10),
-          to: toDate.toISOString().slice(0, 10),
-          guests, email: form.email,
+          ref: result.booking.reference,
+          propertyId: search.propertyId ?? property?.id ?? "",
+          total: result.booking.totalAmount,
+          method,
+          from: checkIn,
+          to: checkOut,
+          guests,
+          email: form.email,
+          payment_id: paymentResult.payment_id,
         },
       });
-    }, 1800);
+    } catch (e) {
+      setBookingError((e as Error).message);
+    }
   };
+
+  const location = property
+    ? [property.city?.name, property.address].filter(Boolean).join(", ")
+    : "";
+
+  const isProcessing = createBooking.isPending || initPayment.isPending;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -106,7 +192,7 @@ function CheckoutPage() {
 
       {/* Processing overlay */}
       <AnimatePresence>
-        {processing && (
+        {isProcessing && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm grid place-items-center"
@@ -121,10 +207,10 @@ function CheckoutPage() {
                   <Loader2 className="h-7 w-7 text-primary-foreground animate-spin" />
                 </div>
               </div>
-              <h3 className="font-display font-bold text-xl">Traitement du paiement…</h3>
+              <h3 className="font-display font-bold text-xl">Traitement de la réservation…</h3>
               <p className="text-sm text-muted-foreground mt-2">Veuillez patienter, ne fermez pas cette page.</p>
               <div className="mt-5 h-1.5 bg-muted rounded-full overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1.7 }} className="h-full gradient-primary" />
+                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 2.5 }} className="h-full gradient-primary" />
               </div>
             </motion.div>
           </motion.div>
@@ -134,7 +220,11 @@ function CheckoutPage() {
       <main className="container mx-auto px-4 pt-24 pb-16 max-w-7xl flex-1">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/properties/$id" params={{ id: property.id }} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1">
+          <Link
+            to="/properties/$id"
+            params={{ id: search.propertyId ?? property?.id ?? "" }}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1"
+          >
             <ChevronLeft className="h-4 w-4" /> Retour à l'hébergement
           </Link>
           <h1 className="mt-3 font-display font-bold text-3xl md:text-4xl tracking-tight">Finaliser votre réservation</h1>
@@ -144,47 +234,94 @@ function CheckoutPage() {
 
         <div className="grid lg:grid-cols-[1fr_400px] gap-10">
           <div className="space-y-8 min-w-0">
-            {/* Booking summary */}
+            {/* Property summary */}
             <Section>
-              <div className="flex gap-4">
-                <img src={property.images[0]} alt={property.name} className="h-24 w-28 md:h-28 md:w-36 rounded-2xl object-cover flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" /> {property.city}, {property.neighborhood}
-                  </div>
-                  <h3 className="font-display font-semibold text-lg mt-1 truncate">{property.name}</h3>
-                  <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
-                    <span className="flex items-center gap-1 font-medium">
-                      <Star className="h-3.5 w-3.5 fill-secondary text-secondary" />
-                      {property.rating} <span className="text-muted-foreground font-normal">· {property.reviews} avis</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <CalendarDays className="h-3.5 w-3.5" /> {nights} nuit{nights > 1 ? "s" : ""}
-                    </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" /> {guests} voyageur{guests > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <Badge variant="secondary" className="rounded-full">
-                      {format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM yyyy", { locale: fr })}
-                    </Badge>
-                    <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié StayBF</Badge>
+              {loading ? (
+                <PropertySummarySkeleton />
+              ) : property ? (
+                <div className="flex gap-4">
+                  <img
+                    src={coverImageUrl(property.images)}
+                    alt={property.name}
+                    className="h-24 w-28 md:h-28 md:w-36 rounded-2xl object-cover flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    {location && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5" /> {location}
+                      </div>
+                    )}
+                    <h3 className="font-display font-semibold text-lg mt-1 truncate">{property.name}</h3>
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
+                      {property.rating_avg !== null && (
+                        <span className="flex items-center gap-1 font-medium">
+                          <Star className="h-3.5 w-3.5 fill-secondary text-secondary" />
+                          {property.rating_avg.toFixed(1)}{" "}
+                          <span className="text-muted-foreground font-normal">· {property.rating_count} avis</span>
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <CalendarDays className="h-3.5 w-3.5" /> {nights} nuit{nights > 1 ? "s" : ""}
+                      </span>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Users className="h-3.5 w-3.5" /> {guests} voyageur{guests > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <Badge variant="secondary" className="rounded-full">
+                        {format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM yyyy", { locale: fr })}
+                      </Badge>
+                      <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié StayBF</Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </Section>
 
             {/* Price breakdown */}
             <Section title="Détails du prix">
-              <Row label={`${property.price.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`} value={`${subtotal.toLocaleString("fr-FR")} FCFA`} />
-              <Row label="Frais de service StayBF (10%)" value={`${fee.toLocaleString("fr-FR")} FCFA`} />
-              <Row label="Taxes" value={`${taxes.toLocaleString("fr-FR")} FCFA`} />
-              <Separator className="my-3" />
-              <div className="flex items-baseline justify-between">
-                <span className="font-display font-semibold text-lg">Total à payer</span>
-                <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
-              </div>
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ) : pricing ? (
+                <>
+                  {/* Show per-night breakdown if pricing varies */}
+                  {pricing.nightPricing.some((n) => n.priceSource !== "base") ? (
+                    <div className="space-y-1.5 mb-3">
+                      {pricing.nightPricing.map((n) => (
+                        <div key={n.date} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {format(new Date(n.date), "d MMM", { locale: fr })}
+                            {n.priceSource === "seasonal" && (
+                              <span className="ml-1 text-[10px] bg-secondary/20 text-secondary-foreground px-1.5 py-0.5 rounded-full">saisonnier</span>
+                            )}
+                            {n.priceSource === "override" && (
+                              <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">prix spécial</span>
+                            )}
+                          </span>
+                          <span className="font-medium">{n.priceFcfa.toLocaleString("fr-FR")} FCFA</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Row
+                      label={`${pricing.nightPricing[0]?.priceFcfa.toLocaleString("fr-FR")} FCFA × ${nights} nuit${nights > 1 ? "s" : ""}`}
+                      value={`${pricing.accommodationAmount.toLocaleString("fr-FR")} FCFA`}
+                    />
+                  )}
+                  <Row label={`Frais de service StayBF (${Math.round(pricing.serviceFeeRate * 100)}%)`} value={`${pricing.serviceFeeAmount.toLocaleString("fr-FR")} FCFA`} />
+                  <Separator className="my-3" />
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-display font-semibold text-lg">Total à payer</span>
+                    <span className="font-display font-bold text-2xl text-primary">{pricing.totalAmount.toLocaleString("fr-FR")} FCFA</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sélectionnez des dates pour voir le prix.</p>
+              )}
             </Section>
 
             {/* Payment methods */}
@@ -225,10 +362,10 @@ function CheckoutPage() {
                 })}
               </div>
 
-              {(method === "orange" || method === "moov") && (
+              {(method === "orange_money" || method === "moov_money") && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-muted/50 border border-border p-4">
-                  <Label htmlFor="mobileNumber" className="text-sm">Numéro {method === "orange" ? "Orange Money" : "Moov Money"}</Label>
-                  <Input id="mobileNumber" placeholder="+226 70 00 00 00" className="mt-2 h-11" />
+                  <Label htmlFor="mobileNumber" className="text-sm">Numéro {method === "orange_money" ? "Orange Money" : "Moov Money"}</Label>
+                  <Input id="mobileNumber" value={mobileNumber} onChange={(e) => setMobileNumber(e.target.value)} placeholder="+226 70 00 00 00" className="mt-2 h-11" />
                   <p className="text-xs text-muted-foreground mt-2">Vous recevrez un code USSD pour confirmer le paiement.</p>
                 </motion.div>
               )}
@@ -237,16 +374,16 @@ function CheckoutPage() {
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-xl bg-muted/50 border border-border p-4 space-y-3">
                   <div>
                     <Label htmlFor="card" className="text-sm">Numéro de carte</Label>
-                    <Input id="card" placeholder="1234 5678 9012 3456" className="mt-2 h-11" />
+                    <Input id="card" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="1234 5678 9012 3456" className="mt-2 h-11" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="exp" className="text-sm">Expiration</Label>
-                      <Input id="exp" placeholder="MM / AA" className="mt-2 h-11" />
+                      <Input id="exp" value={cardExp} onChange={(e) => setCardExp(e.target.value)} placeholder="MM / AA" className="mt-2 h-11" />
                     </div>
                     <div>
                       <Label htmlFor="cvc" className="text-sm">CVC</Label>
-                      <Input id="cvc" placeholder="123" className="mt-2 h-11" />
+                      <Input id="cvc" value={cardCvc} onChange={(e) => setCardCvc(e.target.value)} placeholder="123" className="mt-2 h-11" />
                     </div>
                   </div>
                 </motion.div>
@@ -294,9 +431,15 @@ function CheckoutPage() {
                 <div className="rounded-xl border border-border p-4">
                   <p className="font-semibold">Règles de la maison</p>
                   <ul className="text-muted-foreground mt-1 space-y-1 list-disc pl-5">
-                    <li>Arrivée à partir de 14h00 — Départ avant 11h00</li>
-                    <li>Non-fumeur · Pas d'événement</li>
-                    <li>Pièce d'identité obligatoire à l'arrivée</li>
+                    {(property?.house_rules as string[] | null | undefined)?.length ? (
+                      (property!.house_rules as string[]).slice(0, 3).map((r, i) => <li key={i}>{r}</li>)
+                    ) : (
+                      <>
+                        <li>Arrivée à partir de 14h00 — Départ avant 11h00</li>
+                        <li>Non-fumeur · Pas d'événement</li>
+                        <li>Pièce d'identité obligatoire à l'arrivée</li>
+                      </>
+                    )}
                   </ul>
                 </div>
                 <label className="flex items-start gap-3 rounded-xl border border-border p-4 cursor-pointer hover:bg-muted/40">
@@ -307,6 +450,13 @@ function CheckoutPage() {
                 </label>
               </div>
             </Section>
+
+            {bookingError && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <p className="text-sm text-destructive">{bookingError}</p>
+              </div>
+            )}
 
             {/* Trust */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -323,36 +473,47 @@ function CheckoutPage() {
               <div className="rounded-3xl border border-border/60 shadow-elevated bg-card p-6">
                 <h3 className="font-display font-semibold text-lg">Récapitulatif</h3>
                 <Separator className="my-4" />
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Dates</span>
-                    <span className="font-medium text-right">{format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM", { locale: fr })}</span>
+                {loading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-2/3" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Voyageurs</span>
-                    <span className="font-medium">{guests}</span>
+                ) : (
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Dates</span>
+                      <span className="font-medium text-right">{format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM", { locale: fr })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Voyageurs</span>
+                      <span className="font-medium">{guests}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Chambre ({nights} nuit{nights > 1 ? "s" : ""})</span>
+                      <span className="font-medium">{pricing?.accommodationAmount.toLocaleString("fr-FR") ?? "—"} FCFA</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Frais de service</span>
+                      <span className="font-medium">{pricing?.serviceFeeAmount.toLocaleString("fr-FR") ?? "—"} FCFA</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Chambre ({nights} nuit{nights > 1 ? "s" : ""})</span>
-                    <span className="font-medium">{subtotal.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Frais de service</span>
-                    <span className="font-medium">{fee.toLocaleString("fr-FR")} FCFA</span>
-                  </div>
-                </div>
+                )}
                 <Separator className="my-4" />
                 <div className="flex items-baseline justify-between">
                   <span className="font-display font-semibold">Total</span>
-                  <span className="font-display font-bold text-2xl text-primary">{total.toLocaleString("fr-FR")} FCFA</span>
+                  <span className="font-display font-bold text-2xl text-primary">
+                    {pricing ? `${pricing.totalAmount.toLocaleString("fr-FR")} FCFA` : "—"}
+                  </span>
                 </div>
                 <Button
                   size="lg"
-                  disabled={!valid || processing}
+                  disabled={!valid || isProcessing}
                   onClick={handlePay}
                   className="w-full mt-5 h-12 gradient-primary text-primary-foreground rounded-xl font-semibold text-base shadow-card"
                 >
-                  {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Traitement…</> : "Payer maintenant"}
+                  {isProcessing ? <><Loader2 className="h-4 w-4 animate-spin" /> Traitement…</> : "Réserver maintenant"}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
                   <Lock className="h-3 w-3" /> Paiement chiffré SSL 256 bits
@@ -368,19 +529,42 @@ function CheckoutPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-muted-foreground">Total à payer</p>
-            <p className="font-display font-bold text-lg leading-tight">{total.toLocaleString("fr-FR")} FCFA</p>
+            <p className="font-display font-bold text-lg leading-tight">
+              {pricing ? `${pricing.totalAmount.toLocaleString("fr-FR")} FCFA` : "—"}
+            </p>
           </div>
           <Button
-            disabled={!valid || processing}
+            disabled={!valid || isProcessing}
             onClick={handlePay}
             className="h-12 px-6 gradient-primary text-primary-foreground rounded-xl font-semibold shadow-card"
           >
-            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Payer maintenant"}
+            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Réserver"}
           </Button>
         </div>
       </div>
 
       <Footer />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function PropertySummarySkeleton() {
+  return (
+    <div className="flex gap-4">
+      <Skeleton className="h-24 w-28 md:h-28 md:w-36 rounded-2xl flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <div className="flex gap-2 pt-1">
+          <Skeleton className="h-5 w-32 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
+        </div>
+      </div>
     </div>
   );
 }

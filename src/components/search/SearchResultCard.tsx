@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Star, MapPin, BadgeCheck, Zap } from "lucide-react";
+import { Heart, Star, MapPin, BadgeCheck } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Listing } from "@/lib/staybf-search-data";
+import type { SearchResult } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  listing: Listing;
+  listing: SearchResult;
   index?: number;
   active?: boolean;
-  onHover?: (id: number | null) => void;
+  onHover?: (id: string | null) => void;
 };
 
 export function SearchResultCard({ listing, index = 0, active, onHover }: Props) {
@@ -52,12 +52,6 @@ export function SearchResultCard({ listing, index = 0, active, onHover }: Props)
                 Vérifié
               </Badge>
             )}
-            {listing.instantBook && (
-              <Badge className="bg-secondary text-foreground border-0 gap-1 shadow-card">
-                <Zap className="h-3 w-3" />
-                Réservation instantanée
-              </Badge>
-            )}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); setFav(!fav); }}
@@ -77,7 +71,7 @@ export function SearchResultCard({ listing, index = 0, active, onHover }: Props)
               <h3 className="font-display font-semibold text-lg leading-snug mt-0.5 line-clamp-1">{listing.name}</h3>
               <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span className="line-clamp-1">{listing.city}, {listing.neighborhood}</span>
+                <span className="line-clamp-1">{[listing.city, listing.address].filter(Boolean).join(", ")}</span>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0 bg-muted/60 px-2 py-1 rounded-lg">

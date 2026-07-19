@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Map as MapIcon, X } from "lucide-react";
 import { Navbar } from "@/components/site/Navbar";
@@ -12,7 +12,8 @@ import { ResultsSkeleton } from "@/components/search/ResultsSkeleton";
 import { EmptyResults } from "@/components/search/EmptyResults";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { generateListings } from "@/lib/staybf-search-data";
+import { useSearch } from "@/lib/search/useSearch";
+import type { SearchFilters as SearchFiltersType } from "@/lib/search/types";
 
 export const Route = createFileRoute("/search")({
   head: () => ({
@@ -36,34 +37,22 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const [city, setCity] = useState("Ouagadougou");
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
-  const allListings = useMemo(() => generateListings(city, 18), [city]);
+  const searchFilters = useMemo<SearchFiltersType>(() => ({
+    city,
+    types: filters.types,
+    minPrice: filters.priceRange[0],
+    maxPrice: filters.priceRange[1],
+    amenities: filters.amenities,
+    minRating: filters.minRating,
+    sort: filters.sort,
+    searchText: "",
+  }), [city, filters]);
 
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 650);
-    return () => clearTimeout(t);
-  }, [city, filters]);
-
-  const results = useMemo(() => {
-    let r = allListings.filter((l) => {
-      if (l.price < filters.priceRange[0] || l.price > filters.priceRange[1]) return false;
-      if (filters.types.length && !filters.types.includes(l.type)) return false;
-      if (filters.amenities.length && !filters.amenities.every((a) => l.amenities.includes(a))) return false;
-      if (filters.minRating && l.rating < filters.minRating) return false;
-      if (filters.availability === "today" && !l.availableToday) return false;
-      if (filters.availability === "weekend" && !l.availableWeekend) return false;
-      return true;
-    });
-    if (filters.sort === "cheapest") r = [...r].sort((a, b) => a.price - b.price);
-    if (filters.sort === "expensive") r = [...r].sort((a, b) => b.price - a.price);
-    if (filters.sort === "rated") r = [...r].sort((a, b) => b.rating - a.rating);
-    return r;
-  }, [allListings, filters]);
+  const { results, loading } = useSearch(searchFilters);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -76,7 +65,7 @@ function SearchPage() {
       />
 
       <div className="container mx-auto px-4 py-6 flex-1 w-full">
-        <div className="grid lg:grid-cols-[260px_1fr] xl:grid-cols-[260px_1fr_400px] gap-6">
+        <div className="grid lg:grid-cols-[260px_1fr_380px] gap-6">
           {/* Desktop sidebar */}
           <aside className="hidden lg:block">
             <div className="sticky top-[200px] max-h-[calc(100vh-220px)] overflow-y-auto pr-2">
@@ -111,8 +100,8 @@ function SearchPage() {
             </AnimatePresence>
           </section>
 
-          {/* Desktop map */}
-          <aside className="hidden xl:block">
+          {/* Desktop map — visible at lg+ (tablet and above) */}
+          <aside className="hidden lg:block">
             <div className="sticky top-[200px] h-[calc(100vh-220px)]">
               <SearchMap listings={results} activeId={activeId} city={city} />
             </div>
@@ -123,7 +112,7 @@ function SearchPage() {
       {/* Mobile map FAB */}
       <Button
         onClick={() => setMapOpen(true)}
-        className="xl:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 gradient-primary text-primary-foreground rounded-full px-6 h-12 shadow-elevated gap-2 font-semibold"
+        className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 gradient-primary text-primary-foreground rounded-full px-6 h-12 shadow-elevated gap-2 font-semibold"
       >
         <MapIcon className="h-4 w-4" />
         Carte
