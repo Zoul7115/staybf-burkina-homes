@@ -13,7 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth/auth.context";
-import { getSession } from "../lib/auth/auth.functions";
+import { getRouterAuth } from "../lib/auth/auth.functions";
 import type { RouterContext } from "../router";
 import type { RouterAuthContext } from "../lib/auth/types";
 
@@ -106,13 +106,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
   }),
   loader: async (): Promise<{ auth: RouterAuthContext }> => {
+    // getRouterAuth is a createServerFn — it always runs server-side, even during
+    // client-side navigation, so the loader always receives the current session.
     try {
-      const session = await getSession({ data: {} });
-      if (!session) return { auth: null };
-
-      // The session middleware already resolved roles — surfaced via context.
-      // The loader here is only used to pass the initial auth to AuthProvider.
-      return { auth: null };
+      const auth = await getRouterAuth({ data: {} });
+      return { auth };
     } catch {
       return { auth: null };
     }

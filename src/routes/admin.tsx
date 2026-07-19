@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState, redirect } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Building2, Receipt, UserCog, Crown, CreditCard,
   Wallet, Star, MapPin, LifeBuoy, Bell, FileBarChart, Settings, ShieldCheck,
@@ -10,6 +10,10 @@ import { supabase } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: ({ context }) => {
+    if (!context.auth) throw redirect({ to: "/auth/login" });
+    if (!context.auth.roles.isAdmin) throw redirect({ to: "/" });
+  },
   component: AdminLayout,
 });
 

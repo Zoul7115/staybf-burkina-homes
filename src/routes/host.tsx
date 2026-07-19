@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { LayoutDashboard, Home, BedDouble, Calendar, Receipt, Wallet, Crown, Star, MessageSquare, BarChart3, User, Settings } from "lucide-react";
 import { DashboardShell, type NavItem, type ShellNotification } from "@/components/dashboard/DashboardShell";
 import { useRouterState } from "@tanstack/react-router";
@@ -9,6 +9,10 @@ import { supabase } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/host")({
+  beforeLoad: ({ context }) => {
+    if (!context.auth) throw redirect({ to: "/auth/login" });
+    if (!context.auth.roles.isHost && !context.auth.roles.isAdmin) throw redirect({ to: "/" });
+  },
   component: HostLayout,
 });
 

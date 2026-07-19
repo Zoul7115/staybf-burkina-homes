@@ -4,7 +4,7 @@
 // Bridges browser-side auth events to TanStack Router's navigation.
 // =============================================================================
 
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { supabase } from "../supabase/client";
@@ -24,29 +24,29 @@ interface AuthProviderProps {
 export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  // Keep a ref so the effect closure always sees the latest auth value
-  const authRef = useRef<RouterAuthContext>(initialAuth);
-  authRef.current = initialAuth;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
-        // Reload server loaders so the session middleware re-resolves roles/status
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        // Re-run the root loader (getRouterAuth server fn) to pick up the new session.
         router.invalidate();
       } else if (event === "SIGNED_OUT") {
-        // Purge all cached server data — user-specific data must not leak between sessions
+        // Purge all cached server data — user-specific data must not leak between sessions.
         queryClient.clear();
         router.navigate({ to: "/auth/login" });
-      } else if (event === "TOKEN_REFRESHED") {
-        router.invalidate();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, queryClient]);
+
+  // Memoize so consumers only re-render when initialAuth actually changes.
+  // initialAuth is updated by the root loader (getRouterAuth) on every navigation
+  // and after router.invalidate(), so it always reflects the current session.
+  const value = useMemo(() => ({ auth: initialAuth }), [initialAuth]);
 
   return (
-    <AuthContext.Provider value={{ auth: initialAuth }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

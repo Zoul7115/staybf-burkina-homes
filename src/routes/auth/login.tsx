@@ -23,8 +23,15 @@ function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn({ data: { email, password } });
-      await navigate({ to: "/" });
+      const result = await signIn({ data: { email, password } });
+      // Navigate to the space that matches the user's primary role.
+      // The session cookie is set server-side during signIn; the next
+      // page load will have the full auth context from getRouterAuth.
+      let destination = "/";
+      if (result.isAdmin) destination = "/admin/dashboard";
+      else if (result.isHost) destination = "/host/dashboard";
+      else if (result.isTraveler) destination = "/traveler/home";
+      await navigate({ to: destination });
     } catch (err) {
       setError((err as Error).message ?? "Identifiants incorrects");
     } finally {
