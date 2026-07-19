@@ -34,7 +34,10 @@ function LoginPage() {
       if (result.isAdmin) destination = "/admin/dashboard";
       else if (result.isHost) destination = "/host/dashboard";
       else if (result.isTraveler) destination = "/traveler/home";
+      console.log("Destination :", destination);
+      console.log("Avant navigate");
       await navigate({ to: destination });
+      console.log("Après navigate");
     } catch (err) {
       console.error("Erreur signIn:", err);
       setError((err as Error).message ?? "Identifiants incorrects");
