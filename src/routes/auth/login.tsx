@@ -23,7 +23,10 @@ function LoginPage() {
     setError(null);
     setLoading(true);
     try {
+      console.log("Avant signIn");
       const result = await signIn({ data: { email, password } });
+      console.log(result);
+      console.log("Après signIn");
       // Navigate to the space that matches the user's primary role.
       // The session cookie is set server-side during signIn; the next
       // page load will have the full auth context from getRouterAuth.
@@ -33,6 +36,7 @@ function LoginPage() {
       else if (result.isTraveler) destination = "/traveler/home";
       await navigate({ to: destination });
     } catch (err) {
+      console.error("Erreur signIn:", err);
       setError((err as Error).message ?? "Identifiants incorrects");
     } finally {
       setLoading(false);
