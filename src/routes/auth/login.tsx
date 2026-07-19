@@ -33,7 +33,7 @@ function LoginPage() {
       let destination = "/";
       if (result.isAdmin) destination = "/admin/dashboard";
       else if (result.isHost) destination = "/host/dashboard";
-      else if (result.isTraveler) destination = "/traveler/home";
+      else if (result.isTraveler) destination = "/traveler/dashboard";
       console.log("Destination :", destination);
       console.log("Avant navigate");
       await navigate({ to: destination });
