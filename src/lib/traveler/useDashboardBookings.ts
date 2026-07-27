@@ -36,8 +36,9 @@ async function fetchDashboardBookings(): Promise<DashboardBooking[]> {
 
   return ((data ?? []) as RawRow[]).map((r) => {
     const prop = Array.isArray(r.properties) ? (r.properties[0] ?? null) : r.properties;
-    const imgs = (prop?.property_images ?? []).sort((a, b) => a.position - b.position);
-    const cover = imgs.find((i) => i.is_cover) ?? imgs[0] ?? null;
+    type ImgRow = { storage_path: string; is_cover: boolean; position: number };
+    const imgs = (prop?.property_images ?? [] as ImgRow[]).sort((a: ImgRow, b: ImgRow) => a.position - b.position);
+    const cover = imgs.find((i: ImgRow) => i.is_cover) ?? imgs[0] ?? null;
     const cities = prop?.cities ? (Array.isArray(prop.cities) ? (prop.cities[0] ?? null) : prop.cities) : null;
     return {
       id: r.id,

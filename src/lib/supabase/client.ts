@@ -37,7 +37,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
 
     // Storage key prefix. Supabase uses `sb-<project-ref>-auth-token` by default.
-    // Keeping the default avoids key collisions if a user opens multiple StayBF
+    // Keeping the default avoids key collisions if a user opens multiple YiriGo
     // environments (staging vs production) in the same browser profile.
     storageKey: undefined,
 

@@ -206,7 +206,7 @@ export type PayoutCompletedEvent = BaseEvent<"PAYOUT_COMPLETED", {
 
 // ── Union ─────────────────────────────────────────────────────
 
-export type StayBFEvent =
+export type YiriGoEvent =
   | BookingCreatedEvent
   | BookingConfirmedEvent
   | BookingCancelledEvent
@@ -230,5 +230,5 @@ export type StayBFEvent =
   | PayoutCreatedEvent
   | PayoutCompletedEvent;
 
-export type StayBFEventType = StayBFEvent["type"];
-export type EventPayload<T extends StayBFEventType> = Extract<StayBFEvent, { type: T }>["payload"];
+export type YiriGoEventType = YiriGoEvent["type"];
+export type EventPayload<T extends YiriGoEventType> = Extract<YiriGoEvent, { type: T }>["payload"];

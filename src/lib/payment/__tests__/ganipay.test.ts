@@ -19,8 +19,8 @@ const TEST_CONFIG: GaniPayConfig = {
   apiKey:        "test-api-key-123",
   environment:   "sandbox",
   webhookSecret: "test-webhook-secret",
-  callbackUrl:   "https://app.staybf.com/payment/callback",
-  cancelUrl:     "https://app.staybf.com/payment/cancel",
+  callbackUrl:   "https://yiri-go.com/payment/callback",
+  cancelUrl:     "https://yiri-go.com/payment/cancel",
 };
 
 const PAYMENT_INTENT_REQUEST: CreateIntentRequest = {

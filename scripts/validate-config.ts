@@ -195,7 +195,7 @@ results.push(
 const PASS = "\x1b[32m✓\x1b[0m";
 const FAIL = "\x1b[31m✗\x1b[0m";
 
-console.log("\n\x1b[1mStayBF — Configuration Validation\x1b[0m\n");
+console.log("\n\x1b[1mYiriGo — Configuration Validation\x1b[0m\n");
 
 for (const r of results) {
   const icon = r.pass ? PASS : FAIL;

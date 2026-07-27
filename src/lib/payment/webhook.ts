@@ -5,7 +5,7 @@
 import type { WebhookEvent, PaymentStatus } from "./types";
 import { paymentGateway } from "./gateway";
 import { eventBus } from "@/lib/events/bus";
-import type { StayBFEvent } from "@/lib/events/types";
+import type { YiriGoEvent } from "@/lib/events/types";
 
 export type WebhookProcessResult =
   | { processed: true; event: WebhookEvent }
@@ -44,7 +44,7 @@ export async function processWebhook(opts: {
 
 // ── Domain event mapping ──────────────────────────────────────
 
-function mapWebhookToDomainEvent(event: WebhookEvent): StayBFEvent | null {
+function mapWebhookToDomainEvent(event: WebhookEvent): YiriGoEvent | null {
   if (!event.paymentId) return null;
 
   switch (event.mappedStatus as PaymentStatus) {

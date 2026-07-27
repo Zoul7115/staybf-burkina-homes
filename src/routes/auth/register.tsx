@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { signUp } from "../../lib/auth/auth.functions";
 
 export const Route = createFileRoute("/auth/register")({
-  head: () => ({ meta: [{ title: "Inscription — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Inscription — YiriGo" }] }),
   component: RegisterPage,
 });
 
@@ -76,7 +76,7 @@ function RegisterPage() {
         <div className="rounded-2xl border border-border bg-card shadow-card p-6 space-y-5">
           <div className="text-center">
             <h1 className="font-display font-bold text-xl">Créer un compte</h1>
-            <p className="text-sm text-muted-foreground mt-1">Rejoignez la communauté StayBF</p>
+            <p className="text-sm text-muted-foreground mt-1">Rejoignez la communauté YiriGo</p>
           </div>
 
           {error && (

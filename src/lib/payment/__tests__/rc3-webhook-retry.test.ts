@@ -15,7 +15,7 @@ const MAX_RETRY_ATTEMPTS = 5;
 
 // Internal retry detection logic (mirrored — RC3-D: guard against empty serviceKey)
 function isInternalRetry(headers: Record<string, string>, serviceKey: string): boolean {
-  const retryId = headers["x-staybf-internal-retry"];
+  const retryId = headers["x-yirig-internal-retry"];
   const auth    = headers["authorization"] ?? "";
   return !!retryId && !!serviceKey && auth.startsWith("Bearer ") && auth.slice(7) === serviceKey;
 }
@@ -65,7 +65,7 @@ describe("RC3-A — signature variable scope", () => {
 
   it("internal retry has empty signature header (no GaniPay header)", () => {
     const retryHeaders = {
-      "x-staybf-internal-retry": "log-001",
+      "x-yirig-internal-retry": "log-001",
       "authorization": `Bearer ${SERVICE_KEY}`,
     };
     // Signature reads as empty string — not undefined, not ReferenceError
@@ -87,7 +87,7 @@ describe("RC3-B — freshness check skips internal retries", () => {
   it("internal retry with old occurred_at is accepted", () => {
     const fresh = isFreshWebhook(
       oldTimestamp,
-      { "x-staybf-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
+      { "x-yirig-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
       SERVICE_KEY
     );
     expect(fresh).toBe(true);
@@ -101,7 +101,7 @@ describe("RC3-B — freshness check skips internal retries", () => {
   it("internal retry without occurred_at is accepted", () => {
     const fresh = isFreshWebhook(
       undefined,
-      { "x-staybf-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
+      { "x-yirig-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
       SERVICE_KEY
     );
     expect(fresh).toBe(true);
@@ -148,19 +148,19 @@ describe("RC3-C — internal retry uses existing webhook log", () => {
 // ── Internal retry authentication ────────────────────────────
 
 describe("Internal retry authentication guard", () => {
-  it("requires X-StayBF-Internal-Retry header", () => {
+  it("requires X-YiriGo-Internal-Retry header", () => {
     const result = isInternalRetry({ "authorization": `Bearer ${SERVICE_KEY}` }, SERVICE_KEY);
     expect(result).toBe(false);
   });
 
   it("requires service-role Bearer token", () => {
-    const result = isInternalRetry({ "x-staybf-internal-retry": "log-001", "authorization": "Bearer wrong" }, SERVICE_KEY);
+    const result = isInternalRetry({ "x-yirig-internal-retry": "log-001", "authorization": "Bearer wrong" }, SERVICE_KEY);
     expect(result).toBe(false);
   });
 
   it("accepts valid internal retry credentials", () => {
     const result = isInternalRetry(
-      { "x-staybf-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
+      { "x-yirig-internal-retry": "log-001", "authorization": `Bearer ${SERVICE_KEY}` },
       SERVICE_KEY
     );
     expect(result).toBe(true);
@@ -168,7 +168,7 @@ describe("Internal retry authentication guard", () => {
 
   it("rejects empty service key (misconfigured env)", () => {
     const result = isInternalRetry(
-      { "x-staybf-internal-retry": "log-001", "authorization": "Bearer " },
+      { "x-yirig-internal-retry": "log-001", "authorization": "Bearer " },
       "" // empty service key
     );
     expect(result).toBe(false);

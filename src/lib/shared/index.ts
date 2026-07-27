@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 
-export const PLACEHOLDER_IMG = "https://placehold.co/800x500?text=StayBF";
+export const PLACEHOLDER_IMG = "https://placehold.co/800x500?text=YiriGo";
 
 const IMAGE_BUCKET = "property-images";
 

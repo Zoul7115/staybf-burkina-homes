@@ -71,12 +71,12 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 160);
 
-  /* StayBF primary green #0E7A3D */
+  /* YiriGo primary green #0E7A3D */
   --primary: oklch(0.515 0.142 150);
   --primary-foreground: oklch(0.99 0.005 150);
   --primary-dark: oklch(0.42 0.13 150);
 
-  /* StayBF gold #F4B400 */
+  /* YiriGo gold #F4B400 */
   --secondary: oklch(0.82 0.165 86);
   --secondary-foreground: oklch(0.18 0.02 160);
   --accent: oklch(0.82 0.165 86);

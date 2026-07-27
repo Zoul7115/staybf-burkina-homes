@@ -22,11 +22,11 @@ import type { GaniPayConfig } from "../providers/GaniPayProvider";
 // ── Config sandbox ────────────────────────────────────────────
 
 const SANDBOX_CONFIG: GaniPayConfig = {
-  apiKey:        "test_sandbox_key_staybf",
+  apiKey:        "test_sandbox_key_yirig",
   environment:   "sandbox",
-  webhookSecret: "sandbox_webhook_secret_staybf",
-  callbackUrl:   "https://staybf.com/checkout/success",
-  cancelUrl:     "https://staybf.com/checkout",
+  webhookSecret: "sandbox_webhook_secret_yirig",
+  callbackUrl:   "https://yiri-go.com/checkout/success",
+  cancelUrl:     "https://yiri-go.com/checkout",
 };
 
 // ── Fixtures ──────────────────────────────────────────────────

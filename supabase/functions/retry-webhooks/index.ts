@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
             "Content-Type":            "application/json",
             "Authorization":           `Bearer ${SERVICE_KEY}`,
             // Internal retry marker — tells the EF to skip HMAC re-verification
-            "X-StayBF-Internal-Retry": row.id,
+            "X-YiriGo-Internal-Retry": row.id,
             // Replay the original signature so the EF can verify if desired
             "x-ganipay-signature":     "retry-internal",
           },

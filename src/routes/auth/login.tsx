@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "../../lib/auth/auth.functions";
 
 export const Route = createFileRoute("/auth/login")({
-  head: () => ({ meta: [{ title: "Connexion — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Connexion — YiriGo" }] }),
   component: LoginPage,
 });
 
@@ -55,7 +55,7 @@ function LoginPage() {
         <div className="rounded-2xl border border-border bg-card shadow-card p-6 space-y-5">
           <div className="text-center">
             <h1 className="font-display font-bold text-xl">Connexion</h1>
-            <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace StayBF</p>
+            <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace YiriGo</p>
           </div>
 
           {error && (
@@ -82,7 +82,7 @@ function LoginPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Mot de passe</Label>
                 <a
-                  href="mailto:support@staybf.com?subject=Réinitialisation%20mot%20de%20passe"
+                  href="/auth/forgot-password"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   Mot de passe oublié ?

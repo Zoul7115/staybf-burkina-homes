@@ -45,7 +45,7 @@ export const Route = createFileRoute("/checkout")({
   }),
   head: () => ({
     meta: [
-      { title: "Paiement — StayBF" },
+      { title: "Paiement — YiriGo" },
       { name: "description", content: "Finalisez votre réservation en toute sécurité avec Orange Money, Moov Money, Visa ou Mastercard." },
     ],
   }),
@@ -271,7 +271,7 @@ function CheckoutPage() {
                       <Badge variant="secondary" className="rounded-full">
                         {format(fromDate, "d MMM", { locale: fr })} → {format(toDate, "d MMM yyyy", { locale: fr })}
                       </Badge>
-                      <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié StayBF</Badge>
+                      <Badge className="bg-primary/10 text-primary border-0 rounded-full">Vérifié YiriGo</Badge>
                     </div>
                   </div>
                 </div>
@@ -312,7 +312,7 @@ function CheckoutPage() {
                       value={`${pricing.accommodationAmount.toLocaleString("fr-FR")} FCFA`}
                     />
                   )}
-                  <Row label={`Frais de service StayBF (${Math.round(pricing.serviceFeeRate * 100)}%)`} value={`${pricing.serviceFeeAmount.toLocaleString("fr-FR")} FCFA`} />
+                  <Row label={`Frais de service YiriGo (${Math.round(pricing.serviceFeeRate * 100)}%)`} value={`${pricing.serviceFeeAmount.toLocaleString("fr-FR")} FCFA`} />
                   <Separator className="my-3" />
                   <div className="flex items-baseline justify-between">
                     <span className="font-display font-semibold text-lg">Total à payer</span>
@@ -445,7 +445,7 @@ function CheckoutPage() {
                 <label className="flex items-start gap-3 rounded-xl border border-border p-4 cursor-pointer hover:bg-muted/40">
                   <Checkbox checked={accept} onCheckedChange={(c) => setAccept(c === true)} className="mt-0.5" />
                   <span className="text-sm">
-                    J'accepte les <a href="#" className="underline text-primary">conditions générales</a>, la politique d'annulation et la <a href="#" className="underline text-primary">politique de confidentialité</a> de StayBF.
+                    J'accepte les <a href="#" className="underline text-primary">conditions générales de YiriGo</a>.
                   </span>
                 </label>
               </div>

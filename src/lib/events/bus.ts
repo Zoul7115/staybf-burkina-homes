@@ -14,14 +14,14 @@ import { logger } from "@/lib/observability/logger";
 //   - No circular dependencies — bus has zero imports from domain modules
 // ============================================================
 
-import type { StayBFEvent, StayBFEventType, EventPayload } from "./types";
+import type { YiriGoEvent, YiriGoEventType, EventPayload } from "./types";
 
-type Handler<T extends StayBFEventType> = (payload: EventPayload<T>) => void | Promise<void>;
+type Handler<T extends YiriGoEventType> = (payload: EventPayload<T>) => void | Promise<void>;
 
 type Subscription = {
   id: string;
-  type: StayBFEventType | "*";
-  handler: (event: StayBFEvent) => void | Promise<void>;
+  type: YiriGoEventType | "*";
+  handler: (event: YiriGoEvent) => void | Promise<void>;
 };
 
 let _subscriptionCounter = 0;
@@ -29,8 +29,8 @@ let _subscriptionCounter = 0;
 export class EventBus {
   private subscriptions: Subscription[] = [];
 
-  emit(event: StayBFEvent): void {
-    const enriched: StayBFEvent = { ...event, timestamp: event.timestamp ?? new Date().toISOString() };
+  emit(event: YiriGoEvent): void {
+    const enriched: YiriGoEvent = { ...event, timestamp: event.timestamp ?? new Date().toISOString() };
 
     for (const sub of this.subscriptions) {
       if (sub.type === "*" || sub.type === enriched.type) {
@@ -45,7 +45,7 @@ export class EventBus {
     }
   }
 
-  on<T extends StayBFEventType>(type: T, handler: Handler<T>): string {
+  on<T extends YiriGoEventType>(type: T, handler: Handler<T>): string {
     const id = `sub-${++_subscriptionCounter}`;
     this.subscriptions.push({
       id,
@@ -57,7 +57,7 @@ export class EventBus {
     return id;
   }
 
-  onAny(handler: (event: StayBFEvent) => void): string {
+  onAny(handler: (event: YiriGoEvent) => void): string {
     const id = `sub-${++_subscriptionCounter}`;
     this.subscriptions.push({ id, type: "*", handler });
     return id;
@@ -71,7 +71,7 @@ export class EventBus {
     this.subscriptions = [];
   }
 
-  listenerCount(type?: StayBFEventType): number {
+  listenerCount(type?: YiriGoEventType): number {
     if (!type) return this.subscriptions.length;
     return this.subscriptions.filter((s) => s.type === type || s.type === "*").length;
   }

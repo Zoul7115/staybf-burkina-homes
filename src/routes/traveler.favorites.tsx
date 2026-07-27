@@ -11,7 +11,7 @@ import { useFavorites } from "@/lib/favorites/useFavorites";
 // ---------------------------------------------------------------------------
 
 export const Route = createFileRoute("/traveler/favorites")({
-  head: () => ({ meta: [{ title: "Mes favoris — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Mes favoris — YiriGo" }] }),
   component: FavoritesPage,
 });
 

@@ -18,13 +18,13 @@ import type { SearchFilters as SearchFiltersType } from "@/lib/search/types";
 export const Route = createFileRoute("/search")({
   head: () => ({
     meta: [
-      { title: "Rechercher un hébergement — StayBF" },
+      { title: "Rechercher un hébergement — YiriGo" },
       {
         name: "description",
         content:
           "Trouvez et comparez hôtels, résidences et villas vérifiés au Burkina Faso. Filtrez par budget, équipements et disponibilité.",
       },
-      { property: "og:title", content: "Rechercher un hébergement — StayBF" },
+      { property: "og:title", content: "Rechercher un hébergement — YiriGo" },
       {
         property: "og:description",
         content: "Comparez les meilleurs hébergements au Burkina Faso, du business au lodge.",

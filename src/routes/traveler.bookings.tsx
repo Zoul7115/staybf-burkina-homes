@@ -23,7 +23,7 @@ import { queryKeys } from "@/lib/query/keys";
 // ---------------------------------------------------------------------------
 
 export const Route = createFileRoute("/traveler/bookings")({
-  head: () => ({ meta: [{ title: "Mes réservations — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Mes réservations — YiriGo" }] }),
   component: BookingsPage,
 });
 

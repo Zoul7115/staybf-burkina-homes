@@ -14,7 +14,8 @@
     "validate:config": "bun run scripts/validate-config.ts",
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/types.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

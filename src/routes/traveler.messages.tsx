@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/traveler/messages")({
-  head: () => ({ meta: [{ title: "Messages — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Messages — YiriGo" }] }),
   component: MessagesPage,
 });
 

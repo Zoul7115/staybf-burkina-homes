@@ -11,7 +11,7 @@
 // ============================================================
 
 import { eventBus } from "@/lib/events/bus";
-import type { StayBFEvent } from "@/lib/events/types";
+import type { YiriGoEvent } from "@/lib/events/types";
 import { callEdgeFunction } from "@/lib/storage";
 import { logger } from "@/lib/observability/logger";
 
@@ -30,7 +30,7 @@ type NotificationTemplate = {
 
 // ── Template registry ─────────────────────────────────────────
 
-function buildTemplates(event: StayBFEvent): NotificationTemplate[] {
+function buildTemplates(event: YiriGoEvent): NotificationTemplate[] {
   switch (event.type) {
     case "BOOKING_CREATED":
       return [
@@ -247,7 +247,7 @@ async function dispatch(template: NotificationTemplate, recipientId: string): Pr
 let _initialized = false;
 
 export function initNotificationEngine(opts: {
-  getRecipientId: (role: "traveler" | "host" | "admin", event: StayBFEvent) => string | null;
+  getRecipientId: (role: "traveler" | "host" | "admin", event: YiriGoEvent) => string | null;
 }): () => void {
   if (_initialized) return () => {};
   _initialized = true;

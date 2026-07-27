@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # scripts/create-buckets.sh
-# Provisions all Supabase Storage buckets for staybf.
+# Provisions all Supabase Storage buckets for yirig.
 #
 # Idempotent: uses PATCH to update an existing bucket rather than failing.
 # Run after applying migration 0010 (storage_object_meta table must exist).
@@ -48,7 +48,7 @@ fi
 DRY_RUN="${DRY_RUN:-0}"
 STORAGE_API="${SUPABASE_URL}/storage/v1/bucket"
 
-echo "=== staybf bucket provisioning ==="
+echo "=== yirig bucket provisioning ==="
 echo "Target: ${SUPABASE_URL}"
 echo ""
 

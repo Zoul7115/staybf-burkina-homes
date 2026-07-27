@@ -13,7 +13,7 @@ import { useDashboardBookings } from "@/lib/traveler/useDashboardBookings";
 import { useTravelerNotifications } from "@/lib/traveler/useTravelerNotifications";
 
 export const Route = createFileRoute("/traveler/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — YiriGo" }] }),
   component: DashboardPage,
 });
 

@@ -1,4 +1,4 @@
-# supabase/config.toml — StayBF Burkina Homes
+# supabase/config.toml — YiriGo
 # Supabase CLI configuration file.
 # Reference: https://supabase.com/docs/reference/cli/config
 
@@ -7,7 +7,7 @@
 # ─────────────────────────────────────────────────────────────
 # A unique string used to distinguish different Supabase projects on the same
 # host. Defaults to the working directory name when running `supabase init`.
-project_id = "staybf-burkina-homes"
+project_id = "yirig-burkina-homes"
 
 # ─────────────────────────────────────────────────────────────
 # API
@@ -99,8 +99,8 @@ site_url = "http://localhost:5173"
 # A list of *exact* URLs that auth providers are permitted to redirect to post
 # authentication. Wildcard redirect URLs are not permitted.
 additional_redirect_urls = [
-  "https://staybf.com",
-  "https://staybf.com/auth/callback",
+  "https://yiri-go.com",
+  "https://yiri-go.com/auth/callback",
   "http://localhost:5173/auth/callback",
   "http://localhost:8080/auth/callback"
 ]

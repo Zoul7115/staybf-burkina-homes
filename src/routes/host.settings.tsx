@@ -160,7 +160,7 @@ function HostSettingsPage() {
     { key: "messages",     title: "Messages voyageurs",         desc: "Notifications instantanées des messages" },
     { key: "reviews",      title: "Avis et notes",              desc: "Être alerté des nouveaux avis" },
     { key: "payouts",      title: "Versements",                 desc: "Confirmation lors des paiements" },
-    { key: "newsletter",   title: "Newsletter & conseils",      desc: "Recevoir les actualités StayBF" },
+    { key: "newsletter",   title: "Newsletter & conseils",      desc: "Recevoir les actualités YiriGo" },
   ];
 
   return (
@@ -291,7 +291,7 @@ function HostSettingsPage() {
       <Card className="p-5 border-destructive/30">
         <h3 className="font-display font-semibold text-destructive mb-2">Zone sensible</h3>
         <p className="text-sm text-muted-foreground mb-3">La suppression du compte est définitive et irréversible. Contactez le support pour procéder.</p>
-        <Button variant="destructive" disabled title="Contactez support@staybf.bf pour supprimer votre compte">
+        <Button variant="destructive" disabled title="Contactez support@yiri-go.com pour supprimer votre compte">
           <Trash2 className="h-4 w-4 mr-1.5" /> Supprimer mon compte
         </Button>
       </Card>

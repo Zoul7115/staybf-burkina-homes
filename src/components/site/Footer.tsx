@@ -1,7 +1,7 @@
 import { Leaf, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 
 const cols = [
-  { title: "StayBF", links: ["À propos", "Carrières", "Presse", "Blog"] },
+  { title: "YiriGo", links: ["À propos", "Carrières", "Presse", "Blog"] },
   { title: "Support", links: ["Centre d'aide", "Contact", "FAQ", "Annulation"] },
   { title: "Hébergement", links: ["Devenir hôte", "Ressources hôtes", "Forum communauté", "Hospitalité responsable"] },
   { title: "Légal", links: ["Conditions générales", "Confidentialité", "Cookies", "Mentions légales"] },
@@ -57,7 +57,7 @@ export function Footer() {
         </div>
 
         <div className="mt-14 pt-8 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-background/60 text-sm">
-          <p>© {new Date().getFullYear()} StayBF. Tous droits réservés. Fait avec ❤️ à Ouagadougou.</p>
+          <p>© 2026 YiriGo. Tous droits réservés. Fait avec ❤️ au Burkina Faso.</p>
           <p className="flex items-center gap-2">
             <span>🇧🇫</span> Burkina Faso · Français (FCFA)
           </p>

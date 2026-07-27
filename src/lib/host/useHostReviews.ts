@@ -111,7 +111,7 @@ export function useHostReviews(): UseHostReviewsReturn {
     data: data ?? null,
     loading: isLoading,
     error: error?.message ?? null,
-    replyToReview: (reviewId, body) => replyMutation.mutateAsync({ reviewId, body }),
+    replyToReview: (reviewId, body) => replyMutation.mutateAsync({ reviewId, body }).then(() => undefined),
     replying: replyMutation.isPending,
     replyError: replyMutation.error?.message ?? null,
   };

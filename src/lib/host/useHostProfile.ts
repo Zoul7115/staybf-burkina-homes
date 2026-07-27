@@ -5,6 +5,7 @@ import type { HostProfileWithUser } from "./types";
 
 type ProfileUpdates = { full_name?: string; phone?: string; avatar_url?: string; locale?: string };
 type HostProfileUpdates = { company_name?: string; bio?: string; payout_method?: string; payout_account?: string };
+type HostProfileOptimistic = Omit<HostProfileUpdates, 'payout_method'> & { payout_method?: import("./types").PayoutMethod | null };
 
 // ── Fetcher ───────────────────────────────────────────────────
 
@@ -81,15 +82,15 @@ export function useHostProfile(): UseHostProfileReturn {
     onMutate: async (updates) => {
       await queryClient.cancelQueries({ queryKey: KEY });
       const prev = queryClient.getQueryData<HostProfileWithUser | null>(KEY);
-      queryClient.setQueryData<HostProfileWithUser | null>(KEY, (old) =>
-        old ? {
-          ...old,
-          company_name: updates.company_name ?? old.company_name,
-          bio: updates.bio ?? old.bio,
-          payout_method: updates.payout_method ?? old.payout_method,
-          payout_account: updates.payout_account ?? old.payout_account,
-        } : old
-      );
+      queryClient.setQueryData<HostProfileWithUser | null>(KEY, (old) => {
+        if (!old) return old;
+        const optimistic: HostProfileOptimistic = {
+          company_name: updates.company_name,
+          bio: updates.bio,
+          payout_method: (updates.payout_method as import("./types").PayoutMethod | null | undefined),
+        };
+        return { ...old, ...Object.fromEntries(Object.entries(optimistic).filter(([, v]) => v !== undefined)) };
+      });
       return { prev };
     },
     onError: (_, __, ctx) => { if (ctx?.prev !== undefined) queryClient.setQueryData(KEY, ctx.prev); },

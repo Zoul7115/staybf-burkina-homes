@@ -13,7 +13,7 @@ import { callEdgeFunction } from "@/lib/storage";
 import { supabase } from "@/lib/supabase/client";
 
 export const Route = createFileRoute("/traveler/profile")({
-  head: () => ({ meta: [{ title: "Profil — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Profil — YiriGo" }] }),
   component: ProfilePage,
 });
 

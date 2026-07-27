@@ -19,7 +19,7 @@ import { toPublicUrl, PLACEHOLDER_IMG } from "@/lib/shared";
 export const Route = createFileRoute("/properties/$id")({
   head: () => ({
     meta: [
-      { title: "Hébergement — StayBF" },
+      { title: "Hébergement — YiriGo" },
       { name: "description", content: "Hébergements vérifiés au Burkina Faso." },
     ],
   }),

@@ -106,7 +106,7 @@ function HostRoomsPage() {
         action={
           <RoomFormDialog
             propertyId={propertyId}
-            onSubmit={createRoom}
+            onSubmit={createRoom as (params: RoomFormParams | Omit<RoomFormParams, "propertyId">) => Promise<void>}
             saving={saving}
             saveError={saveError}
             trigger={
@@ -126,7 +126,7 @@ function HostRoomsPage() {
         <p className="text-sm text-muted-foreground">{rooms.length} type{rooms.length > 1 ? "s" : ""} de chambre{rooms.length > 1 ? "s" : ""}</p>
         <RoomFormDialog
           propertyId={propertyId}
-          onSubmit={createRoom}
+          onSubmit={createRoom as (params: RoomFormParams | Omit<RoomFormParams, "propertyId">) => Promise<void>}
           saving={saving}
           saveError={saveError}
           trigger={

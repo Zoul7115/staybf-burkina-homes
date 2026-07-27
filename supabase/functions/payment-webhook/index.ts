@@ -78,11 +78,11 @@ Deno.serve(async (req) => {
   }
 
   // ── Verify HMAC signature ─────────────────────────────────
-  // Internal retries (from retry-webhooks EF) carry X-StayBF-Internal-Retry
+  // Internal retries (from retry-webhooks EF) carry X-YiriGo-Internal-Retry
   // with the original webhook_log_id. The signature was already verified on
   // first receipt — skip re-verification for internal calls.
 
-  const internalRetryId = req.headers.get("x-staybf-internal-retry");
+  const internalRetryId = req.headers.get("x-yirig-internal-retry");
   // BUG-FIX RC3-D: guard against empty SUPABASE_SERVICE_ROLE_KEY — an unset env var
   // would let any caller with "Bearer " (empty token) pass the internal retry check.
   const _serviceKey     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
   // with this provider_event_id. Re-inserting would hit the UNIQUE constraint
   // (23505) and the handler would return ok({deduplicated:true}), silently
   // abandoning the retry. Instead, look up the existing row by the log ID
-  // that the retry-webhooks EF passes in X-StayBF-Internal-Retry.
+  // that the retry-webhooks EF passes in X-YiriGo-Internal-Retry.
 
   let webhookLogId: string;
 

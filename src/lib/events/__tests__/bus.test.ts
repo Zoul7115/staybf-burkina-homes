@@ -25,7 +25,7 @@ describe("EventBus — basic pub/sub", () => {
     const handler = vi.fn();
     bus.on("PAYMENT_CAPTURED", handler);
 
-    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reason: "test", cancelledBy: "traveler", refundAmountFcfa: 0 } });
+    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reference: "r1", reason: "test", cancelledBy: "traveler", wasCompleted: false } });
     expect(handler).not.toHaveBeenCalled();
   });
 
@@ -34,7 +34,7 @@ describe("EventBus — basic pub/sub", () => {
     const handler = vi.fn();
     bus.onAny(handler);
 
-    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reason: "x", cancelledBy: "traveler", refundAmountFcfa: 0 } });
+    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reference: "r1", reason: "x", cancelledBy: "traveler", wasCompleted: false } });
     bus.emit({ type: "REFUND_CREATED", payload: { refundId: "r1", bookingId: "b1", amountFcfa: 0 } });
     expect(handler).toHaveBeenCalledTimes(2);
   });
@@ -103,7 +103,7 @@ describe("EventBus — error isolation", () => {
     bus.on("BOOKING_CANCELLED", safe);
 
     expect(() =>
-      bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reason: "x", cancelledBy: "traveler", refundAmountFcfa: 0 } })
+      bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reference: "r1", reason: "x", cancelledBy: "traveler", wasCompleted: false } })
     ).not.toThrow();
 
     expect(crasher).toHaveBeenCalledTimes(1);
@@ -132,9 +132,9 @@ describe("EventBus — timestamp enrichment", () => {
     let received: { timestamp?: string } | null = null;
     bus.onAny((e) => { received = e as { timestamp?: string }; });
 
-    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reason: "x", cancelledBy: "traveler", refundAmountFcfa: 0 } });
+    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reference: "r1", reason: "x", cancelledBy: "traveler", wasCompleted: false } });
     expect(received).not.toBeNull();
-    expect(typeof (received as { timestamp?: string }).timestamp).toBe("string");
+    expect(typeof (received as unknown as { timestamp?: string }).timestamp).toBe("string");
   });
 
   it("preserves existing timestamp", () => {
