@@ -143,7 +143,7 @@ describe("EventBus — timestamp enrichment", () => {
     bus.onAny((e) => { received = e as { timestamp?: string }; });
 
     const ts = "2025-01-01T00:00:00.000Z";
-    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reason: "x", cancelledBy: "traveler", refundAmountFcfa: 0 }, timestamp: ts });
+    bus.emit({ type: "BOOKING_CANCELLED", payload: { bookingId: "b1", reference: "r1", reason: "x", cancelledBy: "traveler", wasCompleted: false }, timestamp: ts });
     expect((received as { timestamp?: string } | null)?.timestamp).toBe(ts);
   });
 });
@@ -152,9 +152,9 @@ describe("EventBus — multiple subscribers same event", () => {
   it("calls all subscribers in registration order", () => {
     const bus = new EventBus();
     const calls: number[] = [];
-    bus.on("PAYMENT_CAPTURED", () => calls.push(1));
-    bus.on("PAYMENT_CAPTURED", () => calls.push(2));
-    bus.on("PAYMENT_CAPTURED", () => calls.push(3));
+    bus.on("PAYMENT_CAPTURED", () => { calls.push(1); });
+    bus.on("PAYMENT_CAPTURED", () => { calls.push(2); });
+    bus.on("PAYMENT_CAPTURED", () => { calls.push(3); });
 
     bus.emit({ type: "PAYMENT_CAPTURED", payload: { paymentId: "p1", bookingId: "b1", amountFcfa: 0, processorFeeFcfa: 0, method: "x", provider: "y", capturedAt: "" } });
     expect(calls).toEqual([1, 2, 3]);

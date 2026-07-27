@@ -145,10 +145,10 @@ describe("Scénario 1 — Paiement réussi (Orange Money)", () => {
     const result = await provider.verifyWebhook(rawBody, signature, SANDBOX_CONFIG.webhookSecret);
 
     expect(result.valid).toBe(true);
-    expect(result.event?.type).toBe("payment.captured");
-    expect(result.event?.mappedStatus).toBe("captured");
-    expect(result.event?.providerEventId).toBe("evt-success-001");
-    expect(result.event?.amountFcfa).toBe(55_000);
+    expect((result as any).event?.type).toBe("payment.captured");
+    expect((result as any).event?.mappedStatus).toBe("captured");
+    expect((result as any).event?.providerEventId).toBe("evt-success-001");
+    expect((result as any).event?.amountFcfa).toBe(55_000);
   });
 
   it("polling getStatus retourne captured après confirmation", async () => {
@@ -194,9 +194,9 @@ describe("Scénario 2 — Paiement refusé (solde insuffisant)", () => {
     const result = await provider.verifyWebhook(rawBody, signature, SANDBOX_CONFIG.webhookSecret);
 
     expect(result.valid).toBe(true);
-    expect(result.event?.type).toBe("payment.failed");
-    expect(result.event?.mappedStatus).toBe("failed");
-    expect(result.event?.providerEventId).toBe("evt-failed-001");
+    expect((result as any).event?.type).toBe("payment.failed");
+    expect((result as any).event?.mappedStatus).toBe("failed");
+    expect((result as any).event?.providerEventId).toBe("evt-failed-001");
   });
 
   it("webhook payment.cancelled → status cancelled (distinct de failed)", async () => {
@@ -219,8 +219,8 @@ describe("Scénario 2 — Paiement refusé (solde insuffisant)", () => {
     const result = await provider.verifyWebhook(rawBody, signature, SANDBOX_CONFIG.webhookSecret);
 
     expect(result.valid).toBe(true);
-    expect(result.event?.type).toBe("payment.cancelled");
-    expect(result.event?.mappedStatus).toBe("cancelled");
+    expect((result as any).event?.type).toBe("payment.cancelled");
+    expect((result as any).event?.mappedStatus).toBe("cancelled");
   });
 
   it("getStatus retourne failed pour un paiement échoué", async () => {
@@ -304,10 +304,10 @@ describe("Scénario 4 — Double webhook (idempotence GaniPay)", () => {
     // responsabilité de la couche DB (UNIQUE sur provider_event_id).
     expect(result1.valid).toBe(true);
     expect(result2.valid).toBe(true);
-    expect(result1.event?.providerEventId).toBe(sharedEventId);
-    expect(result2.event?.providerEventId).toBe(sharedEventId);
+    expect((result1 as any).event?.providerEventId).toBe(sharedEventId);
+    expect((result2 as any).event?.providerEventId).toBe(sharedEventId);
     // event_id identique → la DB UNIQUE rejettera le second INSERT
-    expect(result1.event?.providerEventId).toBe(result2.event?.providerEventId);
+    expect((result1 as any).event?.providerEventId).toBe((result2 as any).event?.providerEventId);
   });
 
   it("signature invalide sur le second webhook (altération en transit) → rejeté", async () => {
@@ -332,7 +332,7 @@ describe("Scénario 4 — Double webhook (idempotence GaniPay)", () => {
     const result = await provider.verifyWebhook(tamperedBody, validSig, SANDBOX_CONFIG.webhookSecret);
 
     expect(result.valid).toBe(false);
-    expect(result.reason).toContain("Signature mismatch");
+    expect((result as any).reason).toContain("Signature mismatch");
   });
 });
 
@@ -365,7 +365,7 @@ describe("Scénario 5 — Webhook en retard (arrived > 5 min after occurred_at)"
     // HMAC valide — le rejet timestamp est dans l'EF payment-webhook (couche applicative)
     const result = await provider.verifyWebhook(rawBody, signature, SANDBOX_CONFIG.webhookSecret);
     expect(result.valid).toBe(true);
-    expect(result.event?.providerEventId).toBe("evt-late-001");
+    expect((result as any).event?.providerEventId).toBe("evt-late-001");
   });
 
   it("webhook en retard sans signature → rejeté même si timestamp OK", async () => {
@@ -548,8 +548,8 @@ describe("Scénario 7 — Refund (remboursement partiel et total)", () => {
     const result = await provider.verifyWebhook(rawBody, signature, SANDBOX_CONFIG.webhookSecret);
 
     expect(result.valid).toBe(true);
-    expect(result.event?.type).toBe("refund.completed");
-    expect(result.event?.mappedStatus).toBe("refunded");
+    expect((result as any).event?.type).toBe("refund.completed");
+    expect((result as any).event?.mappedStatus).toBe("refunded");
   });
 
   it("refund envoie les bons champs à GaniPay (montant, reason, idempotency_key)", async () => {
@@ -715,7 +715,7 @@ describe("Sécurité — Vérification HMAC-SHA256 (toutes attaques courantes)",
     const rawBody = JSON.stringify({ event_id: "x", event_type: "payment.successful" });
     const result = await provider.verifyWebhook(rawBody, "any-signature", "");
     expect(result.valid).toBe(false);
-    expect(result.reason).toContain("not configured");
+    expect((result as any).reason).toContain("not configured");
   });
 
   it("signature forgée avec mauvais secret → rejet", async () => {
@@ -737,7 +737,7 @@ describe("Sécurité — Vérification HMAC-SHA256 (toutes attaques courantes)",
 
     const result = await provider.verifyWebhook(rawBody, wrongSig, SANDBOX_CONFIG.webhookSecret);
     expect(result.valid).toBe(false);
-    expect(result.reason).toContain("Signature mismatch");
+    expect((result as any).reason).toContain("Signature mismatch");
   });
 
   it("payload JSON invalide → rejet", async () => {
@@ -746,7 +746,7 @@ describe("Sécurité — Vérification HMAC-SHA256 (toutes attaques courantes)",
 
     const result = await provider.verifyWebhook(notJson, sig, SANDBOX_CONFIG.webhookSecret);
     expect(result.valid).toBe(false);
-    expect(result.reason).toContain("Invalid JSON");
+    expect((result as any).reason).toContain("Invalid JSON");
   });
 
   it("event_id manquant → rejet (champ requis pour idempotence)", async () => {
@@ -755,6 +755,6 @@ describe("Sécurité — Vérification HMAC-SHA256 (toutes attaques courantes)",
 
     const result = await provider.verifyWebhook(rawBody, sig, SANDBOX_CONFIG.webhookSecret);
     expect(result.valid).toBe(false);
-    expect(result.reason).toContain("event_id");
+    expect((result as any).reason).toContain("event_id");
   });
 });

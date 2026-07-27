@@ -19,19 +19,20 @@ const HOST_ID = "host-atomic-001";
 
 function makeBalance(availableBalance: number) {
   return {
+    hostId:           HOST_ID,
     availableBalance,
     pendingBalance:   0,
     withdrawnBalance: 0,
     totalEarned:      availableBalance,
+    currency:         "XOF" as const,
+    computedAt:       new Date().toISOString(),
   };
 }
 
 function makeRequest(amountFcfa: number, method = "orange_money") {
   return {
-    hostId:            HOST_ID,
     amountFcfa,
-    method,
-    description:       "Test withdrawal",
+    method:            method as "orange_money" | "moov_money" | "bank",
     accountDetails:    "237 XX XX XX",
   };
 }
@@ -221,18 +222,18 @@ describe("RC2 — Atomic withdrawal validation (B09)", () => {
 
   describe("retry logic", () => {
     it("allows retry when retry_count < 3", () => {
-      expect(canRetryWithdrawal({ status: "failed", retryCount: 0 })).toBe(true);
-      expect(canRetryWithdrawal({ status: "failed", retryCount: 2 })).toBe(true);
+      expect(canRetryWithdrawal({ status: "failed", retryCount: 0 } as any)).toBe(true);
+      expect(canRetryWithdrawal({ status: "failed", retryCount: 2 } as any)).toBe(true);
     });
 
     it("blocks retry at retry_count = 3", () => {
-      expect(canRetryWithdrawal({ status: "failed", retryCount: 3 })).toBe(false);
+      expect(canRetryWithdrawal({ status: "failed", retryCount: 3 } as any)).toBe(false);
     });
 
     it("only failed payouts can be retried", () => {
-      expect(canRetryWithdrawal({ status: "processing", retryCount: 0 })).toBe(false);
-      expect(canRetryWithdrawal({ status: "paid",       retryCount: 0 })).toBe(false);
-      expect(canRetryWithdrawal({ status: "cancelled",  retryCount: 0 })).toBe(false);
+      expect(canRetryWithdrawal({ status: "processing", retryCount: 0 } as any)).toBe(false);
+      expect(canRetryWithdrawal({ status: "paid",       retryCount: 0 } as any)).toBe(false);
+      expect(canRetryWithdrawal({ status: "cancelled",  retryCount: 0 } as any)).toBe(false);
     });
   });
 

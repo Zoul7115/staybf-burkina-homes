@@ -1,6 +1,7 @@
 // Query key registry tests — ensures all keys are stable and unique
 import { describe, it, expect } from "vitest";
 import { queryKeys } from "../keys";
+import type { SearchFilters } from "@/lib/search/types";
 
 describe("queryKeys — shape and stability", () => {
   it("hostDashboard returns a stable array", () => {
@@ -78,7 +79,7 @@ describe("queryKeys — shape and stability", () => {
   });
 
   it("search key embeds full filter object", () => {
-    const filters = { city: "Ouagadougou", minPrice: 0, maxPrice: 999999, types: [], amenities: [], minRating: 0, searchText: "", sort: "recommended" as const };
+    const filters: SearchFilters = { city: "Ouagadougou", minPrice: 0, maxPrice: 999999, types: [], amenities: [], minRating: 0, searchText: "", sort: "cheapest" };
     const key = queryKeys.search(filters);
     expect(key[0]).toBe("search");
     expect(key[1]).toEqual(filters);
