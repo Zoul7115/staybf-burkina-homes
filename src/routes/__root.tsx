@@ -105,33 +105,24 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
     ],
   }),
-  loader: async (): Promise<{ auth: RouterAuthContext }> => {
-    // getRouterAuth is a createServerFn — it always runs server-side, even during
-    // client-side navigation, so the loader always receives the current session.
+  beforeLoad: async ({ location }) => {
+    let auth: RouterAuthContext;
     try {
-      const auth = await getRouterAuth({ data: {} });
-      console.log("[ROOT loader] auth =", auth ? { userId: auth.user?.id, roles: auth.roles } : null);
-      return { auth };
-    } catch (e) {
-      console.error("[ROOT loader] erreur getRouterAuth:", e);
-      return { auth: null };
+      auth = await getRouterAuth({ data: {} });
+    } catch {
+      auth = null;
     }
-  },
-  beforeLoad: async ({ context, location }) => {
-    console.log("[ROOT beforeLoad] location =", location.pathname, "| context.auth =", context.auth ? { userId: context.auth.user?.id, roles: context.auth.roles } : null);
-    const auth = context.auth;
     if (auth?.accountStatus === "suspended") {
       if (!location.pathname.startsWith("/auth/suspended")) {
-        console.log("[ROOT beforeLoad] → redirect /auth/suspended (suspended)");
         throw redirect({ to: "/auth/suspended" });
       }
     }
     if (auth?.accountStatus === "deleted" || auth?.accountStatus === "deactivated") {
       if (!location.pathname.startsWith("/auth")) {
-        console.log("[ROOT beforeLoad] → redirect /auth/login (deleted/deactivated)");
         throw redirect({ to: "/auth/login" });
       }
     }
+    return { auth };
   },
   shellComponent: RootShell,
   component: RootComponent,
@@ -154,8 +145,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
-  const { auth } = Route.useLoaderData();
+  const { queryClient, auth } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
