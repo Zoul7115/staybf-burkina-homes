@@ -70,7 +70,7 @@ export function SearchMap({ listings, activeId, city }: Props) {
 
       {/* Attribution */}
       <div className="absolute bottom-2 right-3 text-[10px] text-muted-foreground bg-card/70 px-2 py-0.5 rounded">
-        Carte StayBF
+        Carte YiriGo
       </div>
     </div>
   );

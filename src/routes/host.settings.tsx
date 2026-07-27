@@ -160,7 +160,7 @@ function HostSettingsPage() {
     { key: "messages",     title: "Messages voyageurs",         desc: "Notifications instantanées des messages" },
     { key: "reviews",      title: "Avis et notes",              desc: "Être alerté des nouveaux avis" },
     { key: "payouts",      title: "Versements",                 desc: "Confirmation lors des paiements" },
-    { key: "newsletter",   title: "Newsletter & conseils",      desc: "Recevoir les actualités StayBF" },
+    { key: "newsletter",   title: "Newsletter & conseils",      desc: "Recevoir les actualités YiriGo" },
   ];
 
   return (

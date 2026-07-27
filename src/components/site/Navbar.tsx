@@ -30,7 +30,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
             <Leaf className="h-5 w-5" strokeWidth={2.5} />
           </span>
           <span className={`font-display font-bold text-xl tracking-tight ${scrolled ? "text-foreground" : "text-white"}`}>
-            Stay<span className="text-secondary">BF</span>
+            Yiri<span className="text-secondary">Go</span>
           </span>
         </Link>
 
@@ -90,7 +90,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                     <Leaf className="h-5 w-5" />
                   </span>
                   <span className="font-display font-bold text-xl">
-                    Stay<span className="text-primary">BF</span>
+                    Yiri<span className="text-primary">Go</span>
                   </span>
                 </Link>
                 <Button asChild variant="ghost" className="justify-start text-base"><Link to="/search">Rechercher</Link></Button>

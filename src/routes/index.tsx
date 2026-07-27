@@ -14,13 +14,13 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "StayBF — Hébergements au Burkina Faso" },
+      { title: "YiriGo — Hébergements au Burkina Faso" },
       {
         name: "description",
         content:
           "Réservez hôtels, résidences meublées et auberges vérifiés partout au Burkina Faso. Paiement Mobile Money, support local 24/7.",
       },
-      { property: "og:title", content: "StayBF — Hébergements au Burkina Faso" },
+      { property: "og:title", content: "YiriGo — Hébergements au Burkina Faso" },
       {
         property: "og:description",
         content:

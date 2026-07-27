@@ -23,7 +23,7 @@ import { queryKeys } from "@/lib/query/keys";
 // ---------------------------------------------------------------------------
 
 export const Route = createFileRoute("/traveler/bookings")({
-  head: () => ({ meta: [{ title: "Mes réservations — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Mes réservations — YiriGo" }] }),
   component: BookingsPage,
 });
 
@@ -215,7 +215,7 @@ function BookingRow({
 
   const downloadReceipt = () => {
     const text = [
-      "STAYBF — REÇU",
+      "YIRIGO — REÇU",
       `Réf : ${b.reference}`,
       b.properties.name,
       `${format(new Date(b.check_in), "d MMM yyyy", { locale: fr })} → ${format(new Date(b.check_out), "d MMM yyyy", { locale: fr })}`,

@@ -32,7 +32,7 @@ export type AdminSettings = {
 };
 
 const DEFAULTS: AdminSettings = {
-  platform: { name: "StayBF", support_email: "support@staybf.bf", currency: "xof", locale: "fr" },
+  platform: { name: "YiriGo", support_email: "support@staybf.bf", currency: "xof", locale: "fr" },
   commissions: { discovery_pct: 15, growth_pct: 10, pro_pct: 8, traveler_fee_pct: 10, cleaning_min_fcfa: 5000, tva_pct: 18 },
   security: { require_2fa_hosts: true, auto_kyc: true, fraud_detection: true, maintenance_mode: false },
 };

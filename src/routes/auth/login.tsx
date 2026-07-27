@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "../../lib/auth/auth.functions";
 
 export const Route = createFileRoute("/auth/login")({
-  head: () => ({ meta: [{ title: "Connexion — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Connexion — YiriGo" }] }),
   component: LoginPage,
 });
 
@@ -55,14 +55,14 @@ function LoginPage() {
             <Leaf className="h-5 w-5" strokeWidth={2.5} />
           </span>
           <span className="font-display font-bold text-2xl tracking-tight">
-            Stay<span className="text-secondary">BF</span>
+            Yiri<span className="text-secondary">Go</span>
           </span>
         </Link>
 
         <div className="rounded-2xl border border-border bg-card shadow-card p-6 space-y-5">
           <div className="text-center">
             <h1 className="font-display font-bold text-xl">Connexion</h1>
-            <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace StayBF</p>
+            <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace YiriGo</p>
           </div>
 
           {error && (

@@ -12,7 +12,7 @@ export function WhyStayBF() {
     <section className="py-16 sm:py-24 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-          <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Pourquoi StayBF</p>
+          <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Pourquoi YiriGo</p>
           <h2 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-balance">
             Conçu pour le Burkina Faso
           </h2>

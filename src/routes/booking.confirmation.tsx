@@ -43,8 +43,8 @@ export const Route = createFileRoute("/booking/confirmation")({
   }),
   head: () => ({
     meta: [
-      { title: "Réservation confirmée — StayBF" },
-      { name: "description", content: "Votre réservation StayBF est confirmée. Préparez votre séjour au Burkina Faso." },
+      { title: "Réservation confirmée — YiriGo" },
+      { name: "description", content: "Votre réservation YiriGo est confirmée. Préparez votre séjour au Burkina Faso." },
     ],
   }),
   component: ConfirmationPage,
@@ -92,7 +92,7 @@ function ConfirmationPage() {
   const similar = property?.similar ?? [];
 
   const downloadReceipt = () => {
-    const text = `STAYBF — REÇU DE RÉSERVATION
+    const text = `YIRIGO — REÇU DE RÉSERVATION
 ────────────────────────────
 Référence : ${ref}
 Hébergement : ${property?.name ?? ""}
@@ -108,7 +108,7 @@ TOTAL PAYÉ : ${total.toLocaleString("fr-FR")} FCFA
 
 Statut : Confirmée ✓
 Merci pour votre confiance.
-StayBF — Ouagadougou, Burkina Faso`;
+YiriGo — Ouagadougou, Burkina Faso`;
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

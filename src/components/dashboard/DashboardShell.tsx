@@ -74,7 +74,7 @@ export function DashboardShell({
           </span>
           <div className="min-w-0">
             <div className="font-display font-bold text-lg leading-tight">
-              Stay<span className="text-secondary">BF</span>
+              Yiri<span className="text-secondary">Go</span>
             </div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
               {user.role}
@@ -139,7 +139,7 @@ export function DashboardShell({
                   <Leaf className="h-5 w-5" />
                 </span>
                 <div>
-                  <div className="font-display font-bold text-lg">Stay<span className="text-secondary">BF</span></div>
+                  <div className="font-display font-bold text-lg">Yiri<span className="text-secondary">Go</span></div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{user.role}</div>
                 </div>
               </div>

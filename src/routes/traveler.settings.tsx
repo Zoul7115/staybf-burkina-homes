@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/traveler/settings")({
-  head: () => ({ meta: [{ title: "Paramètres — StayBF" }] }),
+  head: () => ({ meta: [{ title: "Paramètres — YiriGo" }] }),
   component: SettingsPage,
 });
 

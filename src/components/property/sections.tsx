@@ -94,7 +94,7 @@ export function PropertyHeader() {
               </>
             )}
             <Badge className="bg-primary/10 text-primary border-0 gap-1">
-              <BadgeCheck className="h-3 w-3" /> Vérifié StayBF
+              <BadgeCheck className="h-3 w-3" /> Vérifié YiriGo
             </Badge>
             {property.city && (
               <>
@@ -129,7 +129,7 @@ export function HostCard() {
   const host = property.host;
 
   // Graceful fallback when host_profiles is not publicly accessible
-  const hostName = host?.full_name ?? "Hôte StayBF";
+  const hostName = host?.full_name ?? "Hôte YiriGo";
   const initials = getInitials(host?.full_name);
   const isSuperhost = host?.superhost ?? false;
   const isVerified = host?.verified ?? false;
@@ -159,7 +159,7 @@ export function HostCard() {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Hôte vérifié{since ? ` · Sur StayBF depuis ${since}` : ""}
+            Hôte vérifié{since ? ` · Sur YiriGo depuis ${since}` : ""}
           </p>
           {(responseRate !== null || host?.response_time_minutes !== null) && (
             <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -567,7 +567,7 @@ export function BookingCard({
             <span>{subtotal.toLocaleString("fr-FR")} FCFA</span>
           </div>
           <div className="flex justify-between">
-            <span className="underline">Frais de service StayBF (10%)</span>
+            <span className="underline">Frais de service YiriGo (10%)</span>
             <span>{fee.toLocaleString("fr-FR")} FCFA</span>
           </div>
           <Separator />

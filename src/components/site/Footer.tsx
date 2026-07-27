@@ -1,7 +1,7 @@
 import { Leaf, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 
 const cols = [
-  { title: "StayBF", links: ["À propos", "Carrières", "Presse", "Blog"] },
+  { title: "YiriGo", links: ["À propos", "Carrières", "Presse", "Blog"] },
   { title: "Support", links: ["Centre d'aide", "Contact", "FAQ", "Annulation"] },
   { title: "Hébergement", links: ["Devenir hôte", "Ressources hôtes", "Forum communauté", "Hospitalité responsable"] },
   { title: "Légal", links: ["Conditions générales", "Confidentialité", "Cookies", "Mentions légales"] },
@@ -18,7 +18,7 @@ export function Footer() {
                 <Leaf className="h-5 w-5" strokeWidth={2.5} />
               </span>
               <span className="font-display font-bold text-2xl">
-                Stay<span className="text-secondary">BF</span>
+                Yiri<span className="text-secondary">Go</span>
               </span>
             </a>
             <p className="mt-4 text-background/70 text-sm leading-relaxed max-w-sm">
@@ -57,7 +57,7 @@ export function Footer() {
         </div>
 
         <div className="mt-14 pt-8 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-background/60 text-sm">
-          <p>© {new Date().getFullYear()} StayBF. Tous droits réservés. Fait avec ❤️ à Ouagadougou.</p>
+          <p>© {new Date().getFullYear()} YiriGo. Tous droits réservés. Fait avec ❤️ à Ouagadougou.</p>
           <p className="flex items-center gap-2">
             <span>🇧🇫</span> Burkina Faso · Français (FCFA)
           </p>
