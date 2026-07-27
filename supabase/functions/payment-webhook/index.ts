@@ -248,8 +248,19 @@ Deno.serve(async (req) => {
   });
 
   if (eventConflict?.code === "23505") {
-    await db.from("payment_webhook_logs").update({ status: "ignored" }).eq("id", webhookLogId);
-    return ok({ deduplicated: true });
+    // The event was already seen. For non-captured events this is a true duplicate — return early.
+    // For a captured event where payment.status is NOT yet "captured", the previous attempt
+    // inserted the payment_event row but crashed before completing the downstream writes
+    // (booking confirmation, ledger, notifications). Fall through so idempotent operations
+    // can complete. All writes below are safe to re-run: upsert on ledger, conditional
+    // .eq("status","payment_processing") on booking, and no-op capture update.
+    if (mappedStatus === "captured" && payment.status !== "captured") {
+      childLog.info("partial capture detected — re-running idempotent downstream writes", { payment_id: payment.id });
+      // Fall through to the captured-payment block below.
+    } else {
+      await db.from("payment_webhook_logs").update({ status: "ignored" }).eq("id", webhookLogId);
+      return ok({ deduplicated: true });
+    }
   }
   if (eventConflict) {
     // Increment retry count; dead-letter after MAX_RETRY_ATTEMPTS
