@@ -3,7 +3,7 @@ import { Navbar } from "@/components/site/Navbar";
 import { Hero } from "@/components/site/Hero";
 import { PopularCities } from "@/components/site/PopularCities";
 import { FeaturedProperties } from "@/components/site/FeaturedProperties";
-import { WhyStayBF } from "@/components/site/WhyStayBF";
+import { WhyYiriGo } from "@/components/site/WhyYiriGo";
 import { BecomeHost } from "@/components/site/BecomeHost";
 import { Testimonials } from "@/components/site/Testimonials";
 import { Footer } from "@/components/site/Footer";
@@ -41,7 +41,7 @@ function Home() {
         <Hero />
         <PopularCities />
         <FeaturedProperties />
-        <WhyStayBF />
+        <WhyYiriGo />
         <BecomeHost />
         <Testimonials />
       </main>

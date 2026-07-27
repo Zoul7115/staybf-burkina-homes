@@ -7,7 +7,7 @@ const features = [
   { icon: Headset, title: "Support local 24/7", desc: "Une équipe burkinabè à votre écoute, en français et en langues locales." },
 ];
 
-export function WhyStayBF() {
+export function WhyYiriGo() {
   return (
     <section className="py-16 sm:py-24 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

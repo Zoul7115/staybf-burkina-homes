@@ -1,5 +1,5 @@
 import { Star, Quote } from "lucide-react";
-import { testimonials } from "@/lib/staybf-data";
+import { testimonials } from "@/lib/yirigo-data";
 
 export function Testimonials() {
   return (

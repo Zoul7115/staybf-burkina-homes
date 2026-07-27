@@ -1,4 +1,4 @@
-import { cities } from "@/lib/staybf-data";
+import { cities } from "@/lib/yirigo-data";
 import { ArrowRight } from "lucide-react";
 
 export function PopularCities() {

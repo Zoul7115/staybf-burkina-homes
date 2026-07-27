@@ -1,4 +1,4 @@
-import heroImg from "@/assets/hero-staybf.jpg";
+import heroImg from "@/assets/hero-yirigo.jpg";
 import { SearchCard } from "./SearchCard";
 import { Star } from "lucide-react";
 

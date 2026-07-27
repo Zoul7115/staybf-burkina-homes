@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cities } from "@/lib/staybf-data";
+import { cities } from "@/lib/yirigo-data";
 import { cn } from "@/lib/utils";
 
 type Props = {

@@ -1,4 +1,4 @@
-import { properties } from "@/lib/staybf-data";
+import { properties } from "@/lib/yirigo-data";
 import { PropertyCard } from "./PropertyCard";
 import { Button } from "@/components/ui/button";
 
