@@ -39,8 +39,10 @@ import { Route as HostAnalyticsRouteImport } from './routes/host.analytics'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as BookingConfirmationRouteImport } from './routes/booking.confirmation'
 import { Route as AuthSuspendedRouteImport } from './routes/auth/suspended'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminTravelersRouteImport } from './routes/admin.travelers'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -207,6 +209,11 @@ const AuthSuspendedRoute = AuthSuspendedRouteImport.update({
   path: '/suspended',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -215,6 +222,11 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => AuthRoute,
 } as any)
 const AdminTravelersRoute = AdminTravelersRouteImport.update({
@@ -316,8 +328,10 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -365,8 +379,10 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -415,8 +431,10 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/travelers': typeof AdminTravelersRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/suspended': typeof AuthSuspendedRoute
   '/booking/confirmation': typeof BookingConfirmationRoute
   '/checkout/success': typeof CheckoutSuccessRoute
@@ -466,8 +484,10 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/auth/reset-password'
     | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
@@ -515,8 +535,10 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/auth/reset-password'
     | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
@@ -564,8 +586,10 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/travelers'
+    | '/auth/forgot-password'
     | '/auth/login'
     | '/auth/register'
+    | '/auth/reset-password'
     | '/auth/suspended'
     | '/booking/confirmation'
     | '/checkout/success'
@@ -816,6 +840,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSuspendedRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/register': {
       id: '/auth/register'
       path: '/register'
@@ -828,6 +859,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
     '/admin/travelers': {
@@ -977,14 +1015,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthRouteChildren {
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSuspendedRoute: typeof AuthSuspendedRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSuspendedRoute: AuthSuspendedRoute,
 }
 

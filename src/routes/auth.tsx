@@ -19,7 +19,8 @@ export const Route = createFileRoute("/auth")({
     if (
       auth?.accountStatus === "pending_email_verification" &&
       !location.pathname.startsWith("/auth/verify-email") &&
-      !location.pathname.startsWith("/auth/callback")
+      !location.pathname.startsWith("/auth/callback") &&
+      !location.pathname.startsWith("/auth/reset-password")
     ) {
       throw redirect({ to: "/auth/verify-email" });
     }

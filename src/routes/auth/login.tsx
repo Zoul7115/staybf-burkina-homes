@@ -1,17 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Leaf } from "lucide-react";
+import { z } from "zod";
+import { Leaf, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "../../lib/auth/auth.functions";
 
+const searchSchema = z.object({
+  reset: z.literal("success").optional(),
+});
+
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Connexion — YiriGo" }] }),
+  validateSearch: searchSchema,
   component: LoginPage,
 });
 
 function LoginPage() {
+  const { reset } = Route.useSearch();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +50,6 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 justify-center mb-8">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-primary-foreground shadow-card">
             <Leaf className="h-5 w-5" strokeWidth={2.5} />
@@ -58,6 +64,13 @@ function LoginPage() {
             <h1 className="font-display font-bold text-xl">Connexion</h1>
             <p className="text-sm text-muted-foreground mt-1">Accédez à votre espace YiriGo</p>
           </div>
+
+          {reset === "success" && (
+            <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-primary flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              Votre mot de passe a été mis à jour. Connectez-vous avec votre nouveau mot de passe.
+            </div>
+          )}
 
           {error && (
             <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
@@ -82,12 +95,12 @@ function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Mot de passe</Label>
-                <a
-                  href="mailto:support@yiri-go.com?subject=Réinitialisation%20mot%20de%20passe"
+                <Link
+                  to="/auth/forgot-password"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   Mot de passe oublié ?
-                </a>
+                </Link>
               </div>
               <Input
                 id="password"
