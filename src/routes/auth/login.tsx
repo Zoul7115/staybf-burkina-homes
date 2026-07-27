@@ -83,7 +83,7 @@ function LoginPage() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Mot de passe</Label>
                 <a
-                  href="mailto:support@staybf.com?subject=Réinitialisation%20mot%20de%20passe"
+                  href="mailto:support@yiri-go.com?subject=Réinitialisation%20mot%20de%20passe"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   Mot de passe oublié ?

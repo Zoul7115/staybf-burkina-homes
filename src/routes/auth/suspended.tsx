@@ -42,7 +42,7 @@ function SuspendedPage() {
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a
-            href="mailto:support@staybf.com"
+            href="mailto:support@yiri-go.com"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Contact Support

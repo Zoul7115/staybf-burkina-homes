@@ -35,7 +35,7 @@ export const testimonials = [
     role: "Consultante ONG, Ouagadougou",
     avatar: "AO",
     quote:
-      "StayBF m'a simplifié la vie. En mission à Bobo, j'ai réservé une résidence vérifiée en 3 minutes avec Orange Money. Service au top.",
+      "YiriGo m'a simplifié la vie. En mission à Bobo, j'ai réservé une résidence vérifiée en 3 minutes avec Orange Money. Service au top.",
   },
   {
     name: "Marc Lefèvre",
@@ -49,6 +49,6 @@ export const testimonials = [
     role: "Voyageuse, Dakar",
     avatar: "FD",
     quote:
-      "J'ai découvert Tenkodogo grâce à StayBF. Le rapport qualité-prix est imbattable et le paiement Mobile Money m'évite tout souci de carte.",
+      "J'ai découvert Tenkodogo grâce à YiriGo. Le rapport qualité-prix est imbattable et le paiement Mobile Money m'évite tout souci de carte.",
   },
 ];

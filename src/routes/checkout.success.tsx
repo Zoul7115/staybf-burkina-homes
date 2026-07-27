@@ -209,7 +209,7 @@ YiriGo — Ouagadougou, Burkina Faso
         </motion.div>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Besoin d'aide ? Contactez notre support 24/7 — support@staybf.bf
+          Besoin d'aide ? Contactez notre support 24/7 — support@yiri-go.com
         </p>
       </main>
       <Footer />

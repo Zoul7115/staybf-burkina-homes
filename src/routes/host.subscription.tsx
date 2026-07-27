@@ -94,7 +94,7 @@ function HostSubscriptionPage() {
             <p className="text-sm text-muted-foreground">Renouvellement automatique le 01 Août 2026</p>
           </div>
           <Button variant="outline" asChild>
-            <a href="mailto:support@staybf.com?subject=Annulation%20abonnement">
+            <a href="mailto:support@yiri-go.com?subject=Annulation%20abonnement">
               <Mail className="h-4 w-4 mr-2" />Annuler l'abonnement
             </a>
           </Button>
