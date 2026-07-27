@@ -93,22 +93,22 @@ form-action 'self';
 #    explicit rule makes it visible).
 # ─────────────────────────────────────────────────────────────
 
-# Force HTTPS
+# Force HTTPS — yiri-go.com
 [[redirects]]
-  from   = "http://staybf.com/*"
-  to     = "https://staybf.com/:splat"
+  from   = "http://yiri-go.com/*"
+  to     = "https://yiri-go.com/:splat"
   status = 301
   force  = true
 
 [[redirects]]
-  from   = "http://www.staybf.com/*"
-  to     = "https://staybf.com/:splat"
+  from   = "http://www.yiri-go.com/*"
+  to     = "https://yiri-go.com/:splat"
   status = 301
   force  = true
 
 # www → apex
 [[redirects]]
-  from   = "https://www.staybf.com/*"
-  to     = "https://staybf.com/:splat"
+  from   = "https://www.yiri-go.com/*"
+  to     = "https://yiri-go.com/:splat"
   status = 301
   force  = true
