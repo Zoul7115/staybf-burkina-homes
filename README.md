@@ -2,6 +2,13 @@
 
 Plateforme de réservation d'hébergements vérifiés au Burkina Faso. Paiement mobile money (Orange Money, Moov Money), hôtes certifiés, messagerie intégrée.
 
+## Projet Supabase
+
+| | |
+|---|---|
+| **Project Ref** | `infxvfvzhvtdnyuayywe` |
+| **URL** | `https://infxvfvzhvtdnyuayywe.supabase.co` |
+
 ## Stack technique
 
 | Couche | Technologie |
@@ -28,7 +35,7 @@ Plateforme de réservation d'hébergements vérifiés au Burkina Faso. Paiement 
 ```bash
 npm install
 cp .env.example .env.local
-# Renseigner les variables dans .env.local
+# Renseigner les variables dans .env.local (anon key, service role key, etc.)
 npm run dev
 ```
 
@@ -46,7 +53,7 @@ npm run dev
 
 ## Variables d'environnement
 
-Voir `.env.example` pour la liste complète et la documentation de chaque variable.
+Voir `.env.example` pour la liste complète. Les URLs Supabase sont pré-renseignées.
 
 Les variables `VITE_*` sont publiques (bundlées dans le client). Toutes les autres sont server-only.
 
@@ -55,7 +62,8 @@ Les variables `VITE_*` sont publiques (bundlées dans le client). Toutes les aut
 21 migrations dans `supabase/migrations/`, à appliquer dans l'ordre numérique :
 
 ```bash
-supabase db push --project-ref <ref> --password <password>
+supabase link --project-ref infxvfvzhvtdnyuayywe
+supabase db push
 ```
 
 Voir `CHANGELOG.md` pour le détail des corrections de compatibilité PostgreSQL 15 / Supabase Cloud.
@@ -65,7 +73,7 @@ Voir `CHANGELOG.md` pour le détail des corrections de compatibilité PostgreSQL
 40 fonctions Deno dans `supabase/functions/`. Déploiement :
 
 ```bash
-supabase functions deploy --project-ref <ref>
+supabase functions deploy --project-ref infxvfvzhvtdnyuayywe
 ```
 
 ## Storage
@@ -73,8 +81,8 @@ supabase functions deploy --project-ref <ref>
 6 buckets à provisionner via le script idempotent :
 
 ```bash
-SUPABASE_URL=https://<ref>.supabase.co \
-SUPABASE_SERVICE_ROLE_KEY=<key> \
+SUPABASE_URL=https://infxvfvzhvtdnyuayywe.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key> \
 ./scripts/create-buckets.sh
 ```
 

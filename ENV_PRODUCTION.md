@@ -15,16 +15,16 @@ Il couvre : Netlify, Supabase (Edge Functions), paiement GaniPay, et email Resen
 | Variable | Obligatoire | Exemple | Description |
 |---|---|---|---|
 | `APP_URL` | ✅ Oui | `https://yiri-go.com` | URL publique de l'application. Utilisé dans `auth.functions.ts` pour `emailRedirectTo` (signup) et `redirectTo` (reset password). **Doit correspondre exactement au domaine déployé.** |
-| `VITE_SUPABASE_URL` | ✅ Oui | `https://abcdefghijkl.supabase.co` | URL publique du projet Supabase. Source : Dashboard Supabase → Settings → API. |
+| `VITE_SUPABASE_URL` | ✅ Oui | `https://infxvfvzhvtdnyuayywe.supabase.co` | URL publique du projet Supabase. Source : Dashboard Supabase → Settings → API. |
 | `VITE_SUPABASE_ANON_KEY` | ✅ Oui | `eyJhbGciO...` | Clé anon/publique Supabase. Bundlée dans le navigateur. La RLS est la seule porte d'accès. |
-| `VITE_MEDIA_BASE_URL` | ✅ Oui | `https://abcdefghijkl.supabase.co` | URL de base du CDN Storage pour les images (propriétés, chambres, avatars). En production, peut pointer vers un CNAME personnalisé. |
-| `SUPABASE_URL` | ✅ Oui | `https://abcdefghijkl.supabase.co` | Miroir de `VITE_SUPABASE_URL` pour les server functions TanStack Start qui n'ont pas accès à `import.meta.env`. |
+| `VITE_MEDIA_BASE_URL` | ✅ Oui | `https://infxvfvzhvtdnyuayywe.supabase.co` | URL de base du CDN Storage pour les images (propriétés, chambres, avatars). En production, peut pointer vers un CNAME personnalisé. |
+| `SUPABASE_URL` | ✅ Oui | `https://infxvfvzhvtdnyuayywe.supabase.co` | Miroir de `VITE_SUPABASE_URL` pour les server functions TanStack Start qui n'ont pas accès à `import.meta.env`. |
 | `SUPABASE_ANON_KEY` | ✅ Oui | `eyJhbGciO...` | Miroir de `VITE_SUPABASE_ANON_KEY` pour les server functions. |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ Oui | `eyJhbGciO...` | Clé service_role — bypasse la RLS. Utilisée uniquement par `supabaseAdmin` dans `src/lib/supabase/admin.ts`. **Ne jamais exposer côté navigateur.** |
 | `SUPABASE_JWT_SECRET` | ✅ Oui | `super-secret-jwt-...` | Secret JWT du projet Supabase. Source : Dashboard → Settings → Auth → JWT Settings. |
 | `SUPABASE_DB_URL` | ⬜ Optionnel | `postgresql://postgres:pwd@db.ref.supabase.co:5432/postgres` | Connexion directe Postgres. Utilisée par les scripts de migration en CI/CD. Pas requise à runtime. |
 | `SUPABASE_DB_POOLER_URL` | ⬜ Optionnel | `postgresql://postgres.ref:pwd@aws-0-eu-west-1.pooler.supabase.com:6543/postgres` | Connexion PgBouncer pour les queries runtime sous charge. |
-| `SUPABASE_PROJECT_REF` | ⬜ Optionnel | `abcdefghijkl` | Référence courte du projet. Utilisée par `scripts/create-buckets.sh`. |
+| `SUPABASE_PROJECT_REF` | ⬜ Optionnel | `infxvfvzhvtdnyuayywe` | Référence courte du projet. Utilisée par `scripts/create-buckets.sh`. |
 | `LIBSODIUM_SEALED_BOX_PUBLIC_KEY` | ✅ Oui | `base64encodedkey==` | Clé publique libsodium pour le chiffrement des comptes de virement (colonne `payout_account`). |
 | `LIBSODIUM_SEALED_BOX_PRIVATE_KEY` | ✅ Oui | `base64encodedkey==` | Clé privée libsodium pour le déchiffrement. Garder hors de tout log. |
 
@@ -42,7 +42,7 @@ Il couvre : Netlify, Supabase (Edge Functions), paiement GaniPay, et email Resen
 | Variable | Obligatoire | Exemple | Description |
 |---|---|---|---|
 | `APP_URL` | ✅ Oui | `https://yiri-go.com` | Utilisé dans `_shared/cors.ts` : `ALLOWED_ORIGIN = APP_URL \|\| "*"`. Si absent, toutes les EF acceptent les requêtes depuis n'importe quel domaine (CORS wildcard). **Critique.** |
-| `SUPABASE_URL` | ✅ Oui | `https://abcdefghijkl.supabase.co` | Injecté automatiquement par Supabase dans les EF. Vérifier qu'il est bien défini. |
+| `SUPABASE_URL` | ✅ Oui | `https://infxvfvzhvtdnyuayywe.supabase.co` | Injecté automatiquement par Supabase dans les EF. Vérifier qu'il est bien défini. |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ Oui | `eyJhbGciO...` | Injecté automatiquement par Supabase. Utilisé par `makeServiceClient()` dans `_shared/auth.ts`. |
 | `SUPABASE_ANON_KEY` | ✅ Oui | `eyJhbGciO...` | Injecté automatiquement par Supabase. |
 
@@ -103,7 +103,7 @@ Avant d'ouvrir le trafic public, vérifier **dans cet ordre** :
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` présent dans Netlify (pour les server functions)
 - [ ] `LIBSODIUM_SEALED_BOX_PUBLIC_KEY` et `_PRIVATE_KEY` présents dans Netlify
 - [ ] Domaine `yiri-go.com` vérifié dans Resend (SPF/DKIM/DMARC en place)
-- [ ] URL du webhook GaniPay configurée dans le dashboard GaniPay : `https://<ref>.supabase.co/functions/v1/payment-webhook`
+- [ ] URL du webhook GaniPay configurée dans le dashboard GaniPay : `https://infxvfvzhvtdnyuayywe.supabase.co/functions/v1/payment-webhook`
 - [ ] Supabase Auth → Site URL = `https://yiri-go.com`
 - [ ] Supabase Auth → Redirect URLs inclut `https://yiri-go.com/auth/callback`
 - [ ] Test end-to-end : inscription → email → lien → `/auth/callback` → dashboard
